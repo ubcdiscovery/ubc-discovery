@@ -173,17 +173,7 @@ export default function EventDetail() {
             </div>
 
             <div className="mt-7">
-              {event.source_url && (
-                <a
-                  href={event.source_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 border border-ink bg-ink text-bg font-mono text-[11px] font-bold tracking-wider uppercase no-underline"
-                >
-                  OPEN ORIGINAL ↗
-                </a>
-              )}
-              <div className="mt-3.5 font-mono text-[10.5px] text-muted tracking-wide">
+              <div className="font-mono text-[10.5px] text-muted tracking-wide">
                 ○ REPORT AN ISSUE WITH THIS LISTING
               </div>
             </div>
@@ -233,7 +223,17 @@ export default function EventDetail() {
                 {event.club_name ?? event.source_label.replace(/_/g, " ")}
               </div>
             </div>
-            <div className="p-6">
+            <div className="p-6 flex flex-col gap-6">
+              {event.source_url && (
+                <a
+                  href={event.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-3.5 border border-accent bg-accent text-white font-mono text-[11px] font-bold tracking-wider uppercase text-center no-underline"
+                >
+                  OPEN ORIGINAL ↗
+                </a>
+              )}
               <SaveEventButton
                 eventId={event.id}
                 event={event}
