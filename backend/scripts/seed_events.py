@@ -17,7 +17,9 @@ import httpx
 
 def _dt(day_offset: int, hour: int, minute: int = 0) -> str:
     """Return an ISO-8601 UTC timestamp *day_offset* days from today at the given hour."""
-    t = datetime.now(timezone.utc).replace(hour=hour, minute=minute, second=0, microsecond=0)
+    t = datetime.now(timezone.utc).replace(
+        hour=hour, minute=minute, second=0, microsecond=0
+    )
     t += timedelta(days=day_offset)
     return t.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -31,8 +33,6 @@ UBC_EVENTS = [
         "external_cta_label": "View organizer page",
         "vibes": ["academic", "volunteering", "wellness"],
         "club_name": "SEEDS Sustainability",
-        "latitude": 49.2625,
-        "longitude": -123.2531,
         "location_name": "CIRS (2260 West Mall)",
         "event_date": _dt(3, 9),
         "event_end_date": _dt(3, 16),
@@ -45,8 +45,6 @@ UBC_EVENTS = [
         "external_cta_label": "View organizer page",
         "vibes": ["academic", "social"],
         "club_name": "Science Rendezvous",
-        "latitude": 49.2631,
-        "longitude": -123.2513,
         "location_name": "Beaty Biodiversity Museum (2212 Main Mall)",
         "event_date": _dt(5, 10),
         "event_end_date": _dt(5, 16),
@@ -59,8 +57,6 @@ UBC_EVENTS = [
         "external_cta_label": "View organizer page",
         "vibes": ["outdoors", "wellness"],
         "club_name": "Botanical Garden",
-        "latitude": 49.2530,
-        "longitude": -123.2520,
         "location_name": "UBC Botanical Garden (6804 SW Marine Dr)",
         "event_date": _dt(7, 7),
         "event_end_date": _dt(7, 9),
@@ -73,8 +69,6 @@ UBC_EVENTS = [
         "external_cta_label": "View details",
         "vibes": ["social"],
         "club_name": "UBC Housing",
-        "latitude": 49.2611,
-        "longitude": -123.2581,
         "location_name": "Various Student Residences (Marine Drive Hub)",
         "event_date": _dt(10, 9),
         "event_end_date": _dt(10, 17),
@@ -87,8 +81,6 @@ UBC_EVENTS = [
         "external_cta_label": "View academic dates",
         "vibes": ["academic"],
         "club_name": "UBC Academic",
-        "latitude": 49.2668,
-        "longitude": -123.2499,
         "location_name": "Campus-wide (AMS Nest)",
         "event_date": _dt(12, 8),
         "event_end_date": _dt(12, 17),
@@ -101,8 +93,6 @@ UBC_EVENTS = [
         "external_cta_label": "View organizer page",
         "vibes": ["culture", "arts", "academic"],
         "club_name": "IKB Gallery",
-        "latitude": 49.2677,
-        "longitude": -123.2527,
         "location_name": "IKB Learning Centre (1961 East Mall)",
         "event_date": _dt(14, 13, 30),
         "event_end_date": _dt(14, 15),
@@ -115,8 +105,6 @@ UBC_EVENTS = [
         "external_cta_label": "View organizer page",
         "vibes": ["career", "food", "social"],
         "club_name": "UBC Sauder",
-        "latitude": 49.2651,
-        "longitude": -123.2539,
         "location_name": "UBC Sauder (2053 Main Mall)",
         "event_date": _dt(17, 17),
         "event_end_date": _dt(17, 20),
@@ -129,8 +117,6 @@ UBC_EVENTS = [
         "external_cta_label": "View organizer page",
         "vibes": ["outdoors", "wellness", "volunteering"],
         "club_name": "UBC Farm",
-        "latitude": 49.2534,
-        "longitude": -123.2381,
         "location_name": "UBC Farm (3461 Ross Drive)",
         "event_date": _dt(20, 10),
         "event_end_date": _dt(20, 12, 30),
@@ -143,8 +129,6 @@ UBC_EVENTS = [
         "external_cta_label": "View exhibition",
         "vibes": ["arts", "culture"],
         "club_name": "MOA",
-        "latitude": 49.2695,
-        "longitude": -123.2594,
         "location_name": "Museum of Anthropology (6393 NW Marine Dr)",
         "event_date": _dt(24, 18),
         "event_end_date": _dt(24, 21),
@@ -154,7 +138,9 @@ UBC_EVENTS = [
 
 def main():
     parser = argparse.ArgumentParser(description="Seed UBC events via the API")
-    parser.add_argument("--api-url", default="http://localhost:8000", help="Base API URL")
+    parser.add_argument(
+        "--api-url", default="http://localhost:8000", help="Base API URL"
+    )
     args = parser.parse_args()
 
     api_key = os.environ.get("ADMIN_API_KEY")

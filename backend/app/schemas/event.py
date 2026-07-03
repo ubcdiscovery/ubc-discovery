@@ -29,8 +29,6 @@ class EventResponse(BaseModel):
     club_name: str | None
     event_picture_url: str | None = None
     vibes: list[str]
-    latitude: float | None
-    longitude: float | None
     location_name: str | None
     event_date: datetime | None
     event_end_date: datetime | None
@@ -48,8 +46,6 @@ class CreateEventRequest(BaseModel):
     source_url: str | None = None
     external_cta_label: str | None = None
     vibes: list[str] = Field(default_factory=list)
-    latitude: float | None = None
-    longitude: float | None = None
     location_name: str | None = None
     event_date: datetime
     event_end_date: datetime | None = None
@@ -64,7 +60,9 @@ class CreateEventRequest(BaseModel):
     @classmethod
     def validate_source_label(cls, value: str) -> str:
         if value not in EVENT_SOURCE_LABELS:
-            raise ValueError("source_label must be one of the fixed event source labels")
+            raise ValueError(
+                "source_label must be one of the fixed event source labels"
+            )
         return value
 
     @field_validator("vibes")
@@ -85,13 +83,13 @@ class UpdateEventRequest(BaseModel):
     source_url: str | None = None
     external_cta_label: str | None = None
     vibes: list[str] | None = None
-    latitude: float | None = None
-    longitude: float | None = None
     location_name: str | None = None
     event_date: datetime | None = None
     event_end_date: datetime | None = None
 
-    @field_validator("title", "description", "source", "source_label", "vibes", mode="before")
+    @field_validator(
+        "title", "description", "source", "source_label", "vibes", mode="before"
+    )
     @classmethod
     def reject_null_required_fields(cls, value):
         if value is None:
@@ -100,7 +98,11 @@ class UpdateEventRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_end_after_start(self) -> Self:
-        if self.event_date and self.event_end_date and self.event_end_date < self.event_date:
+        if (
+            self.event_date
+            and self.event_end_date
+            and self.event_end_date < self.event_date
+        ):
             raise ValueError("event_end_date must not be before event_date")
         return self
 
@@ -108,7 +110,9 @@ class UpdateEventRequest(BaseModel):
     @classmethod
     def validate_source_label(cls, value: str | None) -> str | None:
         if value is not None and value not in EVENT_SOURCE_LABELS:
-            raise ValueError("source_label must be one of the fixed event source labels")
+            raise ValueError(
+                "source_label must be one of the fixed event source labels"
+            )
         return value
 
     @field_validator("vibes")

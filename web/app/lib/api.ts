@@ -24,8 +24,6 @@ export interface ApiEvent {
   club_name: string | null;
   event_picture_url: string | null;
   vibes: string[];
-  latitude: number | null;
-  longitude: number | null;
   location_name: string | null;
   event_date: string | null;
   event_end_date: string | null;

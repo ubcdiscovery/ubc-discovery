@@ -94,7 +94,9 @@ class TestSearchEvents:
         db_session.add_all([future_event, past_event])
         await db_session.flush()
 
-        resp = await unauthed_client.get("/events/search", params={"q": "Campus Search Match"})
+        resp = await unauthed_client.get(
+            "/events/search", params={"q": "Campus Search Match"}
+        )
 
         assert resp.status_code == 200
         ids = [event["id"] for event in resp.json()["events"]]
@@ -114,8 +116,6 @@ class TestCreateEvent:
                 "source_url": "https://example.com/event",
                 "external_cta_label": "View registration",
                 "vibes": ["career", "social"],
-                "latitude": 49.2700,
-                "longitude": -123.2500,
                 "location_name": "The Nest",
                 "event_date": "2026-09-01T10:00:00Z",
                 "event_end_date": "2026-09-01T13:00:00Z",
@@ -145,7 +145,9 @@ class TestCreateEvent:
         assert data["source_label"] == "campus_community"
         assert data["vibes"] == []
 
-    async def test_create_event_preserves_ingestion_source(self, admin_client: AsyncClient):
+    async def test_create_event_preserves_ingestion_source(
+        self, admin_client: AsyncClient
+    ):
         resp = await admin_client.post(
             "/events",
             json={
@@ -157,7 +159,9 @@ class TestCreateEvent:
         assert resp.status_code == 200
         assert resp.json()["source"] == "instagram"
 
-    async def test_create_event_accepts_free_form_source(self, admin_client: AsyncClient):
+    async def test_create_event_accepts_free_form_source(
+        self, admin_client: AsyncClient
+    ):
         resp = await admin_client.post(
             "/events",
             json={
@@ -197,7 +201,9 @@ class TestCreateEvent:
         assert data["event_date"] is not None
         assert data["event_end_date"] is not None
 
-    async def test_create_event_rejects_end_before_start(self, admin_client: AsyncClient):
+    async def test_create_event_rejects_end_before_start(
+        self, admin_client: AsyncClient
+    ):
         resp = await admin_client.post(
             "/events",
             json={
@@ -214,7 +220,9 @@ class TestUpdateEvent:
         self, admin_client: AsyncClient, sample_events: list[Event]
     ):
         event = sample_events[0]
-        with patch("app.routers.events.recommender.generate_event_embedding") as mock_embedding:
+        with patch(
+            "app.routers.events.recommender.generate_event_embedding"
+        ) as mock_embedding:
             mock_embedding.return_value = [0.1, 0.2]
             resp = await admin_client.put(
                 f"/events/{event.id}",
@@ -232,7 +240,9 @@ class TestUpdateEvent:
         self, admin_client: AsyncClient, sample_events: list[Event]
     ):
         event = sample_events[0]
-        with patch("app.routers.events.recommender.generate_event_embedding") as mock_embedding:
+        with patch(
+            "app.routers.events.recommender.generate_event_embedding"
+        ) as mock_embedding:
             resp = await admin_client.put(
                 f"/events/{event.id}",
                 json={"source_url": "https://example.com/updated"},

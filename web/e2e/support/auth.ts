@@ -39,8 +39,6 @@ export const mockEvent = {
   club_name: null,
   event_picture_url: null,
   vibes: ["social"],
-  latitude: null,
-  longitude: null,
   location_name: "Main Mall",
   event_date: "2026-09-01T18:00:00Z",
   event_end_date: "2026-09-01T20:00:00Z",
