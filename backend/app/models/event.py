@@ -22,7 +22,7 @@ class Event(Base):
     club_name: Mapped[str | None] = mapped_column(String(255))
     vibes: Mapped[list[str]] = mapped_column(JSON, default=list)
 
-    location_name: Mapped[str | None] = mapped_column(String(255))
+    location_name: Mapped[str] = mapped_column(String(255), nullable=False)
 
     event_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False

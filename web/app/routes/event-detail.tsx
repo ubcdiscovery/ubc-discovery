@@ -82,7 +82,7 @@ export default function EventDetail() {
                   ? fmtTime(d).toUpperCase()
                   : "",
             ],
-            ["WHERE", event.location_name ?? "TBD", "OPEN IN MAPS →"],
+            ["WHERE", event.location_name, "OPEN IN MAPS →"],
             [
               "HOST",
               event.club_name ?? event.source_label.replace(/_/g, " "),
@@ -209,7 +209,7 @@ export default function EventDetail() {
                 WHERE
               </div>
               <div className="font-display font-bold text-xl mt-1.5 tracking-tight leading-tight">
-                {event.location_name ?? "TBD"}
+                {event.location_name}
               </div>
               <span className="mt-2 inline-block font-mono text-[11px] text-accent font-bold tracking-wide uppercase">
                 OPEN IN MAPS ↗

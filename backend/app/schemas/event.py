@@ -29,7 +29,7 @@ class EventResponse(BaseModel):
     club_name: str | None
     event_picture_url: str | None = None
     vibes: list[str]
-    location_name: str | None
+    location_name: str
     event_date: datetime | None
     event_end_date: datetime | None
     created_at: datetime
@@ -46,7 +46,7 @@ class CreateEventRequest(BaseModel):
     source_url: str | None = None
     external_cta_label: str | None = None
     vibes: list[str] = Field(default_factory=list)
-    location_name: str | None = None
+    location_name: str
     event_date: datetime
     event_end_date: datetime | None = None
 
@@ -88,7 +88,13 @@ class UpdateEventRequest(BaseModel):
     event_end_date: datetime | None = None
 
     @field_validator(
-        "title", "description", "source", "source_label", "vibes", mode="before"
+        "title",
+        "description",
+        "source",
+        "source_label",
+        "vibes",
+        "location_name",
+        mode="before",
     )
     @classmethod
     def reject_null_required_fields(cls, value):

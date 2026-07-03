@@ -28,12 +28,15 @@ export function EventCardMedium({ event }: { event: ApiEvent }) {
           </div>
 
           <div className="min-w-0">
-            <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
+            <SourceBadge
+              sourceLabel={event.source_label}
+              host={event.club_name}
+            />
             <h3 className="mt-1.5 mb-1 font-display font-bold text-[21px] text-ink leading-tight tracking-tight text-balance">
               {event.title}
             </h3>
             <div className="font-mono text-[11px] text-muted tracking-wide uppercase mb-2">
-              ↳ {event.location_name ?? "TBD"}
+              ↳ {event.location_name}
             </div>
             <div className="flex gap-1.5 flex-wrap">
               {event.vibes.slice(0, 3).map((v) => (
@@ -76,7 +79,7 @@ export function EventCardCompact({ event }: { event: ApiEvent }) {
               {event.title}
             </div>
             <div className="text-muted text-[10px] mt-0.5 tracking-wide uppercase">
-              {event.location_name ?? "TBD"}
+              {event.location_name}
             </div>
           </div>
           <div className="text-muted tabular-nums">
@@ -120,7 +123,7 @@ export function EventCardRich({ event }: { event: ApiEvent }) {
               {event.title}
             </h3>
             <div className="mt-2 font-mono text-[10.5px] text-muted tracking-wide uppercase">
-              {d && fmtTime(d)} · {event.location_name ?? "TBD"}
+              {d && fmtTime(d)} · {event.location_name}
             </div>
             <div className="mt-2.5 flex gap-1 flex-wrap">
               {event.vibes.slice(0, 3).map((v) => (

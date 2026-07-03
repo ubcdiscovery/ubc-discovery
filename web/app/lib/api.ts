@@ -24,7 +24,7 @@ export interface ApiEvent {
   club_name: string | null;
   event_picture_url: string | null;
   vibes: string[];
-  location_name: string | null;
+  location_name: string;
   event_date: string | null;
   event_end_date: string | null;
   created_at: string;

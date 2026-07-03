@@ -83,12 +83,14 @@ class TestSearchEvents:
             title="Campus Search Match",
             description="Upcoming searchable event",
             source="manual",
+            location_name="Main Mall",
             event_date=current_time + timedelta(days=1),
         )
         past_event = Event(
             title="Campus Search Match Past",
             description="Past searchable event",
             source="manual",
+            location_name="Main Mall",
             event_date=current_time - timedelta(days=1),
         )
         db_session.add_all([future_event, past_event])
@@ -136,7 +138,11 @@ class TestCreateEvent:
     async def test_create_event_minimal_fields(self, admin_client: AsyncClient):
         resp = await admin_client.post(
             "/events",
-            json={"title": "Minimal Event", "event_date": "2026-09-01T10:00:00Z"},
+            json={
+                "title": "Minimal Event",
+                "location_name": "To be announced",
+                "event_date": "2026-09-01T10:00:00Z",
+            },
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -153,6 +159,7 @@ class TestCreateEvent:
             json={
                 "title": "Scraped Event",
                 "source": "instagram",
+                "location_name": "To be announced",
                 "event_date": "2026-09-01T10:00:00Z",
             },
         )
@@ -167,6 +174,7 @@ class TestCreateEvent:
             json={
                 "title": "Imported Event",
                 "source": "ubc_calendar",
+                "location_name": "To be announced",
                 "event_date": "2026-09-01T10:00:00Z",
             },
         )
@@ -176,14 +184,34 @@ class TestCreateEvent:
     async def test_create_event_rejects_empty_source(self, admin_client: AsyncClient):
         resp = await admin_client.post(
             "/events",
-            json={"title": "Missing Source", "source": ""},
+            json={
+                "title": "Missing Source",
+                "source": "",
+                "location_name": "The Nest",
+                "event_date": "2026-09-01T10:00:00Z",
+            },
         )
         assert resp.status_code == 422
 
     async def test_create_event_rejects_unknown_vibe(self, admin_client: AsyncClient):
         resp = await admin_client.post(
             "/events",
-            json={"title": "Unknown Vibe", "vibes": ["invented"]},
+            json={
+                "title": "Unknown Vibe",
+                "vibes": ["invented"],
+                "location_name": "The Nest",
+                "event_date": "2026-09-01T10:00:00Z",
+            },
+        )
+        assert resp.status_code == 422
+
+    async def test_create_event_requires_location_name(self, admin_client: AsyncClient):
+        resp = await admin_client.post(
+            "/events",
+            json={
+                "title": "Missing Location",
+                "event_date": "2026-09-01T10:00:00Z",
+            },
         )
         assert resp.status_code == 422
 
@@ -192,6 +220,7 @@ class TestCreateEvent:
             "/events",
             json={
                 "title": "Future Event",
+                "location_name": "The Nest",
                 "event_date": "2026-09-01T10:00:00Z",
                 "event_end_date": "2026-09-01T12:00:00Z",
             },
@@ -208,6 +237,7 @@ class TestCreateEvent:
             "/events",
             json={
                 "title": "Bad Dates",
+                "location_name": "The Nest",
                 "event_date": "2026-09-01T14:00:00Z",
                 "event_end_date": "2026-09-01T10:00:00Z",
             },
@@ -265,6 +295,15 @@ class TestUpdateEvent:
         )
         assert resp.status_code == 422
 
+    async def test_update_event_rejects_null_location_name(
+        self, admin_client: AsyncClient, sample_events: list[Event]
+    ):
+        resp = await admin_client.put(
+            f"/events/{sample_events[0].id}",
+            json={"location_name": None},
+        )
+        assert resp.status_code == 422
+
     async def test_update_event_rejects_end_before_existing_start(
         self, admin_client: AsyncClient, sample_events: list[Event]
     ):
@@ -284,6 +323,7 @@ class TestDeleteEvent:
         event = Event(
             title="Delete Me",
             source="manual",
+            location_name="The Nest",
             event_date=datetime(2026, 9, 1, 10, 0, tzinfo=ZoneInfo("UTC")),
         )
         db_session.add(event)
