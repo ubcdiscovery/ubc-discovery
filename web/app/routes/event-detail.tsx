@@ -129,23 +129,15 @@ export default function EventDetail() {
         {/* Bottom action bar */}
         <div className="fixed bottom-0 left-0 right-0 bg-bg border-t-2 border-ink px-4.5 py-3 pb-7 flex gap-2 md:hidden z-50">
           <SaveEventButton eventId={event.id} event={event} variant="bar" />
-          {event.source_url ? (
+          {event.source_url && (
             <a
-              href={
-                event.source_url.startsWith("http")
-                  ? event.source_url
-                  : `https://${event.source_url}`
-              }
+              href={event.source_url}
               target="_blank"
               rel="noreferrer"
               className="flex-1 py-3 border border-accent bg-accent text-white font-mono text-[11px] font-bold tracking-wider uppercase cursor-pointer text-center no-underline"
             >
               OPEN ORIGINAL →
             </a>
-          ) : (
-            <button className="flex-1 py-3 border border-accent bg-accent text-white font-mono text-[11px] font-bold tracking-wider uppercase cursor-pointer">
-              OPEN ORIGINAL →
-            </button>
           )}
         </div>
       </div>
