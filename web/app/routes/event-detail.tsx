@@ -10,7 +10,9 @@ import { RouteErrorState } from "~/components/RouteErrorState";
 export function meta({ data }: Route.MetaArgs) {
   const event = data as ApiEvent | undefined;
   return [
-    { title: event ? `${event.title} — UBC Discovery` : "Event — UBC Discovery" },
+    {
+      title: event ? `${event.title} - UBC Discovery` : "Event — UBC Discovery",
+    },
   ];
 }
 
@@ -54,20 +56,11 @@ export default function EventDetail() {
     <div>
       {/* Mobile */}
       <div className="md:hidden">
-        <div className="px-4.5 py-3.5 border-b border-ink flex justify-between items-center">
-          <button
-            onClick={() => navigate(-1)}
-            className="bg-transparent border-none cursor-pointer font-mono text-[11px] text-ink font-bold tracking-wide uppercase"
-          >
-            ← BACK
-          </button>
-          <div className="font-mono text-[10px] text-muted tracking-wider uppercase">
-            UBC Discovery
-          </div>
-        </div>
-
         <div className="px-4.5 pt-4.5">
-          <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
+          <SourceBadge
+            sourceLabel={event.source_label}
+            host={event.club_name}
+          />
           <h1 className="mt-3 mb-1.5 font-display font-extrabold text-4xl text-ink tracking-tight leading-none text-balance">
             {event.title}
           </h1>
@@ -81,10 +74,26 @@ export default function EventDetail() {
         {/* Data table */}
         <div className="mx-4.5 mt-5 border border-ink">
           {[
-            ["WHEN", d ? fmtDay(d) : "TBD", d && endD ? fmtRange(d, endD).toUpperCase() : d ? fmtTime(d).toUpperCase() : ""],
+            [
+              "WHEN",
+              d ? fmtDay(d) : "TBD",
+              d && endD
+                ? fmtRange(d, endD).toUpperCase()
+                : d
+                  ? fmtTime(d).toUpperCase()
+                  : "",
+            ],
             ["WHERE", event.location_name ?? "TBD", "OPEN IN MAPS →"],
-            ["HOST", event.club_name ?? event.source_label.replace(/_/g, " "), ""],
-            ["SOURCE", event.source_url ?? "—", event.source_url ? "OPEN ↗" : ""],
+            [
+              "HOST",
+              event.club_name ?? event.source_label.replace(/_/g, " "),
+              "",
+            ],
+            [
+              "SOURCE",
+              event.source_url ?? "—",
+              event.source_url ? "OPEN ↗" : "",
+            ],
           ].map(([k, v, action], i, arr) => (
             <div
               key={k}
@@ -123,7 +132,11 @@ export default function EventDetail() {
           <SaveEventButton eventId={event.id} event={event} variant="bar" />
           {event.source_url ? (
             <a
-              href={event.source_url.startsWith("http") ? event.source_url : `https://${event.source_url}`}
+              href={
+                event.source_url.startsWith("http")
+                  ? event.source_url
+                  : `https://${event.source_url}`
+              }
               target="_blank"
               rel="noreferrer"
               className="flex-1 py-3 border border-accent bg-accent text-white font-mono text-[11px] font-bold tracking-wider uppercase cursor-pointer text-center no-underline"
@@ -140,16 +153,6 @@ export default function EventDetail() {
 
       {/* Desktop */}
       <div className="hidden md:block">
-        <div className="px-8 py-3.5 border-b-2 border-ink flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="bg-transparent border-none cursor-pointer font-mono text-[11px] text-ink font-bold tracking-wide uppercase"
-          >
-            ← Back to Discover
-          </button>
-          <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
-        </div>
-
         <div className="grid grid-cols-[1fr_380px] border-b border-ink">
           <div className="px-8 pt-10 pb-12 border-r border-ink">
             {d && (
@@ -186,7 +189,11 @@ export default function EventDetail() {
             <div className="mt-7">
               {event.source_url ? (
                 <a
-                  href={event.source_url.startsWith("http") ? event.source_url : `https://${event.source_url}`}
+                  href={
+                    event.source_url.startsWith("http")
+                      ? event.source_url
+                      : `https://${event.source_url}`
+                  }
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2.5 border border-ink bg-ink text-bg font-mono text-[11px] font-bold tracking-wider uppercase no-underline"
@@ -207,7 +214,11 @@ export default function EventDetail() {
                   WHEN
                 </div>
                 <div className="font-display font-extrabold text-[44px] tracking-tight leading-none text-ink mt-1">
-                  {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][d.getDay()]}
+                  {
+                    ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][
+                      d.getDay()
+                    ]
+                  }
                   <br />
                   <span className="text-accent tabular-nums">
                     {fmtMonth(d)} {fmtDate02(d)}
@@ -241,7 +252,11 @@ export default function EventDetail() {
               </div>
             </div>
             <div className="p-6">
-              <SaveEventButton eventId={event.id} event={event} variant="wide" />
+              <SaveEventButton
+                eventId={event.id}
+                event={event}
+                variant="wide"
+              />
             </div>
           </aside>
         </div>
