@@ -48,7 +48,6 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
 export default function EventDetail() {
   const event = useLoaderData<typeof clientLoader>();
-  const navigate = useNavigate();
   const d = event.event_date ? new Date(event.event_date) : null;
   const endD = event.event_end_date ? new Date(event.event_end_date) : null;
 
@@ -154,13 +153,8 @@ export default function EventDetail() {
       {/* Desktop */}
       <div className="hidden md:block">
         <div className="grid grid-cols-[1fr_380px] border-b border-ink">
-          <div className="px-8 pt-10 pb-12 border-r border-ink">
-            {d && (
-              <div className="font-mono text-[11px] text-muted tracking-wide uppercase">
-                {fmtDay(d)} · {d.getFullYear()}
-              </div>
-            )}
-            <h1 className="mt-3.5 mb-1 font-display font-extrabold text-[88px] text-ink tracking-[-3px] leading-[0.92]">
+          <div className="p-8 border-r border-ink">
+            <h1 className="font-display font-extrabold text-7xl text-ink tracking-[-3px] leading-[0.92]">
               {event.title}
             </h1>
             <div className="flex gap-1.5 mt-3.5">
@@ -181,26 +175,22 @@ export default function EventDetail() {
               <div className="font-mono text-[11px] text-muted tracking-wider uppercase mb-3 pb-1.5 border-b border-ink">
                 About this event
               </div>
-              <p className="max-w-145 text-base text-ink-soft leading-relaxed">
+              <p className="text-base text-ink-soft leading-relaxed">
                 {event.description}
               </p>
             </div>
 
             <div className="mt-7">
-              {event.source_url ? (
+              {event.source_url && (
                 <a
-                  href={
-                    event.source_url.startsWith("http")
-                      ? event.source_url
-                      : `https://${event.source_url}`
-                  }
+                  href={event.source_url}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2.5 border border-ink bg-ink text-bg font-mono text-[11px] font-bold tracking-wider uppercase no-underline"
                 >
                   OPEN ORIGINAL ↗
                 </a>
-              ) : null}
+              )}
               <div className="mt-3.5 font-mono text-[10.5px] text-muted tracking-wide">
                 ○ REPORT AN ISSUE WITH THIS LISTING
               </div>
