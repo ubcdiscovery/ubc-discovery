@@ -70,6 +70,16 @@ export default function EventDetail() {
           </div>
         </div>
 
+        {event.event_picture_url && (
+          <div className="mx-4.5 mt-5">
+            <img
+              src={event.event_picture_url}
+              alt={`${event.title} event poster`}
+              className="block h-auto w-full"
+            />
+          </div>
+        )}
+
         {/* Data table */}
         <div className="mx-4.5 mt-5 border border-ink">
           {[
@@ -158,8 +168,8 @@ export default function EventDetail() {
             {event.event_picture_url && (
               <img
                 src={event.event_picture_url}
-                alt=""
-                className="mt-8 w-full h-90 object-cover"
+                alt={`${event.title} event poster`}
+                className="mx-auto mt-8 block h-auto max-h-[75vh] w-auto max-w-full"
               />
             )}
 
