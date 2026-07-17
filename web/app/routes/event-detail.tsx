@@ -96,7 +96,7 @@ export default function EventDetail() {
           ].map(([k, v, action], i, arr) => (
             <div
               key={k}
-              className={`grid grid-cols-[64px_1fr_auto] gap-2.5 px-3 py-2.5 items-center font-mono text-[11.5px] ${
+              className={`grid grid-cols-[64px_1fr_auto] gap-2.5 px-3 py-2.5 items-center font-mono text-xs ${
                 i < arr.length - 1 ? "border-b border-rule-soft" : ""
               }`}
             >
@@ -112,16 +112,16 @@ export default function EventDetail() {
         </div>
 
         <div className="px-4.5 pt-5">
-          <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-2">
+          <div className="font-mono text-xs text-muted tracking-wider uppercase mb-2">
             About this event
           </div>
-          <p className="text-[14.5px] text-ink-soft leading-relaxed">
+          <p className="text-sm text-ink-soft leading-relaxed">
             {event.description}
           </p>
         </div>
 
         <div className="px-4.5 pt-5 pb-3.5">
-          <span className="font-mono text-[10.5px] text-muted tracking-wide uppercase">
+          <span className="font-mono text-xs text-muted tracking-wide uppercase">
             ○ REPORT AN ISSUE WITH THIS LISTING
           </span>
         </div>
@@ -134,7 +134,7 @@ export default function EventDetail() {
               href={event.source_url}
               target="_blank"
               rel="noreferrer"
-              className="flex-1 py-3 border border-accent bg-accent text-white font-mono text-[11px] font-bold tracking-wider uppercase cursor-pointer text-center no-underline"
+              className="flex-1 py-3 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase cursor-pointer text-center no-underline"
             >
               OPEN ORIGINAL →
             </a>
@@ -164,7 +164,7 @@ export default function EventDetail() {
             )}
 
             <div className="mt-9">
-              <div className="font-mono text-[11px] text-muted tracking-wider uppercase mb-3 pb-1.5 border-b border-ink">
+              <div className="font-mono text-xs text-muted tracking-wider uppercase mb-3 pb-1.5 border-b border-ink">
                 About this event
               </div>
               <p className="text-base text-ink-soft leading-relaxed">
@@ -173,7 +173,7 @@ export default function EventDetail() {
             </div>
 
             <div className="mt-7">
-              <div className="font-mono text-[10.5px] text-muted tracking-wide">
+              <div className="font-mono text-xs text-muted tracking-wide">
                 ○ REPORT AN ISSUE WITH THIS LISTING
               </div>
             </div>
@@ -182,10 +182,10 @@ export default function EventDetail() {
           <aside className="sticky top-0 self-start">
             {d && (
               <div className="p-6 border-b border-ink">
-                <div className="font-mono text-[10.5px] text-muted tracking-wider uppercase">
+                <div className="font-mono text-xs text-muted tracking-wider uppercase">
                   WHEN
                 </div>
-                <div className="font-display font-extrabold text-[44px] tracking-tight leading-none text-ink mt-1">
+                <div className="font-display font-extrabold text-5xl tracking-tight leading-none text-ink mt-1">
                   {
                     ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][
                       d.getDay()
@@ -205,18 +205,18 @@ export default function EventDetail() {
               </div>
             )}
             <div className="p-6 border-b border-ink">
-              <div className="font-mono text-[10.5px] text-muted tracking-wider uppercase">
+              <div className="font-mono text-xs text-muted tracking-wider uppercase">
                 WHERE
               </div>
               <div className="font-display font-bold text-xl mt-1.5 tracking-tight leading-tight">
                 {event.location_name}
               </div>
-              <span className="mt-2 inline-block font-mono text-[11px] text-accent font-bold tracking-wide uppercase">
+              <span className="mt-2 inline-block font-mono text-xs text-accent font-bold tracking-wide uppercase">
                 OPEN IN MAPS ↗
               </span>
             </div>
             <div className="p-6 border-b border-ink">
-              <div className="font-mono text-[10.5px] text-muted tracking-wider uppercase">
+              <div className="font-mono text-xs text-muted tracking-wider uppercase">
                 HOST
               </div>
               <div className="font-display font-bold text-lg mt-1.5 tracking-tight">
@@ -229,7 +229,7 @@ export default function EventDetail() {
                   href={event.source_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full py-3.5 border border-accent bg-accent text-white font-mono text-[11px] font-bold tracking-wider uppercase text-center no-underline"
+                  className="w-full py-3.5 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase text-center no-underline"
                 >
                   OPEN ORIGINAL ↗
                 </a>
