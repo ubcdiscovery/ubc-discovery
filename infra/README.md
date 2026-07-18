@@ -8,11 +8,8 @@ pre-existing `prod/` configuration is separate and unchanged by this baseline.
 ## Contents
 
 - `compose/`: Caddy, FastAPI, and PostgreSQL topology.
-- `HOST-RUNBOOK.md`: one-time Debian 13 preparation, with no firewall or SSH
-  changes and no reboot.
 - `OPERATIONS.md`: release, backup, restore, health, and rollback procedures.
 - `scripts/`: local validation and operational helpers.
-- `changes/`: exact non-executable review manifest for the first baseline.
 
 EventScraper is intentionally absent: its current foundation has no runnable
 container image or approved candidate-delivery contract.
