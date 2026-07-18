@@ -1,11 +1,16 @@
 name: Deploy Backend
 
 on:
+  workflow_run:
+    workflows: ["Build Backend Docker image"]
+    branches: [main]
+    types: [completed]
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Immutable GHCR tag to deploy (sha- plus the 40-character commit SHA)"
-        required: true
+        description: "Public GHCR image tag to deploy"
+        required: false
+        default: latest
 
 permissions:
   contents: read
@@ -20,6 +25,7 @@ jobs:
     name: Deploy backend to Lightsail
     runs-on: ubuntu-24.04
     environment: production
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     env:
       AWS_REGION: 'us-west-2'
       LIGHTSAIL_SERVICE_NAME: ${{ vars.LIGHTSAIL_SERVICE_NAME || 'ubc-discovery-backend' }}
@@ -29,15 +35,17 @@ jobs:
       - name: Select immutable image
         id: image
         env:
+          WORKFLOW_RUN_SHA: ${{ github.event.workflow_run.head_sha }}
           MANUAL_IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
-          if [[ ! "$MANUAL_IMAGE_TAG" =~ ^sha-[0-9a-f]{40}$ ]]; then
-            echo "image_tag must be sha- followed by a 40-character commit SHA" >&2
-            exit 1
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_run" ]]; then
+            image_tag="sha-${WORKFLOW_RUN_SHA}"
+          else
+            image_tag="${MANUAL_IMAGE_TAG:-latest}"
           fi
 
           image_name_lower="${IMAGE_NAME,,}"
-          echo "uri=ghcr.io/${image_name_lower}:${MANUAL_IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "uri=ghcr.io/${image_name_lower}:${image_tag}" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
