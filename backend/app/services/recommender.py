@@ -25,8 +25,7 @@ def generate_event_text(event: Event) -> str:
         parts.append(event.description)
     if event.club_name:
         parts.append(f"Hosted by {event.club_name}")
-    if event.location_name:
-        parts.append(f"Location: {event.location_name}")
+    parts.append(f"Location: {event.location_name}")
     return ". ".join(parts)
 
 
@@ -75,7 +74,9 @@ def embed_text(text: str) -> list[float] | None:
         result = json.loads(response["body"].read())
         embedding = result["embedding"]
         if not embedding or not isinstance(embedding, list):
-            logger.warning("Titan returned empty/invalid embedding for text: %.100s...", text)
+            logger.warning(
+                "Titan returned empty/invalid embedding for text: %.100s...", text
+            )
             return None
         return embedding
     except Exception:
@@ -113,8 +114,10 @@ def rank_events(
         if not event.embedding:
             continue
         score = hybrid_score(
-            taste_vector, event.embedding,
-            effective_vibe_profile, event.vibes or [],
+            taste_vector,
+            event.embedding,
+            effective_vibe_profile,
+            event.vibes or [],
             vibe_weight=vibe_weight,
         )
         scored.append((event, score))
@@ -149,7 +152,10 @@ def get_similar_events(
                 scored.append((c, vibe_score))
             continue
         score = hybrid_score(
-            event.embedding, c.embedding, event.vibes or [], c.vibes or [],
+            event.embedding,
+            c.embedding,
+            event.vibes or [],
+            c.vibes or [],
             vibe_weight=vibe_weight,
         )
         scored.append((c, score))

@@ -78,12 +78,16 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setActiveIndex((prev) => Math.max(prev - 1, -1));
-      } else if (e.key === "Enter" && activeIndex >= 0 && results[activeIndex]) {
+      } else if (
+        e.key === "Enter" &&
+        activeIndex >= 0 &&
+        results[activeIndex]
+      ) {
         onClose();
         navigate(`/events/${results[activeIndex].id}`);
       }
     },
-    [onClose, results, activeIndex, navigate]
+    [onClose, results, activeIndex, navigate],
   );
 
   useEffect(() => {
@@ -104,8 +108,11 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
   return (
     <div className="fixed inset-0 z-[60] bg-ink/20 backdrop-blur-[2px]">
-      <div ref={overlayRef} className="w-full md:max-w-[600px] md:mx-auto md:mt-16">
-      {/* Search input */}
+      <div
+        ref={overlayRef}
+        className="w-full md:max-w-[600px] md:mx-auto md:mt-16"
+      >
+        {/* Search input */}
         <div className="bg-bg border-2 border-ink">
           <div className="flex items-center gap-3 px-4 py-3">
             <span className="font-mono text-accent text-lg shrink-0">⌕</span>
@@ -143,9 +150,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               </div>
             ) : (
               results.map((event, i) => {
-                const d = event.event_date
-                  ? new Date(event.event_date)
-                  : null;
+                const d = event.event_date ? new Date(event.event_date) : null;
                 return (
                   <button
                     key={event.id}
@@ -189,19 +194,19 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                             {event.club_name}
                           </span>
                         )}
-                        {event.club_name && event.location_name && (
+                        {event.club_name && (
                           <span className="text-rule-soft">·</span>
                         )}
-                        {event.location_name && (
-                          <span className="font-mono text-[10px] text-muted tracking-wide truncate">
-                            {event.location_name}
-                          </span>
-                        )}
+                        <span className="font-mono text-[10px] text-muted tracking-wide truncate">
+                          {event.location_name}
+                        </span>
                       </div>
                     </div>
 
                     {/* Arrow */}
-                    <span className="font-mono text-accent text-sm shrink-0 pt-1">→</span>
+                    <span className="font-mono text-accent text-sm shrink-0 pt-1">
+                      →
+                    </span>
                   </button>
                 );
               })

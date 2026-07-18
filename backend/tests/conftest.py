@@ -283,8 +283,6 @@ async def sample_events(db_session: AsyncSession) -> list[Event]:
             external_cta_label="View details",
             club_name=f"Club {i}",
             vibes=["social", "academic"] if i == 0 else ["social"],
-            latitude=49.2665 + i * 0.001,
-            longitude=-123.2490 + i * 0.001,
             location_name=f"Location {i}",
             event_date=datetime(2026, 9, 1 + i, 10, 0, tzinfo=timezone.utc),
             event_end_date=datetime(2026, 9, 1 + i, 13, 0, tzinfo=timezone.utc),
