@@ -2,8 +2,9 @@
 
 All commands assume an independently reviewed release directory at
 `/opt/ubc-discovery-beta`, private `runtime/*.env` files with mode `600`, and an
-exact `release.env` containing digest-pinned images. Never copy secrets into a
-review artifact or command log.
+exact `release.env` containing the digest-pinned API image. Caddy and PostgreSQL
+are pinned directly in the Compose file. Never copy secrets into a review
+artifact or command log.
 
 `release.env` must set `API_ENV_FILE` and `POSTGRES_ENV_FILE` to the absolute
 host paths `/opt/ubc-discovery-beta/runtime/api.env` and
