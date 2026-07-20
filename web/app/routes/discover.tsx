@@ -161,7 +161,7 @@ export default function Discover() {
         : EventCardMedium;
 
   return (
-    <div>
+    <div className="flex flex-1 flex-col">
       {/* Mobile layout */}
       <div className="md:hidden">
         {/* Filters */}
@@ -244,9 +244,9 @@ export default function Discover() {
       </div>
 
       {/* Desktop layout */}
-      <div className="hidden md:block">
+      <div className="hidden md:flex flex-1 flex-col">
         {/* Filter rail + grid */}
-        <div className="flex">
+        <div className="flex flex-1">
           <aside className="w-65 shrink-0 p-5 px-6 border-r border-ink">
             <FilterBlock label="Source">
               {SOURCES.map((s) => (
@@ -291,7 +291,7 @@ export default function Discover() {
             </FilterBlock>
           </aside>
 
-          <main className="flex-1 px-8 py-1.5">
+          <section className="flex-1 px-8 py-1.5" aria-label="Event listings">
             {events.length === 0 ? (
               <div className="py-16 text-center border border-dashed border-ink">
                 <h3 className="font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
@@ -332,7 +332,7 @@ export default function Discover() {
                 ))}
               </div>
             )}
-          </main>
+          </section>
         </div>
       </div>
     </div>

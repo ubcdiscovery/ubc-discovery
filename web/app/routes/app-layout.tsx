@@ -10,10 +10,10 @@ export default function AppLayout() {
     state.status === "member" ? state.profile.preferred_name : undefined;
 
   return (
-    <div className="min-h-screen bg-bg text-ink">
+    <div className="min-h-dvh bg-bg text-ink flex flex-col">
       <MobileHeader memberName={memberName} />
       <TopNav memberName={memberName} />
-      <main className="pb-24 md:pb-0">
+      <main className="flex flex-1 flex-col pb-24 md:pb-0">
         <Outlet />
       </main>
       <BottomTabs />
