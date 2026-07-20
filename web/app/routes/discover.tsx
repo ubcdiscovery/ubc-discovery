@@ -246,7 +246,7 @@ export default function Discover() {
       {/* Desktop layout */}
       <div className="hidden md:block">
         {/* Filter rail + grid */}
-        <div className="flex border-b border-ink">
+        <div className="flex">
           <aside className="w-65 shrink-0 p-5 px-6 border-r border-ink">
             <FilterBlock label="Source">
               {SOURCES.map((s) => (
