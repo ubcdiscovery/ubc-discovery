@@ -7,8 +7,8 @@ import { SourceBadge } from "~/components/SourceBadge";
 import { VibeTag } from "~/components/VibeTag";
 import { RouteErrorState } from "~/components/RouteErrorState";
 
-export function meta({ data }: Route.MetaArgs) {
-  const event = data as ApiEvent | undefined;
+export function meta({ loaderData }: Route.MetaArgs) {
+  const event = loaderData as ApiEvent | undefined;
   return [
     {
       title: event ? `${event.title} - UBC Discovery` : "Event — UBC Discovery",
