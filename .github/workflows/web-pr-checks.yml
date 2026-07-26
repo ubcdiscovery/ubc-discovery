@@ -1,0 +1,126 @@
+name: Web PR checks
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect web changes
+    runs-on: ubuntu-24.04
+    outputs:
+      web: ${{ steps.changes.outputs.web }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect web changes
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- \
+            web \
+            .github/workflows/web-pr-checks.yml
+          then
+            echo "web=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "web=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  quality:
+    name: Typecheck, build, and end-to-end tests
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: 11.13.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Run desktop and mobile end-to-end tests
+        run: pnpm run test:e2e --project=desktop --project=mobile
+
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-failures
+          path: web/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  gate:
+    name: Web PR gate
+    needs:
+      - changes
+      - quality
+    if: always()
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Require web checks when web files changed
+        env:
+          DETECTION_RESULT: ${{ needs.changes.result }}
+          WEB_CHANGED: ${{ needs.changes.outputs.web }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+        run: |
+          if [[ "$DETECTION_RESULT" != "success" ]]; then
+            echo "Web change detection did not succeed."
+            exit 1
+          fi
+
+          if [[ "$WEB_CHANGED" != "true" && "$WEB_CHANGED" != "false" ]]; then
+            echo "Web change detection returned an unexpected value."
+            exit 1
+          fi
+
+          if [[ "$WEB_CHANGED" == "true" && "$QUALITY_RESULT" != "success" ]]; then
+            echo "Web checks did not succeed."
+            exit 1
+          fi
+
+          if [[ "$WEB_CHANGED" == "false" ]]; then
+            echo "No web changes detected; web checks were not required."
+          fi
