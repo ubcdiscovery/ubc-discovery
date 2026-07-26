@@ -2,9 +2,6 @@ name: Web PR checks
 
 on:
   pull_request:
-    paths:
-      - 'web/**'
-      - '.github/workflows/web-pr-checks.yml'
 
 permissions:
   contents: read
@@ -14,8 +11,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect web changes
+    runs-on: ubuntu-24.04
+    outputs:
+      web: ${{ steps.changes.outputs.web }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect web changes
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- \
+            web \
+            .github/workflows/web-pr-checks.yml
+          then
+            echo "web=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "web=true" >> "$GITHUB_OUTPUT"
+          fi
+
   quality:
     name: Typecheck, build, and end-to-end tests
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -60,3 +86,37 @@ jobs:
           path: web/test-results
           if-no-files-found: ignore
           retention-days: 7
+
+  gate:
+    name: Web PR gate
+    needs:
+      - changes
+      - quality
+    if: always()
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Require web checks when web files changed
+        env:
+          DETECTION_RESULT: ${{ needs.changes.result }}
+          WEB_CHANGED: ${{ needs.changes.outputs.web }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+        run: |
+          if [[ "$DETECTION_RESULT" != "success" ]]; then
+            echo "Web change detection did not succeed."
+            exit 1
+          fi
+
+          if [[ "$WEB_CHANGED" != "true" && "$WEB_CHANGED" != "false" ]]; then
+            echo "Web change detection returned an unexpected value."
+            exit 1
+          fi
+
+          if [[ "$WEB_CHANGED" == "true" && "$QUALITY_RESULT" != "success" ]]; then
+            echo "Web checks did not succeed."
+            exit 1
+          fi
+
+          if [[ "$WEB_CHANGED" == "false" ]]; then
+            echo "No web changes detected; web checks were not required."
+          fi
