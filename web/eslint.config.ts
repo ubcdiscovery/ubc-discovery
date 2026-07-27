@@ -3,6 +3,8 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
 
+import tailwindCanonicalConfig from "./eslint.tailwind.config";
+
 export default defineConfig([
   globalIgnores([".react-router/", ".vercel/", "build/", "test-results/"]),
   {
@@ -14,5 +16,6 @@ export default defineConfig([
       "max-lines": ["error", 300],
     },
   },
+  ...tailwindCanonicalConfig,
   tseslint.configs.recommended,
 ]);

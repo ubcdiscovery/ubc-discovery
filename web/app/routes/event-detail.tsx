@@ -125,7 +125,7 @@ export default function EventDetail() {
           <div className="font-mono text-xs text-muted tracking-wider uppercase mb-2">
             About this event
           </div>
-          <p className="text-sm text-ink-soft leading-relaxed">
+          <p className="text-sm/relaxed text-ink-soft">
             {event.description}
           </p>
         </div>
@@ -137,7 +137,7 @@ export default function EventDetail() {
         </div>
 
         {/* Bottom action bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-bg border-t-2 border-ink px-4.5 py-3 pb-7 flex gap-2 md:hidden z-50">
+        <div className="fixed bottom-0 inset-x-0 bg-bg border-t-2 border-ink px-4.5 py-3 pb-7 flex gap-2 md:hidden z-50">
           <SaveEventButton eventId={event.id} event={event} variant="bar" />
           {event.source_url && (
             <a
@@ -169,7 +169,7 @@ export default function EventDetail() {
               <img
                 src={event.event_picture_url}
                 alt={`${event.title} event poster`}
-                className="mx-auto mt-8 block h-auto max-h-[75vh] w-auto max-w-full"
+                className="mx-auto mt-8 block size-auto max-h-[75vh] max-w-full"
               />
             )}
 
@@ -177,7 +177,7 @@ export default function EventDetail() {
               <div className="font-mono text-xs text-muted tracking-wider uppercase mb-3 pb-1.5 border-b border-ink">
                 About this event
               </div>
-              <p className="text-base text-ink-soft leading-relaxed">
+              <p className="text-base/relaxed text-ink-soft">
                 {event.description}
               </p>
             </div>
@@ -218,7 +218,7 @@ export default function EventDetail() {
               <div className="font-mono text-xs text-muted tracking-wider uppercase">
                 WHERE
               </div>
-              <div className="font-display font-bold text-xl mt-1.5 tracking-tight leading-tight">
+              <div className="font-display font-bold text-xl/tight mt-1.5 tracking-tight">
                 {event.location_name}
               </div>
               <span className="mt-2 inline-block font-mono text-xs text-accent font-bold tracking-wide uppercase">

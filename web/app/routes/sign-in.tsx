@@ -164,7 +164,7 @@ export default function SignIn() {
       {/* Mobile */}
       <div className="md:hidden">
         <div className="border-b-2 border-ink">
-          <div className="px-[18px] py-2 flex items-baseline gap-2">
+          <div className="px-4.5 py-2 flex items-baseline gap-2">
             <Link to="/" className="flex items-baseline gap-2">
               <span className="px-1.5 py-0.5 bg-ink text-bg font-mono text-[11px] font-bold tracking-wider">
                 UBC
@@ -176,7 +176,7 @@ export default function SignIn() {
           </div>
         </div>
 
-        <div className="px-[22px] pt-7">
+        <div className="px-5.5 pt-7">
           <div className="font-mono text-[10px] text-accent font-bold tracking-wider uppercase">
             Join UBC Discovery
           </div>
@@ -294,7 +294,7 @@ export default function SignIn() {
             )}
           </div>
 
-          <div className="mt-7 p-3 border border-dashed border-ink text-xs text-muted leading-relaxed">
+          <div className="mt-7 p-3 border border-dashed border-ink text-xs/relaxed text-muted">
             An independent student project for the UBC community. Not affiliated
             with UBC.
           </div>
@@ -305,7 +305,7 @@ export default function SignIn() {
       <div className="hidden md:grid grid-cols-[5fr_7fr] min-h-screen">
         <aside className="bg-ink text-bg p-8 flex flex-col relative overflow-hidden">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-[30px] h-[30px] bg-bg text-ink flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
+            <div className="size-7.5 bg-bg text-ink flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
               UBC
             </div>
             <span className="font-display font-extrabold text-xl tracking-tight">
@@ -318,7 +318,7 @@ export default function SignIn() {
             <br />
             Every event on campus.
           </h2>
-          <p className="mt-3.5 text-[15px] text-bg opacity-70 leading-relaxed max-w-[380px]">
+          <p className="mt-3.5 text-[15px] text-bg opacity-70 leading-relaxed max-w-95">
             UBC Discovery pulls events from official UBC channels, AMS clubs,
             and community organizers — filterable by what you&rsquo;re into.
           </p>
@@ -329,11 +329,11 @@ export default function SignIn() {
         </aside>
 
         <main className="p-8 px-14 flex flex-col">
-          <div className="flex-1 max-w-[520px]">
+          <div className="flex-1 max-w-130">
             <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
               Sign in
             </div>
-            <h1 className="mt-2 mb-2 font-display font-extrabold text-[46px] text-ink tracking-tighter leading-none">
+            <h1 className="my-2 font-display font-extrabold text-[46px] text-ink tracking-tighter leading-none">
               Sign in to save events,
               <br />
               rate them, and tune your feed.

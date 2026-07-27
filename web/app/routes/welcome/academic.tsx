@@ -37,7 +37,7 @@ function SelectField({
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3.5 py-3.5 border border-ink bg-surface font-display text-lg font-bold text-ink appearance-none cursor-pointer tracking-tight outline-none"
+          className="w-full p-3.5 border border-ink bg-surface font-display text-lg font-bold text-ink appearance-none cursor-pointer tracking-tight outline-none"
         >
           <option value="">Select...</option>
           {options.map((o) => (
@@ -141,7 +141,7 @@ export default function OnboardingAcademic() {
           total={3}
           onBack={() => navigate("/welcome/name")}
         />
-        <div className="px-[22px] pt-6 pb-4">
+        <div className="px-5.5 pt-6 pb-4">
           <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
             Optional · skippable
           </div>

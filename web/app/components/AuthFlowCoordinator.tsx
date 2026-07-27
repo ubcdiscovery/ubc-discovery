@@ -214,7 +214,7 @@ export function AuthFlowCoordinator() {
   return (
     <div
       role="alert"
-      className="fixed bottom-20 left-4 right-4 z-[100] border-2 border-ink bg-bg p-4 shadow-[3px_3px_0_var(--color-ink)] md:left-auto md:right-6 md:bottom-6 md:w-[380px]"
+      className="fixed bottom-20 inset-x-4 z-100 border-2 border-ink bg-bg p-4 shadow-[3px_3px_0_var(--color-ink)] md:left-auto md:right-6 md:bottom-6 md:w-95"
     >
       <p className="font-display font-bold text-ink">{copy.failureTitle}</p>
       <p className="mt-1 text-sm text-ink-soft">{copy.failureMessage}</p>

@@ -10,7 +10,7 @@ export function OnboardingTop({
   onBack?: () => void;
 }) {
   return (
-    <div className="px-[18px] py-4 flex items-center justify-between border-b border-rule-soft md:hidden">
+    <div className="px-4.5 py-4 flex items-center justify-between border-b border-rule-soft md:hidden">
       <button
         onClick={onBack}
         className={`bg-transparent border-none cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase p-0 ${
@@ -48,7 +48,7 @@ export function OnboardingFooter({
   detail?: string;
 }) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 px-[18px] py-3.5 pb-7 bg-bg border-t border-rule-soft flex flex-col gap-2 md:hidden z-50">
+    <div className="fixed bottom-0 inset-x-0 px-4.5 py-3.5 pb-7 bg-bg border-t border-rule-soft flex flex-col gap-2 md:hidden z-50">
       {detail && (
         <div className="font-mono text-[10px] text-muted tracking-wide uppercase text-center">
           {detail}
@@ -118,7 +118,7 @@ export function OnboardingDesktopShell({
     <div className="hidden md:grid grid-cols-[5fr_7fr] min-h-screen bg-bg text-ink font-body">
       <aside className="bg-ink text-bg p-8 flex flex-col relative overflow-hidden">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-[30px] h-[30px] bg-bg text-ink flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
+          <div className="size-7.5 bg-bg text-ink flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
             UBC
           </div>
           <span className="font-display font-extrabold text-xl tracking-tight">
@@ -142,7 +142,7 @@ export function OnboardingDesktopShell({
           {sideTitle}
         </h2>
         {sideBody && (
-          <p className="mt-3.5 text-[15px] text-bg opacity-70 leading-relaxed max-w-[380px]">
+          <p className="mt-3.5 text-[15px] text-bg opacity-70 leading-relaxed max-w-95">
             {sideBody}
           </p>
         )}
@@ -173,11 +173,11 @@ export function OnboardingDesktopShell({
           )}
         </div>
 
-        <div className="flex-1 max-w-[520px]">
+        <div className="flex-1 max-w-130">
           <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
             {kicker}
           </div>
-          <h1 className="mt-2 mb-2 font-display font-extrabold text-[46px] text-ink tracking-tighter leading-none">
+          <h1 className="my-2 font-display font-extrabold text-[46px] text-ink tracking-tighter leading-none">
             {title}
           </h1>
           {subtitle && (

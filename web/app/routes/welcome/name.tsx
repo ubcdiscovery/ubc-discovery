@@ -43,11 +43,11 @@ export default function OnboardingName() {
       {/* Mobile */}
       <div className="md:hidden pb-28">
         <OnboardingTop step={1} total={3} />
-        <div className="px-[22px] pt-8">
+        <div className="px-5.5 pt-8">
           <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
             A few quick things
           </div>
-          <h1 className="mt-2 mb-2 font-display font-extrabold text-[38px] text-ink tracking-tight leading-none">
+          <h1 className="my-2 font-display font-extrabold text-[38px] text-ink tracking-tight leading-none">
             What should we call you?
           </h1>
 

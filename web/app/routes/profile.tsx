@@ -19,7 +19,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="px-[18px] py-[18px] border-b border-rule-soft md:p-0">
+    <div className="p-4.5 border-b border-rule-soft md:p-0">
       <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-3 pb-1.5 border-b border-ink md:flex md:justify-between md:items-baseline">
         <span>{label}</span>
       </div>
@@ -53,7 +53,7 @@ function VisitorProfile() {
   return (
     <div>
       {/* Mobile */}
-      <div className="md:hidden px-[22px] pt-7">
+      <div className="md:hidden px-5.5 pt-7">
         <div className="font-mono text-[10px] text-accent font-bold tracking-wider uppercase">
           Join UBC Discovery
         </div>
@@ -76,7 +76,7 @@ function VisitorProfile() {
       </div>
 
       {/* Desktop */}
-      <div className="hidden md:block max-w-[720px] mx-auto px-8 py-20">
+      <div className="hidden md:block max-w-180 mx-auto px-8 py-20">
         <div className="border border-ink p-10 px-12">
           <div className="font-mono text-[10.5px] text-accent font-bold tracking-wider uppercase">
             Member feature
@@ -84,7 +84,7 @@ function VisitorProfile() {
           <h1 className="mt-3 mb-2 font-display font-extrabold text-[56px] text-ink tracking-tighter leading-[0.92]">
             Sign in for a profile.
           </h1>
-          <p className="mt-3.5 text-[15.5px] text-ink-soft leading-relaxed max-w-[540px]">
+          <p className="mt-3.5 text-[15.5px] text-ink-soft leading-relaxed max-w-135">
             Members get a profile with their interests and academic context, a
             saved-event shortlist, and a re-ranked <em>For you</em> feed.
           </p>
@@ -188,10 +188,10 @@ function MemberProfile({ user }: { user: UserResponse }) {
       {/* Mobile */}
       <div className="md:hidden">
         {/* Avatar block */}
-        <div className="px-[18px] py-5 border-b-2 border-ink flex items-center gap-3.5">
+        <div className="px-4.5 py-5 border-b-2 border-ink flex items-center gap-3.5">
           <div className="relative shrink-0">
             <div
-              className="w-[76px] h-[76px] border-[1.5px] border-ink flex items-center justify-center font-display font-extrabold text-[30px] text-white tracking-tight"
+              className="size-19 border-[1.5px] border-ink flex items-center justify-center font-display font-extrabold text-[30px] text-white tracking-tight"
               style={{
                 background: avatar
                   ? `url(${avatar}) center/cover`
@@ -204,7 +204,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
               <>
                 <button
                   onClick={() => fileRef.current?.click()}
-                  className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-ink text-bg border-2 border-bg cursor-pointer flex items-center justify-center p-0"
+                  className="absolute -bottom-1.5 -right-1.5 size-7 bg-ink text-bg border-2 border-bg cursor-pointer flex items-center justify-center p-0"
                 >
                   <svg
                     width="14"
@@ -251,7 +251,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-3 border border-ink bg-surface font-display text-[22px] font-bold text-ink tracking-tight outline-none"
+                className="w-full p-3 border border-ink bg-surface font-display text-[22px] font-bold text-ink tracking-tight outline-none"
               />
             ) : (
               <h1 className="font-display font-extrabold text-[28px] text-ink tracking-tight leading-none">
@@ -350,7 +350,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
         </Section>
 
         {editing && (
-          <div className="fixed bottom-0 left-0 right-0 px-[18px] py-3 pb-7 bg-bg border-t border-ink flex gap-2 z-50 md:hidden">
+          <div className="fixed bottom-0 inset-x-0 px-4.5 py-3 pb-7 bg-bg border-t border-ink flex gap-2 z-50 md:hidden">
             <button
               onClick={resetForm}
               className="px-3.5 py-3 border border-ink bg-transparent text-ink cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase"
@@ -372,10 +372,10 @@ function MemberProfile({ user }: { user: UserResponse }) {
       <div className="hidden md:block">
         {/* Hero */}
         <div className="px-8 pt-10 pb-8 border-b border-ink">
-          <div className="max-w-[1080px] mx-auto flex gap-7 items-center">
+          <div className="max-w-270 mx-auto flex gap-7 items-center">
             <div className="relative shrink-0">
               <div
-                className="w-[132px] h-[132px] border-2 border-ink flex items-center justify-center font-display font-extrabold text-[56px] text-white tracking-tighter"
+                className="size-33 border-2 border-ink flex items-center justify-center font-display font-extrabold text-[56px] text-white tracking-tighter"
                 style={{
                   background: avatar
                     ? `url(${avatar}) center/cover`
@@ -441,7 +441,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                     <input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full px-3 py-3 border border-ink bg-surface font-display text-[22px] font-bold text-ink tracking-tight outline-none"
+                      className="w-full p-3 border border-ink bg-surface font-display text-[22px] font-bold text-ink tracking-tight outline-none"
                     />
                   </div>
                 </div>
@@ -454,7 +454,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                     <span>
                       {[major, year].filter(Boolean).join(" · ") || "Profile ready"}
                     </span>
-                    <span className="w-1 h-1 rounded-full bg-muted" />
+                    <span className="size-1 rounded-full bg-muted" />
                     <span className="font-mono text-xs text-muted tracking-wide">
                       Member since {memberSince}
                     </span>
@@ -474,7 +474,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
         </div>
 
         {/* Two-column body */}
-        <div className="max-w-[1080px] mx-auto px-8 py-8 pb-14">
+        <div className="max-w-270 mx-auto p-8 pb-14">
           <div className="grid grid-cols-2 gap-8">
             <Section label="Academic context">
               {editing ? (
@@ -565,7 +565,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
         </div>
 
         {editing && (
-          <div className="sticky bottom-0 left-0 right-0 px-8 py-3 bg-bg border-t-2 border-ink flex justify-end gap-2.5">
+          <div className="sticky bottom-0 inset-x-0 px-8 py-3 bg-bg border-t-2 border-ink flex justify-end gap-2.5">
             <button
               onClick={resetForm}
               className="px-4 py-2.5 border border-ink bg-transparent text-ink cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase"

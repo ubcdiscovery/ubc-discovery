@@ -23,7 +23,7 @@ export function TopNav({
     >
       <div className="flex items-center gap-6">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-[30px] h-[30px] bg-ink text-bg flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
+          <div className="size-7.5 bg-ink text-bg flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
             UBC
           </div>
           <span className="font-display font-extrabold text-xl tracking-tight">
@@ -53,7 +53,7 @@ export function TopNav({
         <button
           type="button"
           onClick={onOpenSearch}
-          className="relative min-w-[260px] cursor-pointer border border-ink bg-surface px-3 py-1.5 pl-8 text-left font-mono text-[11.5px] tracking-wide text-muted uppercase transition-colors hover:bg-accent-soft hover:text-ink"
+          className="relative min-w-65 cursor-pointer border border-ink bg-surface px-3 py-1.5 pl-8 text-left font-mono text-[11.5px] tracking-wide text-muted uppercase transition-colors hover:bg-accent-soft hover:text-ink"
           aria-label="Search events"
           aria-haspopup="dialog"
         >

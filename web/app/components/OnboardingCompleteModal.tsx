@@ -68,7 +68,7 @@ export function OnboardingCompleteModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-ink/55 p-5"
+      className="fixed inset-0 z-110 flex items-center justify-center bg-ink/55 p-5"
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) setNotice(null);
@@ -78,9 +78,9 @@ export function OnboardingCompleteModal() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="onboarding-complete-title"
-        className="w-full max-w-[520px] border-2 border-ink bg-bg p-6 shadow-[6px_6px_0_var(--color-ink)] md:p-8"
+        className="w-full max-w-130 border-2 border-ink bg-bg p-6 shadow-[6px_6px_0_var(--color-ink)] md:p-8"
       >
-        <div className="flex h-12 w-12 items-center justify-center bg-accent font-display text-2xl font-extrabold text-white">
+        <div className="flex size-12 items-center justify-center bg-accent font-display text-2xl font-extrabold text-white">
           ✓
         </div>
         <div className="mt-5 font-mono text-[10px] font-bold uppercase tracking-wider text-accent">
@@ -92,7 +92,7 @@ export function OnboardingCompleteModal() {
         >
           You&rsquo;re in, {notice.preferredName}.
         </h2>
-        <p className="mt-4 text-sm leading-relaxed text-ink-soft md:text-[15px]">
+        <p className="mt-4 text-sm/relaxed text-ink-soft md:text-[15px]">
           Your For you feed now reflects your interests and will keep improving
           as you save and rate events.
         </p>

@@ -34,20 +34,20 @@ function Poster({
             src={event.event_picture_url}
             alt=""
             aria-hidden="true"
-            className="absolute inset-0 h-full w-full scale-110 object-cover opacity-15 blur-xl"
+            className="absolute inset-0 size-full scale-110 object-cover opacity-15 blur-xl"
           />
           <img
             src={event.event_picture_url}
             alt=""
             loading={priority ? "eager" : "lazy"}
             decoding="async"
-            className="relative z-10 h-full w-full object-contain"
+            className="relative z-10 size-full object-contain"
           />
         </>
       ) : (
         <div
           aria-hidden="true"
-          className="flex h-full w-full flex-col justify-between bg-accent p-[9%] text-white"
+          className="flex size-full flex-col justify-between bg-accent p-[9%] text-white"
         >
           <span className="font-mono text-[10px] font-bold tracking-[0.2em] uppercase">
             UBC Discovery
@@ -90,7 +90,7 @@ export function EventPosterFeed({ events }: { events: ApiEvent[] }) {
   return (
     <section
       aria-label="Upcoming events"
-      className="mx-auto grid w-full max-w-[61.25rem] grid-cols-1 gap-x-4 gap-y-10 sm:grid-cols-[minmax(0,25rem)] sm:justify-center md:grid-cols-[repeat(auto-fit,minmax(18rem,19.75rem))]"
+      className="mx-auto grid w-full max-w-245 grid-cols-1 gap-x-4 gap-y-10 sm:grid-cols-[minmax(0,25rem)] sm:justify-center md:grid-cols-[repeat(auto-fit,minmax(18rem,19.75rem))]"
     >
       {events.map((event, index) => (
         <article
@@ -113,7 +113,8 @@ export function EventPosterFeed({ events }: { events: ApiEvent[] }) {
           <SaveEventButton
             eventId={event.id}
             event={event}
-            className="absolute right-3 top-3 z-30 h-11 w-11 bg-bg shadow-[3px_3px_0_var(--color-ink)]"
+            variant="largeIcon"
+            className="absolute right-3 top-3 z-30 bg-bg shadow-[3px_3px_0_var(--color-ink)]"
           />
         </article>
       ))}

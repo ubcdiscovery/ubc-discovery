@@ -12,7 +12,7 @@ export function MobileHeader({
       className="h-14 border-b-2 border-ink lg:hidden"
       data-testid="compact-header"
     >
-      <div className="flex h-full items-center justify-between gap-1 px-3 sm:px-[18px]">
+      <div className="flex h-full items-center justify-between gap-1 px-3 sm:px-4.5">
         <Link
           to="/"
           className="flex min-h-11 min-w-0 items-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"

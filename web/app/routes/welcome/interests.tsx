@@ -126,12 +126,12 @@ export default function OnboardingInterests() {
               }}
             >
               <span
-                className={`w-4 h-4 rounded-full border-[1.5px] inline-flex items-center justify-center shrink-0 ${
+                className={`size-4 rounded-full border-[1.5px] inline-flex items-center justify-center shrink-0 ${
                   on ? "border-bg bg-accent" : "border-ink bg-transparent"
                 }`}
               >
                 {on && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                  <span className="size-1.5 rounded-full bg-white" />
                 )}
               </span>
               {v.label}
@@ -151,7 +151,7 @@ export default function OnboardingInterests() {
           total={3}
           onBack={() => navigate("/welcome/academic")}
         />
-        <div className="px-[22px] pt-6 pb-4">
+        <div className="px-5.5 pt-6 pb-4">
           <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
             Pick at least 3
           </div>

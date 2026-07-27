@@ -13,7 +13,7 @@ export function SourceBadge({
   return (
     <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold tracking-wider uppercase text-ink">
       <span
-        className="inline-flex items-center justify-center w-[30px] h-4 text-white text-[9.5px] tracking-wide"
+        className="inline-flex items-center justify-center w-7.5 h-4 text-white text-[9.5px] tracking-wide"
         style={{ background: m.tone }}
       >
         {m.code}

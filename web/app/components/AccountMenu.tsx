@@ -53,7 +53,7 @@ export function AccountMenu({
         onClick={() => setOpen((value) => !value)}
         className={
           compact
-            ? "flex h-6 w-6 items-center justify-center bg-accent text-white font-display text-[12px] font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            ? "flex size-6 items-center justify-center bg-accent text-white font-display text-[12px] font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             : "flex items-center gap-2 border border-transparent px-1.5 py-1 hover:border-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         }
       >
@@ -61,12 +61,12 @@ export function AccountMenu({
           <img
             src={avatarUrl}
             alt={memberName}
-            className={`object-cover ${compact ? "h-6 w-6" : "h-7 w-7"}`}
+            className={`object-cover ${compact ? "size-6" : "size-7"}`}
           />
         ) : (
           <span
-            className={`flex items-center justify-center bg-gradient-to-br from-accent to-[#7990FF] text-white font-display font-extrabold ${
-              compact ? "h-6 w-6 text-[12px]" : "h-7 w-7 text-[13px]"
+            className={`flex items-center justify-center bg-linear-to-br from-accent to-[#7990FF] text-white font-display font-extrabold ${
+              compact ? "size-6 text-[12px]" : "size-7 text-[13px]"
             }`}
           >
             {initial}
@@ -74,12 +74,12 @@ export function AccountMenu({
         )}
         {!compact && (
           <>
-            <span className="max-w-[140px] truncate font-mono text-[11px] font-semibold">
+            <span className="max-w-35 truncate font-mono text-[11px] font-semibold">
               {memberName}
             </span>
             <FiChevronDown
               aria-hidden="true"
-              className={`h-3.5 w-3.5 text-muted transition-transform ${
+              className={`size-3.5 text-muted transition-transform ${
                 open ? "rotate-180" : ""
               }`}
             />
@@ -98,7 +98,7 @@ export function AccountMenu({
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 border-b border-rule-soft px-3 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wide text-ink hover:bg-accent-soft"
           >
-            <FiUser aria-hidden="true" className="h-3.5 w-3.5" />
+            <FiUser aria-hidden="true" className="size-3.5" />
             Profile
           </Link>
           <button
@@ -107,7 +107,7 @@ export function AccountMenu({
             onClick={handleSignOut}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-left font-mono text-[11px] font-bold uppercase tracking-wide text-ink hover:bg-accent-soft"
           >
-            <FiLogOut aria-hidden="true" className="h-3.5 w-3.5" />
+            <FiLogOut aria-hidden="true" className="size-3.5" />
             Sign out
           </button>
         </div>

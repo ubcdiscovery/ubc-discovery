@@ -11,7 +11,7 @@ export function VibeTag({
   const label = v?.label ?? vibe;
   return (
     <span
-      className={`inline-flex items-center h-[22px] px-2 font-mono text-[10.5px] font-semibold tracking-wide uppercase border ${
+      className={`inline-flex items-center h-5.5 px-2 font-mono text-[10.5px] font-semibold tracking-wide uppercase border ${
         active
           ? "text-accent border-accent bg-accent-soft"
           : "text-ink border-ink bg-transparent"

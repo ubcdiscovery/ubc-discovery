@@ -128,7 +128,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-ink/20 backdrop-blur-[2px]"
+      className="fixed inset-0 z-60 bg-ink/20 backdrop-blur-[2px]"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -139,7 +139,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="event-search-title"
-        className="w-full sm:max-w-[600px] sm:mx-auto sm:mt-16"
+        className="w-full sm:max-w-150 sm:mx-auto sm:mt-16"
         onKeyDown={handleDialogKeyDown}
       >
         <h2 id="event-search-title" className="sr-only">
@@ -189,7 +189,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
             id="event-search-results"
             role="listbox"
             aria-label="Event search results"
-            className="bg-bg border-2 border-t-0 border-ink max-h-[400px] overflow-y-auto"
+            className="bg-bg border-2 border-t-0 border-ink max-h-100 overflow-y-auto"
           >
             {results.length === 0 ? (
               <div className="px-4 py-8 text-center">
@@ -225,7 +225,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                           <div className="font-mono text-[9px] text-muted tracking-wider uppercase leading-none">
                             {fmtMonth(d)}
                           </div>
-                          <div className="font-display font-bold text-lg text-ink leading-tight tabular-nums">
+                          <div className="font-display font-bold text-lg/tight text-ink tabular-nums">
                             {fmtDate02(d)}
                           </div>
                         </>
@@ -238,7 +238,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
                     {/* Event info */}
                     <div className="min-w-0 flex-1">
-                      <div className="font-display font-bold text-[14px] text-ink tracking-tight leading-tight truncate">
+                      <div className="font-display font-bold text-sm/tight text-ink tracking-tight truncate">
                         {event.title}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">

@@ -36,7 +36,7 @@ export function MobileUtilityMenu() {
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        <FiMenu aria-hidden="true" className="h-5 w-5" />
+        <FiMenu aria-hidden="true" className="size-5" />
       </NavIconButton>
 
       {open && (

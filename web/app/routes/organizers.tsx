@@ -11,11 +11,11 @@ export function meta() {
 export default function Organizers() {
   return (
     <div className="min-h-screen bg-bg">
-      <main className="max-w-[560px] mx-auto px-6 py-12 md:py-20">
+      <main className="max-w-140 mx-auto px-6 py-12 md:py-20">
         <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-ink mb-4">
           Get your event discovered
         </h1>
-        <p className="font-body text-base text-muted leading-relaxed mb-10">
+        <p className="font-body text-base/relaxed text-muted mb-10">
           UBC Discovery helps students find events happening on campus. If
           you're organizing an event, we'd love to feature it.
         </p>
@@ -24,7 +24,7 @@ export default function Organizers() {
           <h2 className="font-display text-lg font-bold tracking-tight text-ink mb-3">
             How to submit
           </h2>
-          <p className="font-body text-sm text-muted leading-relaxed mb-4">
+          <p className="font-body text-sm/relaxed text-muted mb-4">
             For now, send us a DM on Instagram with your event details and we'll
             add it to the platform.
           </p>
@@ -42,7 +42,7 @@ export default function Organizers() {
           <h2 className="font-display text-lg font-bold tracking-tight text-ink mb-3">
             What to include
           </h2>
-          <ul className="space-y-2 font-body text-sm text-muted leading-relaxed">
+          <ul className="space-y-2 font-body text-sm/relaxed text-muted">
             <li className="flex gap-2">
               <span className="text-accent font-bold">→</span> Event name and
               description

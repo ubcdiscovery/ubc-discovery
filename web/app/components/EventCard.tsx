@@ -72,7 +72,8 @@ export function EventCard({ event }: { event: ApiEvent }) {
       <SaveEventButton
         eventId={event.id}
         event={event}
-        className="absolute right-0 top-4 h-11 w-11 shadow-[0_1px_0_var(--color-ink)] md:right-2 md:top-6"
+        variant="largeIcon"
+        className="absolute right-0 top-4 shadow-[0_1px_0_var(--color-ink)] md:right-2 md:top-6"
       />
     </div>
   );

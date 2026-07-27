@@ -18,7 +18,7 @@ function VisitorSaved() {
     <div>
       {/* Mobile */}
       <div className="md:hidden">
-        <div className="px-[18px] py-3.5 border-b border-rule-soft">
+        <div className="px-4.5 py-3.5 border-b border-rule-soft">
           <div className="font-mono text-[10px] text-muted tracking-wider uppercase">
             Your shortlist
           </div>
@@ -26,8 +26,8 @@ function VisitorSaved() {
             Saved
           </h1>
         </div>
-        <div className="px-[22px] py-8">
-          <div className="border border-ink p-[22px]">
+        <div className="px-5.5 py-8">
+          <div className="border border-ink p-5.5">
             <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
               MEMBER FEATURE
             </div>
@@ -53,7 +53,7 @@ function VisitorSaved() {
 
       {/* Desktop */}
       <div className="hidden md:block">
-        <div className="max-w-[720px] mx-auto px-8 py-20">
+        <div className="max-w-180 mx-auto px-8 py-20">
           <div className="border border-ink p-10 px-12">
             <div className="font-mono text-[10.5px] text-accent font-bold tracking-wider uppercase">
               Member feature
@@ -61,7 +61,7 @@ function VisitorSaved() {
             <h1 className="mt-3 mb-2 font-display font-extrabold text-[56px] text-ink tracking-tighter leading-[0.92]">
               Build a shortlist.
             </h1>
-            <p className="mt-3.5 text-[15.5px] text-ink-soft leading-relaxed max-w-[540px]">
+            <p className="mt-3.5 text-[15.5px] text-ink-soft leading-relaxed max-w-135">
               Save events you&rsquo;re considering and they&rsquo;ll wait here.
               Saving also nudges your <em>For you</em> feed toward what
               you&rsquo;re actually into.
@@ -89,7 +89,7 @@ function RateNudgeBanner({
   return (
     <div
       className={`bg-accent text-white flex items-center gap-3 justify-between border-l-4 border-l-hi ${
-        mobile ? "mx-[18px] mt-3.5 mb-1 px-3.5 py-3" : "mb-5 px-5 py-4"
+        mobile ? "mx-4.5 mt-3.5 mb-1 px-3.5 py-3" : "mb-5 px-5 py-4"
       }`}
     >
       <div className="flex-1 min-w-0">
@@ -173,9 +173,9 @@ function RateSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-[100]">
+    <div className="fixed inset-0 z-100">
       <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" />
-      <div className="absolute bottom-0 left-0 right-0 bg-bg text-ink border-t-2 border-ink pb-7 max-h-[90%] overflow-auto shadow-[0_-16px_40px_rgba(0,0,0,0.25)]">
+      <div className="absolute bottom-0 inset-x-0 bg-bg text-ink border-t-2 border-ink pb-7 max-h-[90%] overflow-auto shadow-[0_-16px_40px_rgba(0,0,0,0.25)]">
         <div className="flex justify-between items-center px-4 py-3 border-b border-rule-soft">
           <span className="font-mono text-[10px] text-muted tracking-wider uppercase">
             Rate this event
@@ -188,7 +188,7 @@ function RateSheet({
           </button>
         </div>
 
-        <div className="px-[18px] pt-5">
+        <div className="px-4.5 pt-5">
           <div className="flex items-baseline justify-between mb-3">
             <div className="font-mono text-[10.5px] text-ink font-bold tracking-wide uppercase">
               <span className="text-accent">1</span> · How was it?
@@ -200,7 +200,7 @@ function RateSheet({
           <StarRating value={stars} onChange={setStars} />
         </div>
 
-        <div className="px-[18px] pt-5">
+        <div className="px-4.5 pt-5">
           <div className="flex items-baseline justify-between mb-3">
             <div className="font-mono text-[10.5px] text-ink font-bold tracking-wide uppercase">
               <span className="text-accent">2</span> · What stood out?
@@ -224,7 +224,7 @@ function RateSheet({
           </div>
         </div>
 
-        <div className="px-[18px] pt-5">
+        <div className="px-4.5 pt-5">
           <div className="flex items-baseline justify-between mb-3">
             <div className="font-mono text-[10.5px] text-ink font-bold tracking-wide uppercase">
               <span className="text-accent">3</span> · One-line note
@@ -241,7 +241,7 @@ function RateSheet({
           />
         </div>
 
-        <div className="px-[18px] pt-3.5 flex gap-2.5">
+        <div className="px-4.5 pt-3.5 flex gap-2.5">
           <button
             onClick={onClose}
             className="px-4 py-3 border border-ink bg-transparent text-ink cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase"
@@ -260,7 +260,7 @@ function RateSheet({
           </button>
         </div>
 
-        <div className="px-[18px] pt-3.5 text-xs text-muted text-center leading-relaxed">
+        <div className="px-4.5 pt-3.5 text-xs/relaxed text-muted text-center">
           Helps us find better events for you.
         </div>
       </div>
@@ -289,7 +289,7 @@ function EmptySavedState({ tab, mobile }: { tab: "upcoming" | "past"; mobile?: b
         </h3>
         <p
           className={`mt-2.5 text-ink-soft leading-relaxed ${
-            mobile ? "text-sm" : "text-[15px] text-muted max-w-[480px]"
+            mobile ? "text-sm" : "text-[15px] text-muted max-w-120"
           }`}
         >
           Tap the ♡ on any event on Discover to keep it here. Saving also tunes
@@ -318,7 +318,7 @@ function EmptySavedState({ tab, mobile }: { tab: "upcoming" | "past"; mobile?: b
       </h3>
       <p
         className={`mt-2.5 text-ink-soft leading-relaxed ${
-          mobile ? "text-sm" : "text-[15px] text-muted max-w-[520px]"
+          mobile ? "text-sm" : "text-[15px] text-muted max-w-130"
         }`}
       >
         Events you saved will move here after their date passes.
@@ -372,7 +372,7 @@ function MemberSaved() {
     <div>
       {/* Mobile */}
       <div className="md:hidden">
-        <div className="px-[18px] py-3.5 border-b border-rule-soft flex items-end justify-between">
+        <div className="px-4.5 py-3.5 border-b border-rule-soft flex items-end justify-between">
           <div>
             <div className="font-mono text-[10px] text-muted tracking-wider uppercase">
               Your shortlist & history
@@ -415,7 +415,7 @@ function MemberSaved() {
           })}
         </div>
 
-        <div className="px-[18px] py-4">
+        <div className="px-4.5 py-4">
           {loadingEvents ? (
             <div className="py-10 text-center font-mono text-[11px] text-muted tracking-wide uppercase">
               Loading saved events...
