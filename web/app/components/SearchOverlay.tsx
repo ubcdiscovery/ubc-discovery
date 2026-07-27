@@ -175,7 +175,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex min-h-11 min-w-11 items-center justify-center border border-rule-soft px-2 font-mono text-xs text-muted tracking-wider uppercase hover:border-ink hover:text-ink transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="flex min-h-11 min-w-11 items-center justify-center border border-rule-soft px-2 font-mono text-xs text-muted tracking-wider uppercase hover:border-ink hover:text-ink transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               aria-label="Close search"
             >
               ESC

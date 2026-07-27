@@ -45,7 +45,7 @@ export function AccountMenu({ memberName }: { memberName: string }) {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex items-center gap-2 border border-transparent px-1.5 py-1 hover:border-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="flex items-center gap-2 border border-transparent px-1.5 py-1 hover:border-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {avatarUrl ? (
           <img

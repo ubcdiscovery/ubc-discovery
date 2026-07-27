@@ -7,7 +7,6 @@
     "deadcode": "knip",
     "dev": "react-router dev",
     "lint": "vp lint .",
-    "lint:tailwind": "vp lint app --config eslint.tailwind.config.ts",
     "start": "react-router-serve ./build/server/*/index.js",
     "typecheck": "react-router typegen && tsc",
     "test:e2e": "playwright test",

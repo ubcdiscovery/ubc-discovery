@@ -13,6 +13,11 @@ export default defineConfig({
       builtin: true,
     },
     ignorePatterns: [".react-router/", ".vercel/", "build/", "test-results/"],
+    settings: {
+      "better-tailwindcss": {
+        entryPoint: "./app/app.css",
+      },
+    },
     rules: {
       "no-array-constructor": "error",
       "no-unused-expressions": "error",
@@ -103,6 +108,8 @@ export default defineConfig({
           "valid-typeof": "error",
           "max-lines": ["error", 300],
           "better-tailwindcss/enforce-canonical-classes": "error",
+          "better-tailwindcss/no-concatenated-classes": "error",
+          "better-tailwindcss/no-conflicting-classes": "error",
           "better-tailwindcss/no-restricted-classes": [
             "error",
             {
@@ -116,6 +123,7 @@ export default defineConfig({
               ],
             },
           ],
+          "better-tailwindcss/no-unknown-classes": "error",
         },
         env: {
           browser: true,
