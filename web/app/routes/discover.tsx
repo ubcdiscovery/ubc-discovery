@@ -248,7 +248,7 @@ export default function Discover() {
 
         <section
           aria-label="Discover events"
-          className="min-w-0 flex-1 px-4.5 pb-32 pt-4 sm:px-6 md:px-8 md:pt-7 lg:px-10"
+          className="min-w-0 flex-1 px-4.5 pb-32 pt-4 sm:px-6 md:px-8 md:pt-7 lg:px-7"
         >
           <h1 className="sr-only">Discover events</h1>
           {events.length === 0 ? (

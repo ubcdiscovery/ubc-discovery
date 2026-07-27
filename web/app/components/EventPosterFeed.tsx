@@ -71,9 +71,7 @@ function CardDetails({ event }: { event: ApiEvent }) {
   return (
     <div className="min-w-0">
       <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
-      <h2
-        className="mt-2 max-w-[25ch] font-display text-[25px] font-extrabold leading-[1.02] tracking-tight text-balance lg:text-[30px]"
-      >
+      <h2 className="mt-2 max-w-[25ch] font-display text-[25px] font-extrabold leading-[1.02] tracking-tight text-balance lg:text-[30px]">
         {event.title}
       </h2>
       <p className="mt-3 font-mono text-[10.5px] tracking-wide text-muted uppercase">
@@ -92,7 +90,7 @@ export function EventPosterFeed({ events }: { events: ApiEvent[] }) {
   return (
     <section
       aria-label="Upcoming events"
-      className="grid grid-cols-1 gap-x-5 gap-y-10 md:grid-cols-2 2xl:grid-cols-3"
+      className="mx-auto grid w-full max-w-[61.25rem] grid-cols-1 gap-x-4 gap-y-10 sm:grid-cols-[minmax(0,25rem)] sm:justify-center md:grid-cols-[repeat(auto-fit,minmax(18rem,19.75rem))]"
     >
       {events.map((event, index) => (
         <article

@@ -16,13 +16,14 @@ test.beforeEach(async ({ page }) => {
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        events: [{
+        events: Array.from({ length: 6 }, (_, index) => ({
           ...mockEvent,
-          title: longTitle,
+          id: `event-${index + 1}`,
+          title: index === 0 ? longTitle : `Campus event ${index + 1}`,
           event_picture_url: posterDataUrl,
           vibes: ["social", "food", "outdoors"],
-        }],
-        total: 1,
+        })),
+        total: 6,
       }),
     })
   );
@@ -111,4 +112,57 @@ test("uses a large poster above the event details on desktop", async ({
   expect(posterBox!.width / articleBox!.width).toBeGreaterThan(0.95);
   expect(posterBox!.y).toBeLessThan(headingBox!.y);
   await expect(poster).toBeVisible();
+});
+
+test("keeps posters centered and bounded in a wall of at most three columns", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "Custom responsive matrix runs once in the desktop project.");
+
+  const matrix = [
+    { width: 640, columns: 1, maxPosterWidth: 401 },
+    { width: 768, columns: 1, maxPosterWidth: 317 },
+    { width: 1024, columns: 2, maxPosterWidth: 317 },
+    { width: 1280, columns: 3, maxPosterWidth: 317 },
+    { width: 1536, columns: 3, maxPosterWidth: 317 },
+  ];
+
+  for (const { width, columns, maxPosterWidth } of matrix) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+
+    const feed = page.getByRole("region", { name: "Upcoming events" });
+    await expect(feed.locator("article")).toHaveCount(6);
+    const articleBoxes = await feed.locator("article").evaluateAll((articles) =>
+      articles.map((article) => {
+        const box = article.getBoundingClientRect();
+        return { x: box.x, y: box.y, width: box.width };
+      })
+    );
+    const firstPoster = feed.locator("article").first().locator("img").last();
+    const gridColumns = await feed.evaluate((element) =>
+      getComputedStyle(element).gridTemplateColumns.split(" ").length
+    );
+    const feedBox = await feed.boundingBox();
+    const posterBox = await firstPoster.boundingBox();
+    const firstRow = articleBoxes.filter(
+      (box) => Math.abs(box.y - articleBoxes[0].y) < 1
+    );
+    const rowLeft = firstRow[0].x;
+    const rowRight = firstRow[firstRow.length - 1].x +
+      firstRow[firstRow.length - 1].width;
+
+    expect(gridColumns).toBe(columns);
+    expect(feedBox).not.toBeNull();
+    expect(posterBox).not.toBeNull();
+    expect(posterBox!.width).toBeLessThanOrEqual(maxPosterWidth);
+    expect((rowLeft + rowRight) / 2).toBeCloseTo(
+      feedBox!.x + feedBox!.width / 2,
+      0
+    );
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth)
+    ).toBe(width);
+  }
 });
