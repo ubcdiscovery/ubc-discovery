@@ -40,7 +40,7 @@ export function OnboardingCompleteModal() {
         ? { ...location.state }
         : {};
     delete nextState.onboardingComplete;
-    navigate(
+    void navigate(
       `${location.pathname}${location.search}${location.hash}`,
       {
         replace: true,

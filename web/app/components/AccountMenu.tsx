@@ -35,7 +35,7 @@ export function AccountMenu({ memberName }: { memberName: string }) {
   async function handleSignOut() {
     setOpen(false);
     await signOut();
-    navigate("/");
+    void navigate("/");
   }
 
   return (

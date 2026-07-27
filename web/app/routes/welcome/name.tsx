@@ -35,7 +35,7 @@ export default function OnboardingName() {
   async function handleContinue() {
     if (!canContinue || !uid) return;
     await onboardingDraftStore.update(uid, { preferred_name: name.trim() });
-    navigate("/welcome/academic");
+    void navigate("/welcome/academic");
   }
 
   return (

@@ -104,7 +104,7 @@ export default function OnboardingAcademic() {
     void onboardingDraftStore.read(uid).then((draft) => {
       if (!active) return;
       if (!draft.preferred_name) {
-        navigate("/welcome/name", { replace: true });
+        void navigate("/welcome/name", { replace: true });
         return;
       }
 
@@ -125,11 +125,11 @@ export default function OnboardingAcademic() {
       major: major.trim() || undefined,
       year_standing: yearLabelToStanding(year),
     });
-    navigate("/welcome/interests");
+    void navigate("/welcome/interests");
   }
 
   function handleSkip() {
-    navigate("/welcome/interests");
+    void navigate("/welcome/interests");
   }
 
   return (

@@ -44,7 +44,7 @@ export function SaveEventButton({
         returnTo,
         actions: [{ type: "save-event", payload: { eventId } }],
       });
-      navigate(`/sign-in?redirect=${encodeURIComponent(returnTo)}`);
+      void navigate(`/sign-in?redirect=${encodeURIComponent(returnTo)}`);
       return;
     }
 

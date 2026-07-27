@@ -89,7 +89,7 @@ export function AuthFlowCoordinator() {
 
   const navigateToCompletion = useCallback(
     (returnTo: string, notice?: { preferredName: string }) => {
-      navigate(returnTo, {
+      void navigate(returnTo, {
         replace: true,
         state: notice
           ? {
@@ -116,14 +116,14 @@ export function AuthFlowCoordinator() {
           location.pathname === "/sign-in" ||
           location.pathname.startsWith("/welcome/")
         ) {
-          navigate("/", { replace: true });
+          void navigate("/", { replace: true });
         }
         return;
       }
 
       const currentPath = `${location.pathname}${location.search}${location.hash}`;
       if (currentPath !== flow.returnTo) {
-        navigate(flow.returnTo, { replace: true });
+        void navigate(flow.returnTo, { replace: true });
       }
 
       if (!flow.actions.some((action) => action.status === "pending")) {

@@ -118,7 +118,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
       ) {
         e.preventDefault();
         onClose();
-        navigate(`/events/${results[activeIndex].id}`);
+        void navigate(`/events/${results[activeIndex].id}`);
       }
     },
     [onClose, results, activeIndex, navigate],
@@ -209,7 +209,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     aria-selected={i === activeIndex}
                     onClick={() => {
                       onClose();
-                      navigate(`/events/${event.id}`);
+                      void navigate(`/events/${event.id}`);
                     }}
                     onMouseEnter={() => setActiveIndex(i)}
                     className={`w-full text-left px-4 py-3 flex items-start gap-3 border-b border-rule-soft last:border-b-0 cursor-pointer transition-colors ${

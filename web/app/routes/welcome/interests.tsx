@@ -33,7 +33,7 @@ export default function OnboardingInterests() {
     void onboardingDraftStore.read(uid).then((draft) => {
       if (!active) return;
       if (!draft.preferred_name) {
-        navigate("/welcome/name", { replace: true });
+        void navigate("/welcome/name", { replace: true });
         return;
       }
 
@@ -59,7 +59,7 @@ export default function OnboardingInterests() {
       interests: selected,
     });
     if (!draft.preferred_name) {
-      navigate("/welcome/name", { replace: true });
+      void navigate("/welcome/name", { replace: true });
       return;
     }
 
