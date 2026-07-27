@@ -11,9 +11,9 @@ export function SourceBadge({
   const displayName =
     host ?? sourceLabel.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   return (
-    <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-semibold tracking-wider uppercase text-ink">
+    <span className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold tracking-wider uppercase text-ink">
       <span
-        className="inline-flex items-center justify-center w-7.5 h-4 text-white text-[9.5px] tracking-wide"
+        className="inline-flex items-center justify-center w-7.5 h-4 text-white text-2xs tracking-wide"
         style={{ background: m.tone }}
       >
         {m.code}

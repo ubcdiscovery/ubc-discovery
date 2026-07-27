@@ -49,7 +49,7 @@ function Poster({
           aria-hidden="true"
           className="flex size-full flex-col justify-between bg-accent p-[9%] text-white"
         >
-          <span className="font-mono text-[10px] font-bold tracking-[0.2em] uppercase">
+          <span className="font-mono text-xs font-bold tracking-[0.2em] uppercase">
             UBC Discovery
           </span>
           <strong className="max-w-[13ch] font-display text-[clamp(1.6rem,5vw,3.5rem)] leading-[0.94] tracking-tight">
@@ -60,7 +60,7 @@ function Poster({
           </span>
         </div>
       )}
-      <div className="absolute bottom-0 left-0 z-20 bg-hi px-3 py-2 font-mono text-[10px] font-extrabold tracking-wider text-black uppercase">
+      <div className="absolute bottom-0 left-0 z-20 bg-hi px-3 py-2 font-mono text-xs font-extrabold tracking-wider text-black uppercase">
         <EventDate event={event} />
       </div>
     </div>
@@ -74,7 +74,7 @@ function CardDetails({ event }: { event: ApiEvent }) {
       <h2 className="mt-2 max-w-[25ch] font-display text-2xl font-extrabold leading-[1.02] tracking-tight text-balance lg:text-3xl">
         {event.title}
       </h2>
-      <p className="mt-3 font-mono text-[10.5px] tracking-wide text-muted uppercase">
+      <p className="mt-3 font-mono text-xs tracking-wide text-muted uppercase">
         ↳ {event.location_name}
       </p>
       <div className="mt-3 flex flex-wrap gap-1.5">

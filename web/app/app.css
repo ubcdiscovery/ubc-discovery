@@ -5,6 +5,9 @@
   --font-body: "Inter", -apple-system, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
+  --text-2xs: 0.625rem;
+  --text-2xs--line-height: 0.875rem;
+
   /* Semantic color tokens — override these per theme */
   --color-bg: #FFFFFF;
   --color-surface: #FFFFFF;

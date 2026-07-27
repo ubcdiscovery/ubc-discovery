@@ -27,7 +27,7 @@ export function OnboardingTop({
           />
         ))}
       </div>
-      <span className="font-mono text-[10.5px] text-muted tracking-wide uppercase">
+      <span className="font-mono text-xs text-muted tracking-wide uppercase">
         Step {step}/{total}
       </span>
     </div>
@@ -50,7 +50,7 @@ export function OnboardingFooter({
   return (
     <div className="fixed bottom-0 inset-x-0 px-4.5 py-3.5 pb-7 bg-bg border-t border-rule-soft flex flex-col gap-2 md:hidden z-50">
       {detail && (
-        <div className="font-mono text-[10px] text-muted tracking-wide uppercase text-center">
+        <div className="font-mono text-xs text-muted tracking-wide uppercase text-center">
           {detail}
         </div>
       )}
@@ -174,7 +174,7 @@ export function OnboardingDesktopShell({
         </div>
 
         <div className="flex-1 max-w-130">
-          <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
+          <div className="font-mono text-xs text-accent font-bold tracking-wide uppercase">
             {kicker}
           </div>
           <h1 className="my-2 font-display font-extrabold text-5xl text-ink tracking-tighter leading-none">

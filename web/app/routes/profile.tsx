@@ -20,7 +20,7 @@ function Section({
 }) {
   return (
     <div className="p-4.5 border-b border-rule-soft md:p-0">
-      <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-3 pb-1.5 border-b border-ink md:flex md:justify-between md:items-baseline">
+      <div className="font-mono text-xs text-muted tracking-wider uppercase mb-3 pb-1.5 border-b border-ink md:flex md:justify-between md:items-baseline">
         <span>{label}</span>
       </div>
       {children}
@@ -54,7 +54,7 @@ function VisitorProfile() {
     <div>
       {/* Mobile */}
       <div className="md:hidden px-5.5 pt-7">
-        <div className="font-mono text-[10px] text-accent font-bold tracking-wider uppercase">
+        <div className="font-mono text-xs text-accent font-bold tracking-wider uppercase">
           Join UBC Discovery
         </div>
         <h1 className="mt-2 font-display font-extrabold text-5xl text-ink tracking-tighter leading-[0.92]">
@@ -78,7 +78,7 @@ function VisitorProfile() {
       {/* Desktop */}
       <div className="hidden md:block max-w-180 mx-auto px-8 py-20">
         <div className="border border-ink p-10 px-12">
-          <div className="font-mono text-[10.5px] text-accent font-bold tracking-wider uppercase">
+          <div className="font-mono text-xs text-accent font-bold tracking-wider uppercase">
             Member feature
           </div>
           <h1 className="mt-3 mb-2 font-display font-extrabold text-6xl text-ink tracking-tighter leading-[0.92]">
@@ -270,7 +270,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
           {editing ? (
             <div className="space-y-3">
               <div>
-                <div className="font-mono text-[10px] text-muted tracking-wide uppercase mb-1.5">
+                <div className="font-mono text-xs text-muted tracking-wide uppercase mb-1.5">
                   Faculty
                 </div>
                 <select
@@ -284,7 +284,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                 </select>
               </div>
               <div>
-                <div className="font-mono text-[10px] text-muted tracking-wide uppercase mb-1.5">
+                <div className="font-mono text-xs text-muted tracking-wide uppercase mb-1.5">
                   Major
                 </div>
                 <input
@@ -294,7 +294,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                 />
               </div>
               <div>
-                <div className="font-mono text-[10px] text-muted tracking-wide uppercase mb-1.5">
+                <div className="font-mono text-xs text-muted tracking-wide uppercase mb-1.5">
                   Year
                 </div>
                 <select
@@ -388,7 +388,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                 <>
                   <button
                     onClick={() => fileRef.current?.click()}
-                    className="absolute -bottom-2.5 -right-2.5 bg-ink text-bg border-2 border-bg cursor-pointer px-3 py-1.5 font-mono text-[10px] font-bold tracking-wide uppercase flex items-center gap-1.5"
+                    className="absolute -bottom-2.5 -right-2.5 bg-ink text-bg border-2 border-bg cursor-pointer px-3 py-1.5 font-mono text-xs font-bold tracking-wide uppercase flex items-center gap-1.5"
                   >
                     <svg
                       width="13"
@@ -435,7 +435,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
               {editing ? (
                 <div className="flex gap-3 flex-wrap">
                   <div className="flex-[1_1_280px] min-w-0">
-                    <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5">
+                    <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
                       Preferred name
                     </div>
                     <input
@@ -480,7 +480,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
               {editing ? (
                 <div className="space-y-3.5">
                   <div>
-                    <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5">
+                    <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
                       Faculty
                     </div>
                     <select
@@ -494,7 +494,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                     </select>
                   </div>
                   <div>
-                    <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5">
+                    <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
                       Major
                     </div>
                     <input
@@ -504,7 +504,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                     />
                   </div>
                   <div>
-                    <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5">
+                    <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
                       Year
                     </div>
                     <select

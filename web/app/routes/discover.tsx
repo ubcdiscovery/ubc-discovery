@@ -41,7 +41,7 @@ function Pill({
   return (
     <button
       onClick={onClick}
-      className={`px-2.5 py-1 border font-mono text-[10.5px] font-semibold tracking-wide uppercase cursor-pointer whitespace-nowrap shrink-0 ${
+      className={`px-2.5 py-1 border font-mono text-xs font-semibold tracking-wide uppercase cursor-pointer whitespace-nowrap shrink-0 ${
         active
           ? "border-accent bg-accent text-white"
           : "border-ink bg-transparent text-ink"
@@ -61,7 +61,7 @@ function FilterBlock({
 }) {
   return (
     <div className="mb-6">
-      <div className="font-mono text-[10px] text-ink tracking-wider uppercase mb-2.5 pb-1 border-b border-ink">
+      <div className="font-mono text-xs text-ink tracking-wider uppercase mb-2.5 pb-1 border-b border-ink">
         {label}
       </div>
       {children}
@@ -139,7 +139,7 @@ export default function Discover() {
     <div className="flex flex-1 flex-col">
       <div className="border-b border-ink bg-bg md:hidden">
         <details className="group">
-          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4.5 font-mono text-[10.5px] font-bold tracking-wider uppercase">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4.5 font-mono text-xs font-bold tracking-wider uppercase">
             <span>Filters</span>
             <span>
               {activeVibe || activeSource !== "all" ? "Active · " : ""}

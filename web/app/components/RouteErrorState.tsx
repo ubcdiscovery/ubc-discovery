@@ -24,7 +24,7 @@ export function RouteErrorState({
       role="alert"
     >
       <div className="w-full max-w-3xl border border-ink bg-surface">
-        <div className="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-ink font-mono text-[10px] tracking-wider uppercase">
+        <div className="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-ink font-mono text-xs tracking-wider uppercase">
           <span className="text-muted">{eyebrow}</span>
           <span className="text-accent" aria-hidden="true">
             ●

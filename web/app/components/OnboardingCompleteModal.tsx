@@ -83,7 +83,7 @@ export function OnboardingCompleteModal() {
         <div className="flex size-12 items-center justify-center bg-accent font-display text-2xl font-extrabold text-white">
           ✓
         </div>
-        <div className="mt-5 font-mono text-[10px] font-bold uppercase tracking-wider text-accent">
+        <div className="mt-5 font-mono text-xs font-bold uppercase tracking-wider text-accent">
           Profile complete
         </div>
         <h2

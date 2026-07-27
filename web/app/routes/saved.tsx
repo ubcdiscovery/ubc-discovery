@@ -19,7 +19,7 @@ function VisitorSaved() {
       {/* Mobile */}
       <div className="md:hidden">
         <div className="px-4.5 py-3.5 border-b border-rule-soft">
-          <div className="font-mono text-[10px] text-muted tracking-wider uppercase">
+          <div className="font-mono text-xs text-muted tracking-wider uppercase">
             Your shortlist
           </div>
           <h1 className="mt-1 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
@@ -28,7 +28,7 @@ function VisitorSaved() {
         </div>
         <div className="px-5.5 py-8">
           <div className="border border-ink p-5.5">
-            <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
+            <div className="font-mono text-xs text-accent font-bold tracking-wide uppercase">
               MEMBER FEATURE
             </div>
             <h2 className="mt-2 mb-1.5 font-display font-extrabold text-3xl text-ink tracking-tight leading-none">
@@ -55,7 +55,7 @@ function VisitorSaved() {
       <div className="hidden md:block">
         <div className="max-w-180 mx-auto px-8 py-20">
           <div className="border border-ink p-10 px-12">
-            <div className="font-mono text-[10.5px] text-accent font-bold tracking-wider uppercase">
+            <div className="font-mono text-xs text-accent font-bold tracking-wider uppercase">
               Member feature
             </div>
             <h1 className="mt-3 mb-2 font-display font-extrabold text-6xl text-ink tracking-tighter leading-[0.92]">
@@ -93,7 +93,7 @@ function RateNudgeBanner({
       }`}
     >
       <div className="flex-1 min-w-0">
-        <div className="font-mono text-[10px] text-white/80 font-bold tracking-wide uppercase">
+        <div className="font-mono text-xs text-white/80 font-bold tracking-wide uppercase">
           Tune your For You
         </div>
         <div
@@ -105,7 +105,7 @@ function RateNudgeBanner({
           rate.
         </div>
       </div>
-      <button className="px-3 py-2 border border-hi bg-hi text-ink cursor-pointer font-mono text-[10.5px] font-bold tracking-wide uppercase shrink-0">
+      <button className="px-3 py-2 border border-hi bg-hi text-ink cursor-pointer font-mono text-xs font-bold tracking-wide uppercase shrink-0">
         Rate now →
       </button>
     </div>
@@ -177,7 +177,7 @@ function RateSheet({
       <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" />
       <div className="absolute bottom-0 inset-x-0 bg-bg text-ink border-t-2 border-ink pb-7 max-h-[90%] overflow-auto shadow-[0_-16px_40px_rgba(0,0,0,0.25)]">
         <div className="flex justify-between items-center px-4 py-3 border-b border-rule-soft">
-          <span className="font-mono text-[10px] text-muted tracking-wider uppercase">
+          <span className="font-mono text-xs text-muted tracking-wider uppercase">
             Rate this event
           </span>
           <button
@@ -190,10 +190,10 @@ function RateSheet({
 
         <div className="px-4.5 pt-5">
           <div className="flex items-baseline justify-between mb-3">
-            <div className="font-mono text-[10.5px] text-ink font-bold tracking-wide uppercase">
+            <div className="font-mono text-xs text-ink font-bold tracking-wide uppercase">
               <span className="text-accent">1</span> · How was it?
             </div>
-            <div className="font-mono text-[9.5px] text-muted tracking-wide uppercase">
+            <div className="font-mono text-2xs text-muted tracking-wide uppercase">
               1 = wouldn&rsquo;t go again · 5 = loved it
             </div>
           </div>
@@ -202,10 +202,10 @@ function RateSheet({
 
         <div className="px-4.5 pt-5">
           <div className="flex items-baseline justify-between mb-3">
-            <div className="font-mono text-[10.5px] text-ink font-bold tracking-wide uppercase">
+            <div className="font-mono text-xs text-ink font-bold tracking-wide uppercase">
               <span className="text-accent">2</span> · What stood out?
             </div>
-            <div className="font-mono text-[9.5px] text-muted tracking-wide uppercase">
+            <div className="font-mono text-2xs text-muted tracking-wide uppercase">
               Pick any · optional
             </div>
           </div>
@@ -226,10 +226,10 @@ function RateSheet({
 
         <div className="px-4.5 pt-5">
           <div className="flex items-baseline justify-between mb-3">
-            <div className="font-mono text-[10.5px] text-ink font-bold tracking-wide uppercase">
+            <div className="font-mono text-xs text-ink font-bold tracking-wide uppercase">
               <span className="text-accent">3</span> · One-line note
             </div>
-            <div className="font-mono text-[9.5px] text-muted tracking-wide uppercase">
+            <div className="font-mono text-2xs text-muted tracking-wide uppercase">
               Just for you · optional
             </div>
           </div>
@@ -374,7 +374,7 @@ function MemberSaved() {
       <div className="md:hidden">
         <div className="px-4.5 py-3.5 border-b border-rule-soft flex items-end justify-between">
           <div>
-            <div className="font-mono text-[10px] text-muted tracking-wider uppercase">
+            <div className="font-mono text-xs text-muted tracking-wider uppercase">
               Your shortlist & history
             </div>
             <h1 className="mt-1 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
@@ -404,7 +404,7 @@ function MemberSaved() {
               >
                 <span>{t.label}</span>
                 <span
-                  className={`px-1.5 text-[10px] ${
+                  className={`px-1.5 text-xs ${
                     on ? "bg-accent text-white" : "bg-rule-soft text-muted"
                   }`}
                 >

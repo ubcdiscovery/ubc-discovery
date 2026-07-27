@@ -177,7 +177,7 @@ export default function SignIn() {
         </div>
 
         <div className="px-5.5 pt-7">
-          <div className="font-mono text-[10px] text-accent font-bold tracking-wider uppercase">
+          <div className="font-mono text-xs text-accent font-bold tracking-wider uppercase">
             Join UBC Discovery
           </div>
           <h1 className="mt-2 font-display font-extrabold text-5xl text-ink tracking-tighter leading-[0.92]">
@@ -202,11 +202,11 @@ export default function SignIn() {
                   <FcGoogle aria-hidden="true" size={14} />
                   CONTINUE WITH GOOGLE
                 </button>
-                <div className="font-mono text-[10px] text-muted tracking-wider uppercase my-1.5 text-center">
+                <div className="font-mono text-xs text-muted tracking-wider uppercase my-1.5 text-center">
                   — OR —
                 </div>
                 <form className="contents" onSubmit={handleSendOtp} noValidate={false}>
-                  <label htmlFor="mobile-auth-email" className="font-mono text-[10px] text-muted tracking-wide uppercase">
+                  <label htmlFor="mobile-auth-email" className="font-mono text-xs text-muted tracking-wide uppercase">
                     EMAIL
                   </label>
                   <input
@@ -235,7 +235,7 @@ export default function SignIn() {
                 <p className="text-sm text-ink-soft">
                   Enter the code sent to <strong className="text-ink">{email}</strong>.
                 </p>
-                <label htmlFor="mobile-auth-code" className="font-mono text-[10px] text-muted tracking-wide uppercase">
+                <label htmlFor="mobile-auth-code" className="font-mono text-xs text-muted tracking-wide uppercase">
                   VERIFICATION CODE
                 </label>
                 <input
@@ -330,7 +330,7 @@ export default function SignIn() {
 
         <main className="p-8 px-14 flex flex-col">
           <div className="flex-1 max-w-130">
-            <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
+            <div className="font-mono text-xs text-accent font-bold tracking-wide uppercase">
               Sign in
             </div>
             <h1 className="my-2 font-display font-extrabold text-5xl text-ink tracking-tighter leading-none">
@@ -351,14 +351,14 @@ export default function SignIn() {
                     Continue with Google
                   </button>
 
-                  <div className="font-mono text-[10px] text-muted tracking-wider uppercase my-1 text-center flex items-center gap-2.5">
+                  <div className="font-mono text-xs text-muted tracking-wider uppercase my-1 text-center flex items-center gap-2.5">
                     <span className="flex-1 h-px bg-rule-soft" />
                     or
                     <span className="flex-1 h-px bg-rule-soft" />
                   </div>
                   <form className="contents" onSubmit={handleSendOtp}>
                     <div>
-                      <label htmlFor="desktop-auth-email" className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5 block">
+                      <label htmlFor="desktop-auth-email" className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5 block">
                         Email
                       </label>
                       <input
@@ -393,7 +393,7 @@ export default function SignIn() {
                     Enter the code sent to <strong className="text-ink">{email}</strong>.
                   </p>
                   <div>
-                    <label htmlFor="desktop-auth-code" className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5 block">
+                    <label htmlFor="desktop-auth-code" className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5 block">
                       Verification code
                     </label>
                     <input

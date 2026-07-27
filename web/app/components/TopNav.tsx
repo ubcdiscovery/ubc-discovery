@@ -64,7 +64,7 @@ export function TopNav({
         </button>
         <Link
           to={ORGANIZER_NAVIGATION.to}
-          className="flex h-8 items-center px-2 font-mono text-[10.5px] font-semibold tracking-wide text-muted uppercase hover:text-ink"
+          className="flex h-8 items-center px-2 font-mono text-xs font-semibold tracking-wide text-muted uppercase hover:text-ink"
         >
           {ORGANIZER_NAVIGATION.label}
         </Link>

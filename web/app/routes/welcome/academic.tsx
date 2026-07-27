@@ -30,7 +30,7 @@ function SelectField({
 }) {
   return (
     <div>
-      <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5">
+      <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
         {label}
       </div>
       <div className="relative">
@@ -142,7 +142,7 @@ export default function OnboardingAcademic() {
           onBack={() => navigate("/welcome/name")}
         />
         <div className="px-5.5 pt-6 pb-4">
-          <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
+          <div className="font-mono text-xs text-accent font-bold tracking-wide uppercase">
             Optional · skippable
           </div>
           <h1 className="mt-1.5 mb-2 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
@@ -163,7 +163,7 @@ export default function OnboardingAcademic() {
               options={FACULTIES}
             />
             <div>
-              <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5 flex justify-between">
+              <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5 flex justify-between">
                 <span>Major or program</span>
                 <span>Free text</span>
               </div>
@@ -175,7 +175,7 @@ export default function OnboardingAcademic() {
               />
             </div>
             <div>
-              <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-2">
+              <div className="font-mono text-xs text-muted tracking-wider uppercase mb-2">
                 Year standing
               </div>
               <PillGrid options={YEARS} value={year} onChange={setYear} />
@@ -225,7 +225,7 @@ export default function OnboardingAcademic() {
             />
           </div>
           <div>
-            <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5">
+            <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
               Major or program
             </div>
             <input

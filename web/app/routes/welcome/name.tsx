@@ -44,7 +44,7 @@ export default function OnboardingName() {
       <div className="md:hidden pb-28">
         <OnboardingTop step={1} total={3} />
         <div className="px-5.5 pt-8">
-          <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
+          <div className="font-mono text-xs text-accent font-bold tracking-wide uppercase">
             A few quick things
           </div>
           <h1 className="my-2 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
@@ -52,7 +52,7 @@ export default function OnboardingName() {
           </h1>
 
           <div className="mt-6">
-            <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-2">
+            <div className="font-mono text-xs text-muted tracking-wider uppercase mb-2">
               Preferred name
             </div>
             <input
@@ -77,7 +77,7 @@ export default function OnboardingName() {
         onContinue={handleContinue}
       >
         <div>
-          <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5">
+          <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
             Preferred name
           </div>
           <input

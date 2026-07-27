@@ -152,7 +152,7 @@ export default function OnboardingInterests() {
           onBack={() => navigate("/welcome/academic")}
         />
         <div className="px-5.5 pt-6 pb-4">
-          <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
+          <div className="font-mono text-xs text-accent font-bold tracking-wide uppercase">
             Pick at least 3
           </div>
           <h1 className="mt-1.5 mb-2 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">

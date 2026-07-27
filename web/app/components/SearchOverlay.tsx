@@ -168,14 +168,14 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               }
             />
             {loading && (
-              <span className="font-mono text-[10px] text-muted tracking-wider uppercase animate-pulse">
+              <span className="font-mono text-xs text-muted tracking-wider uppercase animate-pulse">
                 …
               </span>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="flex min-h-11 min-w-11 items-center justify-center border border-rule-soft px-2 font-mono text-[10px] text-muted tracking-wider uppercase hover:border-ink hover:text-ink transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="flex min-h-11 min-w-11 items-center justify-center border border-rule-soft px-2 font-mono text-xs text-muted tracking-wider uppercase hover:border-ink hover:text-ink transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               aria-label="Close search"
             >
               ESC
@@ -222,7 +222,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     <div className="w-10 shrink-0 pt-0.5 text-center">
                       {d ? (
                         <>
-                          <div className="font-mono text-[9px] text-muted tracking-wider uppercase leading-none">
+                          <div className="font-mono text-xs/none text-muted tracking-wider uppercase">
                             {fmtMonth(d)}
                           </div>
                           <div className="font-display font-bold text-lg/tight text-ink tabular-nums">
@@ -230,7 +230,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                           </div>
                         </>
                       ) : (
-                        <div className="font-mono text-[9px] text-muted tracking-wider uppercase">
+                        <div className="font-mono text-xs text-muted tracking-wider uppercase">
                           TBD
                         </div>
                       )}
@@ -243,14 +243,14 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         {event.club_name && (
-                          <span className="font-mono text-[10px] text-muted tracking-wide truncate">
+                          <span className="font-mono text-xs text-muted tracking-wide truncate">
                             {event.club_name}
                           </span>
                         )}
                         {event.club_name && (
                           <span className="text-rule-soft">·</span>
                         )}
-                        <span className="font-mono text-[10px] text-muted tracking-wide truncate">
+                        <span className="font-mono text-xs text-muted tracking-wide truncate">
                           {event.location_name}
                         </span>
                       </div>

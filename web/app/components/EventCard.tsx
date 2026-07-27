@@ -26,11 +26,11 @@ export function EventCard({ event }: { event: ApiEvent }) {
                 </div>
                 <span
                   aria-hidden="true"
-                  className="font-mono text-[10px] text-rule-soft md:hidden"
+                  className="font-mono text-2xs text-rule-soft md:hidden"
                 >
                   /
                 </span>
-                <div className="font-mono text-[10.5px] text-muted md:mt-0.5">
+                <div className="font-mono text-xs text-muted md:mt-0.5">
                   {fmtTime(d).toUpperCase()}
                 </div>
               </>

@@ -62,7 +62,7 @@ export default function Organizers() {
           </ul>
         </section>
 
-        <p className="font-mono text-[10.5px] text-muted tracking-wide mt-8">
+        <p className="font-mono text-xs text-muted tracking-wide mt-8">
           Self-serve submissions coming soon.
         </p>
       </main>
