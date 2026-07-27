@@ -15,17 +15,27 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const [hasSearched, setHasSearched] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isOpen) {
-      setQuery("");
-      setResults([]);
-      setHasSearched(false);
-      setActiveIndex(-1);
-      requestAnimationFrame(() => inputRef.current?.focus());
-    }
+    if (!isOpen) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    setQuery("");
+    setResults([]);
+    setHasSearched(false);
+    setActiveIndex(-1);
+    const focusFrame = requestAnimationFrame(() => inputRef.current?.focus());
+
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      document.body.style.overflow = previousOverflow;
+      requestAnimationFrame(() => previouslyFocused?.focus());
+    };
   }, [isOpen]);
 
   // Debounced search with request cancellation
@@ -71,7 +81,23 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Escape") {
+        e.preventDefault();
         onClose();
+      } else if (e.key === "Tab") {
+        const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        );
+        if (!focusable?.length) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
         setActiveIndex((prev) => Math.min(prev + 1, results.length - 1));
@@ -90,28 +116,27 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     [onClose, results, activeIndex, navigate],
   );
 
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (
-        overlayRef.current &&
-        !overlayRef.current.contains(e.target as Node)
-      ) {
-        onClose();
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [isOpen, onClose]);
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] bg-ink/20 backdrop-blur-[2px]">
+    <div
+      className="fixed inset-0 z-[60] bg-ink/20 backdrop-blur-[2px]"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      data-testid="search-backdrop"
+    >
       <div
-        ref={overlayRef}
-        className="w-full md:max-w-[600px] md:mx-auto md:mt-16"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="event-search-title"
+        className="w-full sm:max-w-[600px] sm:mx-auto sm:mt-16"
+        onKeyDown={handleKeyDown}
       >
+        <h2 id="event-search-title" className="sr-only">
+          Search events
+        </h2>
         {/* Search input */}
         <div className="bg-bg border-2 border-ink">
           <div className="flex items-center gap-3 px-4 py-3">
@@ -121,9 +146,17 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
               placeholder="Search events, clubs, locations…"
               className="flex-1 bg-transparent font-mono text-[13px] text-ink placeholder:text-muted tracking-wide outline-none"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="event-search-results"
+              aria-expanded={results.length > 0}
+              aria-activedescendant={
+                activeIndex >= 0
+                  ? `event-search-result-${results[activeIndex]?.id}`
+                  : undefined
+              }
             />
             {loading && (
               <span className="font-mono text-[10px] text-muted tracking-wider uppercase animate-pulse">
@@ -131,8 +164,10 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               </span>
             )}
             <button
+              type="button"
               onClick={onClose}
-              className="font-mono text-[10px] text-muted tracking-wider uppercase px-2 py-1 border border-rule-soft hover:border-ink hover:text-ink transition-colors cursor-pointer"
+              className="flex min-h-11 min-w-11 items-center justify-center border border-rule-soft px-2 font-mono text-[10px] text-muted tracking-wider uppercase hover:border-ink hover:text-ink transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              aria-label="Close search"
             >
               ESC
             </button>
@@ -141,7 +176,12 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
         {/* Results dropdown */}
         {(results.length > 0 || (hasSearched && query.trim().length >= 2)) && (
-          <div className="bg-bg border-2 border-t-0 border-ink max-h-[400px] overflow-y-auto">
+          <div
+            id="event-search-results"
+            role="listbox"
+            aria-label="Event search results"
+            className="bg-bg border-2 border-t-0 border-ink max-h-[400px] overflow-y-auto"
+          >
             {results.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <p className="font-mono text-[11px] text-muted tracking-wider uppercase">
@@ -154,6 +194,10 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 return (
                   <button
                     key={event.id}
+                    id={`event-search-result-${event.id}`}
+                    type="button"
+                    role="option"
+                    aria-selected={i === activeIndex}
                     onClick={() => {
                       onClose();
                       navigate(`/events/${event.id}`);

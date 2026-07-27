@@ -5,6 +5,46 @@ import {
   setAuthenticatedUser,
 } from "./support/auth";
 
+test("keeps compact navigation through tablet widths without horizontal overflow", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "Custom responsive matrix runs once in the desktop project.");
+  await mockApi(page);
+
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/");
+
+    await expect(page.getByTestId("compact-header")).toBeVisible();
+    await expect(page.getByTestId("desktop-header")).toBeHidden();
+    await expect(page.getByTestId("bottom-tabs")).toBeVisible();
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth ===
+          document.documentElement.clientWidth
+      )
+    ).toBe(true);
+  }
+
+  for (const width of [1024, 1280]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/");
+
+    await expect(page.getByTestId("compact-header")).toBeHidden();
+    await expect(page.getByTestId("desktop-header")).toBeVisible();
+    await expect(page.getByTestId("bottom-tabs")).toBeHidden();
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth ===
+          document.documentElement.clientWidth
+      )
+    ).toBe(true);
+  }
+});
+
 test("mobile keeps site utilities in the header and identity in the bottom bar", async ({
   page,
   isMobile,

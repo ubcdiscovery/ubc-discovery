@@ -1,23 +1,19 @@
 import { NavLink } from "react-router";
-import { useAuth } from "~/lib/auth";
+import { getMobileNavigation } from "~/lib/app-navigation";
 
-export function BottomTabs() {
-  const { state } = useAuth();
-  const tabs = [
-    { id: "discover", label: "Discover", to: "/" },
-    { id: "saved", label: "Saved", to: "/saved" },
-    state.status === "member"
-      ? { id: "profile", label: "Profile", to: "/profile" }
-      : { id: "sign-in", label: "Sign In", to: "/sign-in" },
-  ];
-
+export function BottomTabs({ isMember }: { isMember: boolean }) {
+  const tabs = getMobileNavigation(isMember);
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-bg border-t-2 border-ink pb-7 flex md:hidden z-50">
-      {tabs.map((t, i) => (
+    <nav
+      className="fixed bottom-0 left-0 right-0 bg-bg border-t-2 border-ink pb-[max(1.75rem,env(safe-area-inset-bottom))] flex lg:hidden z-50"
+      aria-label="Primary navigation"
+      data-testid="bottom-tabs"
+    >
+      {tabs.map((tab, i) => (
         <NavLink
-          key={t.id}
-          to={t.to}
-          end={t.to === "/"}
+          key={tab.id}
+          to={tab.to}
+          end={tab.end}
           className={({ isActive }) =>
             `flex-1 py-3.5 text-center font-display text-sm font-bold tracking-tight ${
               i < tabs.length - 1 ? "border-r border-rule-soft" : ""
@@ -28,7 +24,7 @@ export function BottomTabs() {
             }`
           }
         >
-          {t.label}
+          {tab.label}
         </NavLink>
       ))}
     </nav>
