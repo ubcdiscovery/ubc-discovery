@@ -146,8 +146,10 @@ function MemberProfile({ user }: { user: UserResponse }) {
     setAvatar(URL.createObjectURL(f));
     try {
       await uploadProfilePhoto(f);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Could not upload profile photo."
+      );
     }
   }
 
@@ -170,8 +172,8 @@ function MemberProfile({ user }: { user: UserResponse }) {
       setInterests(next.interests ?? []);
       setAvatar(next.profile_picture_url);
       setEditing(false);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not update profile.");
     } finally {
       setSaving(false);
     }

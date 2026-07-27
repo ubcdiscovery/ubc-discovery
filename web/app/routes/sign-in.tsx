@@ -74,7 +74,7 @@ export default function SignIn() {
       setResendAvailableAt(sentAt + 30_000);
       setReplacementNotice(false);
       setStep("code");
-    } catch (e: any) {
+    } catch (e) {
       setError(authErrorMessage(e) ?? "");
     } finally {
       setLoading(false);
@@ -93,7 +93,7 @@ export default function SignIn() {
       setResendAvailableAt(sentAt + 30_000);
       setCode("");
       setReplacementNotice(true);
-    } catch (e: any) {
+    } catch (e) {
       setError(authErrorMessage(e) ?? "");
     } finally {
       setLoading(false);
@@ -113,7 +113,7 @@ export default function SignIn() {
     try {
       const res = await api.auth.verifyOtp(email, code);
       await signInWithOtpToken(res.firebase_custom_token);
-    } catch (e: any) {
+    } catch (e) {
       setError(authErrorMessage(e) ?? "");
     } finally {
       setLoading(false);
@@ -134,7 +134,7 @@ export default function SignIn() {
     setError("");
     try {
       await signInWithGoogle();
-    } catch (e: any) {
+    } catch (e) {
       const linkEmail = pendingGoogleLinkEmail(e);
       if (linkEmail) {
         setEmail(linkEmail);
