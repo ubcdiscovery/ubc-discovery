@@ -9,6 +9,7 @@
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
+    "lint": "eslint .",
     "start": "react-router-serve ./build/server/*/index.js",
     "typecheck": "react-router typegen && tsc",
     "test:e2e": "playwright test",
@@ -27,14 +28,19 @@
     "react-router": "8.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
     "@react-router/dev": "8.2.0",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^24",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "eslint": "^10.8.0",
+    "globals": "^17.7.0",
+    "jiti": "^2.7.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.65.0",
     "vite": "^8.0.3"
   }
 }
