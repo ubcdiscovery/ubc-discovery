@@ -6,11 +6,11 @@ Web-first campus event discovery app for the UBC community. Places, exploration 
 
 ### Issue tracker
 
-Issue tracking is currently disabled; skills must not create external or local issues. See `docs/agents/issue-tracker.md`.
+Issues and PRDs are tracked in this repository's GitHub Issues. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-The standard triage label vocabulary is reserved but inactive while issue tracking is disabled. See `docs/agents/triage-labels.md`.
+Use the standard triage label vocabulary for issue state and implementation readiness. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
