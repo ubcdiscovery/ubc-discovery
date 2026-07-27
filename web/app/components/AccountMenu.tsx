@@ -54,7 +54,7 @@ export function AccountMenu({
         className={
           compact
             ? "flex h-6 w-6 items-center justify-center bg-accent text-white font-display text-[12px] font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            : "flex items-center gap-2 border border-transparent px-1.5 py-1 hover:border-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            : "flex items-center gap-2 border border-transparent px-1.5 py-1 hover:border-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         }
       >
         {avatarUrl ? (

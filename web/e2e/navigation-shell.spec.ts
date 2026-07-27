@@ -63,7 +63,7 @@ test("navbar icon controls share one hover treatment", async ({
 
   for (const control of controls) {
     await expect(control).toHaveClass(/border-transparent/);
-    await expect(control).toHaveClass(/hover:border-white/);
+    await expect(control).toHaveClass(/hover:border-ink/);
     await expect(control).toHaveClass(/focus-visible:outline-accent/);
     await expect(control).not.toHaveClass(/hover:bg-/);
     await expect(control).not.toHaveClass(/hover:text-/);
