@@ -79,50 +79,16 @@ function VisitorSaved() {
   );
 }
 
-function RateNudgeBanner({
-  count,
-  mobile,
-}: {
-  count: number;
-  mobile?: boolean;
-}) {
-  return (
-    <div
-      className={`bg-accent text-white flex items-center gap-3 justify-between border-l-4 border-l-hi ${
-        mobile ? "mx-4.5 mt-3.5 mb-1 px-3.5 py-3" : "mb-5 px-5 py-4"
-      }`}
-    >
-      <div className="flex-1 min-w-0">
-        <div className="font-mono text-xs text-white/80 font-bold tracking-wide uppercase">
-          Tune your For You
-        </div>
-        <div
-          className={`font-display font-bold text-white tracking-tight leading-tight ${
-            mobile ? "text-lg" : "text-xl"
-          }`}
-        >
-          You have <span className="text-hi">{count} events</span> ready to
-          rate.
-        </div>
-      </div>
-      <button className="px-3 py-2 border border-hi bg-hi text-ink cursor-pointer font-mono text-xs font-bold tracking-wide uppercase shrink-0">
-        Rate now →
-      </button>
-    </div>
-  );
-}
-
 function StarRating({
   value,
   onChange,
-  size = 28,
 }: {
   value: number;
   onChange: (n: number) => void;
-  size?: number;
 }) {
   const [hover, setHover] = useState(0);
   const active = hover || value;
+  const size = 28;
 
   return (
     <div className="flex gap-1.5">

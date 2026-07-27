@@ -41,7 +41,7 @@ const firebaseConfig = {
 export const FIREBASE_CONFIG_MISSING_MESSAGE =
   "Firebase web config is missing. Add VITE_FIREBASE_* values to web/.env.";
 
-export function isFirebaseConfigured() {
+function isFirebaseConfigured() {
   if (AUTH_TEST_MODE) return true;
   return Boolean(
     firebaseConfig.apiKey &&

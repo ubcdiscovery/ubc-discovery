@@ -85,16 +85,8 @@ export function OnboardingDesktopShell({
   kicker,
   title,
   subtitle,
-  sideTitle = (
-    <>
-      Welcome.
-      <br />
-      Let&rsquo;s set you up.
-    </>
-  ),
-  sideBody = "This takes about a minute. We use what you tell us to rank your For you feed.",
   canContinue,
-  ctaLabel = "Continue",
+  ctaLabel,
   onContinue,
   onBack,
   onSkip,
@@ -105,10 +97,8 @@ export function OnboardingDesktopShell({
   kicker: string;
   title: React.ReactNode;
   subtitle?: React.ReactNode;
-  sideTitle?: React.ReactNode;
-  sideBody?: string;
   canContinue: boolean;
-  ctaLabel?: string;
+  ctaLabel: string;
   onContinue: () => void;
   onBack?: () => void;
   onSkip?: () => void;
@@ -139,13 +129,14 @@ export function OnboardingDesktopShell({
         </div>
 
         <h2 className="mt-9 font-display font-extrabold text-6xl text-bg tracking-tighter leading-none">
-          {sideTitle}
+          Welcome.
+          <br />
+          Let&rsquo;s set you up.
         </h2>
-        {sideBody && (
-          <p className="mt-3.5 text-base/relaxed text-bg opacity-70 max-w-95">
-            {sideBody}
-          </p>
-        )}
+        <p className="mt-3.5 text-base/relaxed text-bg opacity-70 max-w-95">
+          This takes about a minute. We use what you tell us to rank your For
+          you feed.
+        </p>
 
         <div className="mt-auto pt-6 font-mono text-xs text-bg opacity-50 tracking-wide uppercase">
           You can change all of this on your profile later

@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigate } from "react-router";
+import { useLoaderData } from "react-router";
 import type { Route } from "./+types/event-detail";
 import { ApiError, api, type ApiEvent } from "~/lib/api";
 import { fmtDay, fmtRange, fmtTime, fmtMonth, fmtDate02 } from "~/lib/date";

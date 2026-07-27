@@ -113,7 +113,7 @@ async function authenticatedApiFetch<T>(
 
 export const api = {
   events: {
-    list: (skip = 0, limit = 50) =>
+    list: (skip: number, limit: number) =>
       apiFetch<EventListResponse>(`/events?skip=${skip}&limit=${limit}`),
     get: (id: string) => apiFetch<ApiEvent>(`/events/${id}`),
     search: (q: string, limit = 10) =>

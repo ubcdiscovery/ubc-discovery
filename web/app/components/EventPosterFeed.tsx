@@ -17,12 +17,12 @@ function EventDate({ event }: { event: ApiEvent }) {
 
 function Poster({
   event,
-  priority = false,
-  className = "",
+  priority,
+  className,
 }: {
   event: ApiEvent;
-  priority?: boolean;
-  className?: string;
+  priority: boolean;
+  className: string;
 }) {
   return (
     <div

@@ -5,7 +5,7 @@ export function SourceBadge({
   host,
 }: {
   sourceLabel: string;
-  host?: string | null;
+  host: string | null;
 }) {
   const m = SOURCE_DISPLAY[sourceLabel] ?? { code: "?", tone: "var(--color-muted)" };
   const displayName =

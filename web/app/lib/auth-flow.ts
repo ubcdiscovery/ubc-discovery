@@ -2,7 +2,7 @@ const AUTH_FLOW_KEY = "ubc-discovery-auth-flow";
 const AUTH_FLOW_VERSION = 1;
 const AUTH_FLOW_TTL_MS = 24 * 60 * 60 * 1000;
 
-export type PostAuthActionStatus = "pending" | "failed";
+type PostAuthActionStatus = "pending" | "failed";
 
 export type PostAuthAction = {
   id: string;
@@ -26,7 +26,7 @@ export type AuthFlow = {
   updatedAt: number;
 };
 
-export type NewPostAuthAction = {
+type NewPostAuthAction = {
   type: string;
   payload: unknown;
 };
@@ -94,7 +94,7 @@ function isAuthFlowNotice(value: unknown): value is AuthFlowNotice {
   );
 }
 
-export function validateAuthReturnTo(candidate: string | null | undefined) {
+function validateAuthReturnTo(candidate: string | null | undefined) {
   if (!candidate || typeof window === "undefined") return null;
   if (!candidate.startsWith("/") || candidate.startsWith("//")) return null;
   try {
@@ -147,7 +147,7 @@ export function readAuthFlow(): AuthFlow | null {
   const storage = getSessionStorage();
   if (!storage) return null;
 
-  let storedValue: string | null = null;
+  let storedValue: string | null;
   try {
     storedValue = storage.getItem(AUTH_FLOW_KEY);
   } catch {
@@ -279,6 +279,6 @@ export function completeAuthAction(
   };
 }
 
-export function clearAuthFlow() {
+function clearAuthFlow() {
   removeStorageItem(AUTH_FLOW_KEY);
 }

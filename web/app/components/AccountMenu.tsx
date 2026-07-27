@@ -3,13 +3,7 @@ import { FiChevronDown, FiLogOut, FiUser } from "react-icons/fi";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth";
 
-export function AccountMenu({
-  memberName,
-  compact = false,
-}: {
-  memberName: string;
-  compact?: boolean;
-}) {
+export function AccountMenu({ memberName }: { memberName: string }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -51,40 +45,28 @@ export function AccountMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className={
-          compact
-            ? "flex size-6 items-center justify-center bg-accent text-white font-display text-xs font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            : "flex items-center gap-2 border border-transparent px-1.5 py-1 hover:border-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        }
+        className="flex items-center gap-2 border border-transparent px-1.5 py-1 hover:border-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {avatarUrl ? (
           <img
             src={avatarUrl}
             alt={memberName}
-            className={`object-cover ${compact ? "size-6" : "size-7"}`}
+            className="size-7 object-cover"
           />
         ) : (
-          <span
-            className={`flex items-center justify-center bg-linear-to-br from-accent to-[#7990FF] text-white font-display font-extrabold ${
-              compact ? "size-6 text-xs" : "size-7 text-sm"
-            }`}
-          >
+          <span className="flex size-7 items-center justify-center bg-linear-to-br from-accent to-[#7990FF] font-display text-sm font-extrabold text-white">
             {initial}
           </span>
         )}
-        {!compact && (
-          <>
-            <span className="max-w-35 truncate font-mono text-xs font-semibold">
-              {memberName}
-            </span>
-            <FiChevronDown
-              aria-hidden="true"
-              className={`size-3.5 text-muted transition-transform ${
-                open ? "rotate-180" : ""
-              }`}
-            />
-          </>
-        )}
+        <span className="max-w-35 truncate font-mono text-xs font-semibold">
+          {memberName}
+        </span>
+        <FiChevronDown
+          aria-hidden="true"
+          className={`size-3.5 text-muted transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
       </button>
 
       {open && (

@@ -12,14 +12,13 @@ type SaveMutationInput = {
   event?: ApiEvent;
 };
 
-const emptySavedEventIds = new Set<string>();
 const emptySavedEvents: SavedEventListItem[] = [];
 
 function savedEventsQueryKey(userId: string | null | undefined) {
   return ["saved-events", userId ?? "anonymous"] as const;
 }
 
-export function useSavedEventsList() {
+function useSavedEventsList() {
   const { state } = useAuth();
   const userId = state.status === "member" ? state.profile.id : null;
 

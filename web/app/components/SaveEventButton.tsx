@@ -10,13 +10,12 @@ import { startAuthFlow } from "~/lib/auth-flow";
 
 type SaveEventButtonProps = {
   eventId: string;
-  event?: ApiEvent;
-  variant?: "icon" | "largeIcon" | "bar" | "wide";
+  event: ApiEvent;
+  variant: "largeIcon" | "bar" | "wide";
   className?: string;
 };
 
 const variantClasses = {
-  icon: "size-8 p-0 text-base",
   largeIcon: "size-11 p-0 text-base",
   bar: "px-3.5 py-3 text-xs",
   wide: "w-full py-3.5 text-xs",
@@ -25,7 +24,7 @@ const variantClasses = {
 export function SaveEventButton({
   eventId,
   event,
-  variant = "icon",
+  variant,
   className = "",
 }: SaveEventButtonProps) {
   const navigate = useNavigate();
@@ -62,7 +61,7 @@ export function SaveEventButton({
   }
 
   const text =
-    variant === "icon" || variant === "largeIcon"
+    variant === "largeIcon"
       ? saved
         ? "♥"
         : "♡"

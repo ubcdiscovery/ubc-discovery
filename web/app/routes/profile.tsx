@@ -31,18 +31,12 @@ function Section({
 function KV({
   k,
   v,
-  danger,
 }: {
   k: string;
   v: string;
-  danger?: boolean;
 }) {
   return (
-    <div
-      className={`flex justify-between items-center py-2 border-b border-dotted border-rule-soft font-mono text-xs tracking-wide ${
-        danger ? "text-[#D63A2E]" : "text-ink"
-      }`}
-    >
+    <div className="flex items-center justify-between border-b border-dotted border-rule-soft py-2 font-mono text-xs tracking-wide text-ink">
       <span className="text-muted">{k}</span>
       <span className="font-bold">{v}</span>
     </div>
