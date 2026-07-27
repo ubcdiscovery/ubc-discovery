@@ -78,7 +78,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     };
   }, [query, isOpen]);
 
-  const handleKeyDown = useCallback(
+  const handleDialogKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -98,7 +98,14 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
           e.preventDefault();
           first.focus();
         }
-      } else if (e.key === "ArrowDown") {
+      }
+    },
+    [onClose],
+  );
+
+  const handleComboboxKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "ArrowDown") {
         e.preventDefault();
         setActiveIndex((prev) => Math.min(prev + 1, results.length - 1));
       } else if (e.key === "ArrowUp") {
@@ -109,6 +116,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
         activeIndex >= 0 &&
         results[activeIndex]
       ) {
+        e.preventDefault();
         onClose();
         navigate(`/events/${results[activeIndex].id}`);
       }
@@ -132,7 +140,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
         aria-modal="true"
         aria-labelledby="event-search-title"
         className="w-full sm:max-w-[600px] sm:mx-auto sm:mt-16"
-        onKeyDown={handleKeyDown}
+        onKeyDown={handleDialogKeyDown}
       >
         <h2 id="event-search-title" className="sr-only">
           Search events
@@ -146,6 +154,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleComboboxKeyDown}
               placeholder="Search events, clubs, locations…"
               className="flex-1 bg-transparent font-mono text-[13px] text-ink placeholder:text-muted tracking-wide outline-none"
               role="combobox"
