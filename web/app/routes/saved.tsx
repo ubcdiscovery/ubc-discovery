@@ -22,7 +22,7 @@ function VisitorSaved() {
           <div className="font-mono text-[10px] text-muted tracking-wider uppercase">
             Your shortlist
           </div>
-          <h1 className="mt-1 font-display font-extrabold text-[40px] text-ink tracking-tight leading-none">
+          <h1 className="mt-1 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
             Saved
           </h1>
         </div>
@@ -31,12 +31,12 @@ function VisitorSaved() {
             <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
               MEMBER FEATURE
             </div>
-            <h2 className="mt-2 mb-1.5 font-display font-extrabold text-[32px] text-ink tracking-tight leading-none">
+            <h2 className="mt-2 mb-1.5 font-display font-extrabold text-3xl text-ink tracking-tight leading-none">
               BUILD A
               <br />
               SHORTLIST.
             </h2>
-            <p className="mt-3 text-[13.5px] text-ink-soft leading-relaxed">
+            <p className="mt-3 text-sm/relaxed text-ink-soft">
               Keep events you&rsquo;re thinking about in one place. Members also
               get a re-ranked For You feed weighted to their interests, saves,
               and ratings.
@@ -61,7 +61,7 @@ function VisitorSaved() {
             <h1 className="mt-3 mb-2 font-display font-extrabold text-[56px] text-ink tracking-tighter leading-[0.92]">
               Build a shortlist.
             </h1>
-            <p className="mt-3.5 text-[15.5px] text-ink-soft leading-relaxed max-w-135">
+            <p className="mt-3.5 text-base/relaxed text-ink-soft max-w-135">
               Save events you&rsquo;re considering and they&rsquo;ll wait here.
               Saving also nudges your <em>For you</em> feed toward what
               you&rsquo;re actually into.
@@ -98,7 +98,7 @@ function RateNudgeBanner({
         </div>
         <div
           className={`font-display font-bold text-white tracking-tight leading-tight ${
-            mobile ? "text-[17px]" : "text-[19px]"
+            mobile ? "text-lg" : "text-xl"
           }`}
         >
           You have <span className="text-hi">{count} events</span> ready to
@@ -282,14 +282,14 @@ function EmptySavedState({ tab, mobile }: { tab: "upcoming" | "past"; mobile?: b
       <div className={`${mobile ? "text-center py-10" : "py-16 text-left"}`}>
         <h3
           className={`font-display font-extrabold text-ink tracking-tight leading-none ${
-            mobile ? "text-[28px]" : "text-4xl"
+            mobile ? "text-3xl" : "text-4xl"
           }`}
         >
           Your shortlist is empty.
         </h3>
         <p
           className={`mt-2.5 text-ink-soft leading-relaxed ${
-            mobile ? "text-sm" : "text-[15px] text-muted max-w-120"
+            mobile ? "text-sm" : "text-base text-muted max-w-120"
           }`}
         >
           Tap the ♡ on any event on Discover to keep it here. Saving also tunes
@@ -311,14 +311,14 @@ function EmptySavedState({ tab, mobile }: { tab: "upcoming" | "past"; mobile?: b
     <div className={`${mobile ? "text-center py-10" : "py-16 text-left"}`}>
       <h3
         className={`font-display font-extrabold text-ink tracking-tight leading-none ${
-          mobile ? "text-[28px]" : "text-4xl"
+          mobile ? "text-3xl" : "text-4xl"
         }`}
       >
         No past saved events yet.
       </h3>
       <p
         className={`mt-2.5 text-ink-soft leading-relaxed ${
-          mobile ? "text-sm" : "text-[15px] text-muted max-w-130"
+          mobile ? "text-sm" : "text-base text-muted max-w-130"
         }`}
       >
         Events you saved will move here after their date passes.
@@ -377,7 +377,7 @@ function MemberSaved() {
             <div className="font-mono text-[10px] text-muted tracking-wider uppercase">
               Your shortlist & history
             </div>
-            <h1 className="mt-1 font-display font-extrabold text-[40px] text-ink tracking-tight leading-none">
+            <h1 className="mt-1 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
               Saved
             </h1>
           </div>
@@ -444,7 +444,7 @@ function MemberSaved() {
               <div className="font-mono text-[11px] text-muted tracking-wider uppercase mb-1.5">
                 Your shortlist & history
               </div>
-              <h1 className="font-display font-extrabold text-[52px] text-ink tracking-[-1.5px] leading-[0.92]">
+              <h1 className="font-display font-extrabold text-5xl text-ink tracking-[-1.5px] leading-[0.92]">
                 Saved.
               </h1>
             </div>
@@ -488,7 +488,7 @@ function MemberSaved() {
               Loading saved events...
             </div>
           ) : error ? (
-            <div className="py-16 text-[15px] text-[#D63A2E]">
+            <div className="py-16 text-base text-[#D63A2E]">
               {error instanceof Error ? error.message : "Could not load saved events."}
             </div>
           ) : (

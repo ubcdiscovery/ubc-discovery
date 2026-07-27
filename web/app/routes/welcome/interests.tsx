@@ -113,7 +113,7 @@ export default function OnboardingInterests() {
             <button
               key={v.id}
               onClick={() => toggle(v.id)}
-              className={`py-3.5 px-3 border-none text-left font-display font-bold text-[17px] tracking-tight cursor-pointer flex items-center gap-2.5 ${
+              className={`py-3.5 px-3 border-none text-left font-display font-bold text-lg tracking-tight cursor-pointer flex items-center gap-2.5 ${
                 on ? "bg-ink text-bg" : "bg-transparent text-ink"
               }`}
               style={{
@@ -160,7 +160,7 @@ export default function OnboardingInterests() {
             <br />
             into?
           </h1>
-          <p className="text-[13.5px] text-ink-soft leading-relaxed">
+          <p className="text-sm/relaxed text-ink-soft">
             This helps us rank your <em>For you</em> feed around what you
             actually like.
           </p>

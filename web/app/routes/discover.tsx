@@ -256,7 +256,7 @@ export default function Discover() {
               <h3 className="font-display text-4xl font-extrabold leading-none tracking-tight text-ink">
                 Nothing on this board.
               </h3>
-              <p className="mx-auto mt-3 max-w-md text-[15px] text-muted">
+              <p className="mx-auto mt-3 max-w-md text-base text-muted">
                 Loosen a filter or check back tomorrow.
               </p>
               <button

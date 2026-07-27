@@ -71,7 +71,7 @@ function CardDetails({ event }: { event: ApiEvent }) {
   return (
     <div className="min-w-0">
       <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
-      <h2 className="mt-2 max-w-[25ch] font-display text-[25px] font-extrabold leading-[1.02] tracking-tight text-balance lg:text-[30px]">
+      <h2 className="mt-2 max-w-[25ch] font-display text-2xl font-extrabold leading-[1.02] tracking-tight text-balance lg:text-3xl">
         {event.title}
       </h2>
       <p className="mt-3 font-mono text-[10.5px] tracking-wide text-muted uppercase">

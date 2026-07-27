@@ -53,7 +53,7 @@ export function AccountMenu({
         onClick={() => setOpen((value) => !value)}
         className={
           compact
-            ? "flex size-6 items-center justify-center bg-accent text-white font-display text-[12px] font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            ? "flex size-6 items-center justify-center bg-accent text-white font-display text-xs font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             : "flex items-center gap-2 border border-transparent px-1.5 py-1 hover:border-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         }
       >
@@ -66,7 +66,7 @@ export function AccountMenu({
         ) : (
           <span
             className={`flex items-center justify-center bg-linear-to-br from-accent to-[#7990FF] text-white font-display font-extrabold ${
-              compact ? "size-6 text-[12px]" : "size-7 text-[13px]"
+              compact ? "size-6 text-xs" : "size-7 text-sm"
             }`}
           >
             {initial}

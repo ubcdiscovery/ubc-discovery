@@ -47,7 +47,7 @@ export default function OnboardingName() {
           <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
             A few quick things
           </div>
-          <h1 className="my-2 font-display font-extrabold text-[38px] text-ink tracking-tight leading-none">
+          <h1 className="my-2 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
             What should we call you?
           </h1>
 
@@ -59,7 +59,7 @@ export default function OnboardingName() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="What your friends call you"
-              className="w-full px-3.5 py-4 border border-ink bg-surface font-display text-[22px] font-bold text-ink tracking-tight outline-none"
+              className="w-full px-3.5 py-4 border border-ink bg-surface font-display text-2xl font-bold text-ink tracking-tight outline-none"
             />
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function OnboardingName() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="What your friends call you"
-            className="w-full px-3.5 py-3 border border-ink bg-surface font-display text-[22px] font-bold text-ink tracking-tight outline-none"
+            className="w-full px-3.5 py-3 border border-ink bg-surface font-display text-2xl font-bold text-ink tracking-tight outline-none"
           />
         </div>
       </OnboardingDesktopShell>

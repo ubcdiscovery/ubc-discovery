@@ -156,7 +156,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleComboboxKeyDown}
               placeholder="Search events, clubs, locations…"
-              className="flex-1 bg-transparent font-mono text-[13px] text-ink placeholder:text-muted tracking-wide outline-none"
+              className="flex-1 bg-transparent font-mono text-base text-ink placeholder:text-muted tracking-wide outline-none"
               role="combobox"
               aria-autocomplete="list"
               aria-controls="event-search-results"

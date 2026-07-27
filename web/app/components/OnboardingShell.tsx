@@ -142,7 +142,7 @@ export function OnboardingDesktopShell({
           {sideTitle}
         </h2>
         {sideBody && (
-          <p className="mt-3.5 text-[15px] text-bg opacity-70 leading-relaxed max-w-95">
+          <p className="mt-3.5 text-base/relaxed text-bg opacity-70 max-w-95">
             {sideBody}
           </p>
         )}
@@ -177,11 +177,11 @@ export function OnboardingDesktopShell({
           <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
             {kicker}
           </div>
-          <h1 className="my-2 font-display font-extrabold text-[46px] text-ink tracking-tighter leading-none">
+          <h1 className="my-2 font-display font-extrabold text-5xl text-ink tracking-tighter leading-none">
             {title}
           </h1>
           {subtitle && (
-            <p className="mb-7 text-[15px] text-ink-soft leading-relaxed">
+            <p className="mb-7 text-base/relaxed text-ink-soft">
               {subtitle}
             </p>
           )}

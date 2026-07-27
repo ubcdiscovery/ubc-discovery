@@ -64,7 +64,7 @@ function VisitorProfile() {
           <br />
           yours.
         </h1>
-        <p className="mt-3.5 text-[14.5px] text-ink-soft leading-relaxed">
+        <p className="mt-3.5 text-sm/relaxed text-ink-soft">
           Save events. Rate them. Unlock the re-ranked For You feed.
         </p>
         <Link
@@ -84,7 +84,7 @@ function VisitorProfile() {
           <h1 className="mt-3 mb-2 font-display font-extrabold text-[56px] text-ink tracking-tighter leading-[0.92]">
             Sign in for a profile.
           </h1>
-          <p className="mt-3.5 text-[15.5px] text-ink-soft leading-relaxed max-w-135">
+          <p className="mt-3.5 text-base/relaxed text-ink-soft max-w-135">
             Members get a profile with their interests and academic context, a
             saved-event shortlist, and a re-ranked <em>For you</em> feed.
           </p>
@@ -191,7 +191,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
         <div className="px-4.5 py-5 border-b-2 border-ink flex items-center gap-3.5">
           <div className="relative shrink-0">
             <div
-              className="size-19 border-[1.5px] border-ink flex items-center justify-center font-display font-extrabold text-[30px] text-white tracking-tight"
+              className="size-19 border-[1.5px] border-ink flex items-center justify-center font-display font-extrabold text-3xl text-white tracking-tight"
               style={{
                 background: avatar
                   ? `url(${avatar}) center/cover`
@@ -251,15 +251,15 @@ function MemberProfile({ user }: { user: UserResponse }) {
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full p-3 border border-ink bg-surface font-display text-[22px] font-bold text-ink tracking-tight outline-none"
+                className="w-full p-3 border border-ink bg-surface font-display text-2xl font-bold text-ink tracking-tight outline-none"
               />
             ) : (
-              <h1 className="font-display font-extrabold text-[28px] text-ink tracking-tight leading-none">
+              <h1 className="font-display font-extrabold text-3xl text-ink tracking-tight leading-none">
                 {name}
               </h1>
             )}
             {!editing && (
-              <div className="mt-1.5 text-[13px] text-ink-soft">
+              <div className="mt-1.5 text-sm text-ink-soft">
                 {[major, year].filter(Boolean).join(" · ") || "Profile ready"}
               </div>
             )}
@@ -346,7 +346,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
         <Section label="Account">
           <KV k="Email" v={user.email} />
           <KV k="UBC verified" v={user.ubc_verified ? "Yes" : "No"} />
-          {error && <p className="mt-2 text-[12px] text-[#D63A2E] font-mono">{error}</p>}
+          {error && <p className="mt-2 text-xs text-[#D63A2E] font-mono">{error}</p>}
         </Section>
 
         {editing && (
@@ -441,7 +441,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                     <input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full p-3 border border-ink bg-surface font-display text-[22px] font-bold text-ink tracking-tight outline-none"
+                      className="w-full p-3 border border-ink bg-surface font-display text-2xl font-bold text-ink tracking-tight outline-none"
                     />
                   </div>
                 </div>
@@ -450,7 +450,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                   <h1 className="font-display font-extrabold text-[64px] text-ink tracking-tighter leading-none">
                     {name}.
                   </h1>
-                  <div className="mt-2 flex gap-3.5 items-center text-[14.5px] text-ink-soft">
+                  <div className="mt-2 flex gap-3.5 items-center text-sm text-ink-soft">
                     <span>
                       {[major, year].filter(Boolean).join(" · ") || "Profile ready"}
                     </span>
@@ -559,7 +559,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
             <Section label="Account">
               <KV k="Email" v={user.email} />
               <KV k="UBC verified" v={user.ubc_verified ? "Yes" : "No"} />
-              {error && <p className="mt-2 text-[12px] text-[#D63A2E] font-mono">{error}</p>}
+              {error && <p className="mt-2 text-xs text-[#D63A2E] font-mono">{error}</p>}
             </Section>
           </div>
         </div>

@@ -21,7 +21,7 @@ export function EventCard({ event }: { event: ApiEvent }) {
                 <div className="font-mono text-[11px] text-muted tracking-wider uppercase">
                   {fmtMonth(d)}
                 </div>
-                <div className="font-display text-[22px] font-bold leading-none text-ink tabular-nums md:mt-0.5 md:text-[32px]">
+                <div className="font-display text-2xl font-bold leading-none text-ink tabular-nums md:mt-0.5 md:text-3xl">
                   {fmtDate02(d)}
                 </div>
                 <span
@@ -42,7 +42,7 @@ export function EventCard({ event }: { event: ApiEvent }) {
               sourceLabel={event.source_label}
               host={event.club_name}
             />
-            <h3 className="mb-1 mt-1.5 max-w-[30ch] font-display text-[21px] font-bold leading-tight tracking-tight text-ink text-balance md:max-w-none">
+            <h3 className="mb-1 mt-1.5 max-w-[30ch] font-display text-xl/tight font-bold tracking-tight text-ink text-balance md:max-w-none">
               {event.title}
             </h3>
             <div className="mb-2 font-mono text-[11px] tracking-wide text-muted uppercase">

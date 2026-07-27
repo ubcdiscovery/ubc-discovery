@@ -11,7 +11,7 @@ export function meta() {
 }
 
 function FirebaseConfigWarning({ message }: { message: string }) {
-  return <p className="text-[12px] text-[#D63A2E] font-mono">{message}</p>;
+  return <p className="text-xs text-[#D63A2E] font-mono">{message}</p>;
 }
 
 export default function SignIn() {
@@ -169,7 +169,7 @@ export default function SignIn() {
               <span className="px-1.5 py-0.5 bg-ink text-bg font-mono text-[11px] font-bold tracking-wider">
                 UBC
               </span>
-              <span className="font-display text-[17px] font-bold text-ink tracking-tight">
+              <span className="font-display text-lg font-bold text-ink tracking-tight">
                 DISCOVERY
               </span>
             </Link>
@@ -187,7 +187,7 @@ export default function SignIn() {
             <br />
             yours.
           </h1>
-          <p className="mt-3.5 text-[14.5px] text-ink-soft leading-relaxed">
+          <p className="mt-3.5 text-sm/relaxed text-ink-soft">
             Save events. Rate them. Unlock the re-ranked For You feed.
           </p>
 
@@ -219,7 +219,7 @@ export default function SignIn() {
                     placeholder="you@anywhere.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="px-3.5 py-3 border border-ink bg-surface font-mono text-[13px] text-ink outline-none"
+                    className="px-3.5 py-3 border border-ink bg-surface font-mono text-base text-ink outline-none"
                   />
                   <button
                     type="submit"
@@ -249,7 +249,7 @@ export default function SignIn() {
                   placeholder="123456"
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  className="px-3.5 py-3 border border-ink bg-surface font-mono text-[13px] text-ink outline-none tracking-[0.5em] text-center"
+                  className="px-3.5 py-3 border border-ink bg-surface font-mono text-base text-ink outline-none tracking-[0.5em] text-center"
                 />
                 <p className="font-mono text-[11px] text-muted">
                   {codeExpired
@@ -287,7 +287,7 @@ export default function SignIn() {
             )}
 
             {error && (
-              <p className="text-[12px] text-[#D63A2E] font-mono">{error}</p>
+              <p className="text-xs text-[#D63A2E] font-mono">{error}</p>
             )}
             {firebaseConfigError && !error && (
               <FirebaseConfigWarning message={firebaseConfigError} />
@@ -318,7 +318,7 @@ export default function SignIn() {
             <br />
             Every event on campus.
           </h2>
-          <p className="mt-3.5 text-[15px] text-bg opacity-70 leading-relaxed max-w-95">
+          <p className="mt-3.5 text-base/relaxed text-bg opacity-70 max-w-95">
             UBC Discovery pulls events from official UBC channels, AMS clubs,
             and community organizers — filterable by what you&rsquo;re into.
           </p>
@@ -333,7 +333,7 @@ export default function SignIn() {
             <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
               Sign in
             </div>
-            <h1 className="my-2 font-display font-extrabold text-[46px] text-ink tracking-tighter leading-none">
+            <h1 className="my-2 font-display font-extrabold text-5xl text-ink tracking-tighter leading-none">
               Sign in to save events,
               <br />
               rate them, and tune your feed.
@@ -450,7 +450,7 @@ export default function SignIn() {
               )}
 
               {error && (
-                <p className="text-[12px] text-[#D63A2E] font-mono">{error}</p>
+                <p className="text-xs text-[#D63A2E] font-mono">{error}</p>
               )}
               {firebaseConfigError && !error && (
                 <FirebaseConfigWarning message={firebaseConfigError} />

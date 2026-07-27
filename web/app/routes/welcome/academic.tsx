@@ -145,12 +145,12 @@ export default function OnboardingAcademic() {
           <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
             Optional · skippable
           </div>
-          <h1 className="mt-1.5 mb-2 font-display font-extrabold text-[34px] text-ink tracking-tight leading-none">
+          <h1 className="mt-1.5 mb-2 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
             Where are you
             <br />
             in your degree?
           </h1>
-          <p className="text-[13.5px] text-ink-soft leading-relaxed">
+          <p className="text-sm/relaxed text-ink-soft">
             This helps us rank first-year, upper-year, and faculty-specific
             events more appropriately.
           </p>
@@ -171,7 +171,7 @@ export default function OnboardingAcademic() {
                 value={major}
                 onChange={(e) => setMajor(e.target.value)}
                 placeholder="e.g. Cognitive Systems, Mechanical Engineering"
-                className="w-full px-3.5 py-3 border border-ink bg-surface font-body text-[14.5px] text-ink outline-none"
+                className="w-full px-3.5 py-3 border border-ink bg-surface font-body text-base text-ink outline-none"
               />
             </div>
             <div>

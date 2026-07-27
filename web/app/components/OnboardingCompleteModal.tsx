@@ -92,7 +92,7 @@ export function OnboardingCompleteModal() {
         >
           You&rsquo;re in, {notice.preferredName}.
         </h2>
-        <p className="mt-4 text-sm/relaxed text-ink-soft md:text-[15px]">
+        <p className="mt-4 text-sm/relaxed text-ink-soft md:text-base">
           Your For you feed now reflects your interests and will keep improving
           as you save and rate events.
         </p>

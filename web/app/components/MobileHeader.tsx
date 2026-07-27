@@ -21,7 +21,7 @@ export function MobileHeader({
           <span className="px-1.5 py-0.5 bg-ink text-bg font-mono text-[11px] font-bold tracking-wider">
             UBC
           </span>
-          <span className="truncate font-display text-[17px] font-bold text-ink tracking-tight">
+          <span className="truncate font-display text-lg font-bold text-ink tracking-tight">
             DISCOVERY
           </span>
         </Link>
