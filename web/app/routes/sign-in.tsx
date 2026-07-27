@@ -58,7 +58,7 @@ export default function SignIn() {
     return false;
   }
 
-  async function handleSendOtp(event: React.FormEvent) {
+  async function handleSendOtp(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return;
@@ -100,7 +100,7 @@ export default function SignIn() {
     }
   }
 
-  async function handleVerifyOtp(event: React.FormEvent) {
+  async function handleVerifyOtp(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!/^\d{6}$/.test(code)) {
       setError("Enter the six-digit code from your email.");
