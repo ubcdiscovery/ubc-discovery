@@ -26,7 +26,7 @@ test("shows a retryable error when the Discover feed cannot load", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(
-    page.getByText(mockEvent.title).filter({ visible: true })
+    page.getByRole("heading", { name: mockEvent.title })
   ).toBeVisible();
 });
 
