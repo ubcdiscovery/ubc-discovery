@@ -39,7 +39,7 @@ function KV({
 }) {
   return (
     <div
-      className={`flex justify-between items-center py-2 border-b border-dotted border-rule-soft font-mono text-[11.5px] tracking-wide ${
+      className={`flex justify-between items-center py-2 border-b border-dotted border-rule-soft font-mono text-xs tracking-wide ${
         danger ? "text-[#D63A2E]" : "text-ink"
       }`}
     >

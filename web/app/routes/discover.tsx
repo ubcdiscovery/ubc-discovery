@@ -81,7 +81,7 @@ function RowSelect({
   return (
     <div
       onClick={onClick}
-      className={`py-1 cursor-pointer font-mono text-[11.5px] tracking-wide flex items-center gap-2 ${
+      className={`py-1 cursor-pointer font-mono text-xs tracking-wide flex items-center gap-2 ${
         active ? "font-bold text-ink" : "font-normal text-muted"
       }`}
     >

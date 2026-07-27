@@ -53,7 +53,7 @@ export function TopNav({
         <button
           type="button"
           onClick={onOpenSearch}
-          className="relative min-w-65 cursor-pointer border border-ink bg-surface px-3 py-1.5 pl-8 text-left font-mono text-[11.5px] tracking-wide text-muted uppercase transition-colors hover:bg-accent-soft hover:text-ink"
+          className="relative min-w-65 cursor-pointer border border-ink bg-surface px-3 py-1.5 pl-8 text-left font-mono text-xs tracking-wide text-muted uppercase transition-colors hover:bg-accent-soft hover:text-ink"
           aria-label="Search events"
           aria-haspopup="dialog"
         >
