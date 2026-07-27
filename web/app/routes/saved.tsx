@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { EventCardMedium } from "~/components/EventCard";
+import { EventCard } from "~/components/EventCard";
 import { VibeTag } from "~/components/VibeTag";
 import type { ApiEvent } from "~/lib/api";
 import { MemberBoundary } from "~/components/MemberBoundary";
@@ -339,7 +339,7 @@ function SavedEventList({
   return (
     <div>
       {events.map((event) => (
-        <EventCardMedium key={event.id} event={event} />
+        <EventCard key={event.id} event={event} />
       ))}
     </div>
   );
@@ -427,7 +427,7 @@ function MemberSaved() {
           ) : activeEvents.length > 0 ? (
             <div>
               {activeEvents.map((event) => (
-                <EventCardMedium key={event.id} event={event} />
+                <EventCard key={event.id} event={event} />
               ))}
             </div>
           ) : (

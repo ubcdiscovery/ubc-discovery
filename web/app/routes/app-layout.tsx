@@ -11,7 +11,7 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-dvh bg-bg text-ink flex flex-col">
-      <MobileHeader memberName={memberName} />
+      <MobileHeader />
       <TopNav memberName={memberName} />
       <main className="flex flex-1 flex-col pb-24 md:pb-0">
         <Outlet />

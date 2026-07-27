@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router";
 import { AccountMenu } from "~/components/AccountMenu";
+import { NavIconButton } from "~/components/NavIconButton";
 import { SearchOverlay } from "~/components/SearchOverlay";
 import { useTheme } from "~/lib/theme";
 
 const NAV_ITEMS = [
   { id: "discover", label: "Discover", to: "/" },
   { id: "saved", label: "Saved", to: "/saved" },
-  { id: "organizers", label: "For Organizers", to: "/organizers" },
 ];
 
 export function TopNav({
@@ -31,7 +31,7 @@ export function TopNav({
 
   return (
     <>
-      <header className="hidden md:flex sticky top-0 z-50 px-8 py-3 border-b-2 border-ink items-center justify-between bg-bg">
+      <header className="sticky top-0 z-50 hidden h-14 items-center justify-between border-b-2 border-ink bg-bg px-8 md:flex">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2.5">
             <div className="w-[30px] h-[30px] bg-ink text-bg flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
@@ -62,21 +62,30 @@ export function TopNav({
         </div>
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={() => setSearchOpen(true)}
-            className="px-3 py-1.5 pl-8 border border-ink font-mono text-[11.5px] text-muted tracking-wide uppercase relative min-w-[260px] bg-surface text-left cursor-pointer hover:border-accent hover:text-ink transition-colors"
+            className="relative min-w-[260px] cursor-pointer border border-ink bg-surface px-3 py-1.5 pl-8 text-left font-mono text-[11.5px] tracking-wide text-muted uppercase transition-colors hover:bg-accent-soft hover:text-ink"
+            aria-label="Search events"
+            aria-haspopup="dialog"
           >
             <span className="absolute left-3 top-1.5 font-mono text-accent">
               ⌕
             </span>
             Search · ⌘K
           </button>
-          <button
+          <Link
+            to="/organizers"
+            className="flex h-8 items-center px-2 font-mono text-[10.5px] font-semibold tracking-wide text-muted uppercase hover:text-ink"
+          >
+            For organizers
+          </Link>
+          <NavIconButton
             onClick={toggleTheme}
-            className="w-8 h-8 flex items-center justify-center border border-rule-soft text-muted hover:text-ink hover:border-ink transition-colors"
+            className="font-mono text-base leading-none"
             aria-label="Toggle theme"
           >
             {resolvedTheme === "dark" ? "☀" : "☾"}
-          </button>
+          </NavIconButton>
           {memberName ? (
             <AccountMenu memberName={memberName} />
           ) : (
