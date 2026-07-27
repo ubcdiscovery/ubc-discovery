@@ -32,7 +32,7 @@ export function RouteErrorState({
         </div>
 
         <div className="px-5 py-9 md:px-10 md:py-12">
-          <h1 className="max-w-2xl font-display font-extrabold text-4xl md:text-[64px] text-ink tracking-[-1.5px] md:tracking-[-2px] leading-[0.95] text-balance">
+          <h1 className="max-w-2xl font-display font-extrabold text-4xl md:text-6xl text-ink tracking-[-1.5px] md:tracking-[-2px] leading-[0.95] text-balance">
             {title}
           </h1>
           <p className="mt-5 max-w-xl text-base/relaxed text-ink-soft">

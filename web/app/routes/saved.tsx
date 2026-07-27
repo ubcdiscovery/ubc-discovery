@@ -58,7 +58,7 @@ function VisitorSaved() {
             <div className="font-mono text-[10.5px] text-accent font-bold tracking-wider uppercase">
               Member feature
             </div>
-            <h1 className="mt-3 mb-2 font-display font-extrabold text-[56px] text-ink tracking-tighter leading-[0.92]">
+            <h1 className="mt-3 mb-2 font-display font-extrabold text-6xl text-ink tracking-tighter leading-[0.92]">
               Build a shortlist.
             </h1>
             <p className="mt-3.5 text-base/relaxed text-ink-soft max-w-135">

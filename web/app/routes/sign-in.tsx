@@ -313,7 +313,7 @@ export default function SignIn() {
             </span>
           </Link>
 
-          <h2 className="mt-10 font-display font-extrabold text-[56px] text-bg tracking-tighter leading-none">
+          <h2 className="mt-10 font-display font-extrabold text-6xl text-bg tracking-tighter leading-none">
             One place.
             <br />
             Every event on campus.

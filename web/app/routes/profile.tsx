@@ -81,7 +81,7 @@ function VisitorProfile() {
           <div className="font-mono text-[10.5px] text-accent font-bold tracking-wider uppercase">
             Member feature
           </div>
-          <h1 className="mt-3 mb-2 font-display font-extrabold text-[56px] text-ink tracking-tighter leading-[0.92]">
+          <h1 className="mt-3 mb-2 font-display font-extrabold text-6xl text-ink tracking-tighter leading-[0.92]">
             Sign in for a profile.
           </h1>
           <p className="mt-3.5 text-base/relaxed text-ink-soft max-w-135">
@@ -375,7 +375,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
           <div className="max-w-270 mx-auto flex gap-7 items-center">
             <div className="relative shrink-0">
               <div
-                className="size-33 border-2 border-ink flex items-center justify-center font-display font-extrabold text-[56px] text-white tracking-tighter"
+                className="size-33 border-2 border-ink flex items-center justify-center font-display font-extrabold text-6xl text-white tracking-tighter"
                 style={{
                   background: avatar
                     ? `url(${avatar}) center/cover`
@@ -447,7 +447,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                 </div>
               ) : (
                 <>
-                  <h1 className="font-display font-extrabold text-[64px] text-ink tracking-tighter leading-none">
+                  <h1 className="font-display font-extrabold text-6xl text-ink tracking-tighter leading-none">
                     {name}.
                   </h1>
                   <div className="mt-2 flex gap-3.5 items-center text-sm text-ink-soft">
