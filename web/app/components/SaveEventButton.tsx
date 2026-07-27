@@ -2,10 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import type { ApiEvent } from "~/lib/api";
 import { useAuth } from "~/lib/auth";
-import {
-  useSavedEventIds,
-  useSavedEventMutations,
-} from "~/lib/saved-events-query";
+import { useSavedEventIds, useSavedEventMutations } from "~/lib/saved-events-query";
 import { startAuthFlow } from "~/lib/auth-flow";
 
 type SaveEventButtonProps = {
@@ -21,12 +18,7 @@ const variantClasses = {
   wide: "w-full py-3.5 text-xs",
 };
 
-export function SaveEventButton({
-  eventId,
-  event,
-  variant,
-  className = "",
-}: SaveEventButtonProps) {
+export function SaveEventButton({ eventId, event, variant, className = "" }: SaveEventButtonProps) {
   const navigate = useNavigate();
   const { state } = useAuth();
   const { data: savedEventIds } = useSavedEventIds();
@@ -86,9 +78,7 @@ export function SaveEventButton({
       onClick={handleClick}
       disabled={pending}
       className={`inline-flex items-center justify-center border font-mono font-bold tracking-wider uppercase cursor-pointer disabled:opacity-60 ${
-        saved
-          ? "border-accent bg-accent text-white"
-          : "border-ink bg-bg text-ink"
+        saved ? "border-accent bg-accent text-on-color" : "border-ink bg-bg text-ink"
       } ${variantClasses[variant]} ${className}`}
     >
       {text}

@@ -68,7 +68,7 @@ export function OnboardingFooter({
           disabled={!canContinue}
           className={`flex-1 py-3 px-4 border font-mono text-xs font-bold tracking-wide uppercase ${
             canContinue
-              ? "border-accent bg-accent text-white cursor-pointer"
+              ? "border-accent bg-accent text-on-color cursor-pointer"
               : "border-rule-soft bg-rule-soft text-muted cursor-not-allowed"
           }`}
         >
@@ -105,15 +105,13 @@ export function OnboardingDesktopShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="hidden md:grid grid-cols-[5fr_7fr] min-h-screen bg-bg text-ink font-body">
-      <aside className="bg-ink text-bg p-8 flex flex-col relative overflow-hidden">
+    <div className="hidden min-h-screen bg-bg font-body text-ink md:grid md:grid-cols-12">
+      <aside className="relative col-span-5 flex flex-col overflow-hidden bg-ink p-8 text-bg">
         <Link to="/" className="flex items-center gap-2.5">
           <div className="size-7.5 bg-bg text-ink flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
             UBC
           </div>
-          <span className="font-display font-extrabold text-xl tracking-tight">
-            DISCOVERY
-          </span>
+          <span className="font-display font-extrabold text-xl tracking-tight">DISCOVERY</span>
         </Link>
 
         <div className="mt-10 font-mono text-xs text-bg opacity-60 tracking-wide uppercase">
@@ -121,10 +119,7 @@ export function OnboardingDesktopShell({
         </div>
         <div className="flex gap-1 mt-2">
           {Array.from({ length: total }).map((_, i) => (
-            <span
-              key={i}
-              className={`flex-1 h-1 ${i < step ? "bg-accent" : "bg-white/20"}`}
-            />
+            <span key={i} className={`flex-1 h-1 ${i < step ? "bg-accent" : "bg-bg/20"}`} />
           ))}
         </div>
 
@@ -134,8 +129,7 @@ export function OnboardingDesktopShell({
           Let&rsquo;s set you up.
         </h2>
         <p className="mt-3.5 text-base/relaxed text-bg opacity-70 max-w-95">
-          This takes about a minute. We use what you tell us to rank your For
-          you feed.
+          This takes about a minute. We use what you tell us to rank your For you feed.
         </p>
 
         <div className="mt-auto pt-6 font-mono text-xs text-bg opacity-50 tracking-wide uppercase">
@@ -143,7 +137,7 @@ export function OnboardingDesktopShell({
         </div>
       </aside>
 
-      <main className="p-8 px-14 flex flex-col">
+      <main className="col-span-7 flex flex-col p-8 px-14">
         <div className="flex justify-between items-center mb-7">
           <button
             onClick={onBack}
@@ -171,11 +165,7 @@ export function OnboardingDesktopShell({
           <h1 className="my-2 font-display font-extrabold text-5xl text-ink tracking-tighter leading-none">
             {title}
           </h1>
-          {subtitle && (
-            <p className="mb-7 text-base/relaxed text-ink-soft">
-              {subtitle}
-            </p>
-          )}
+          {subtitle && <p className="mb-7 text-base/relaxed text-ink-soft">{subtitle}</p>}
           {children}
         </div>
 
@@ -185,7 +175,7 @@ export function OnboardingDesktopShell({
             disabled={!canContinue}
             className={`px-6 py-3 border font-mono text-xs font-bold tracking-wide uppercase ${
               canContinue
-                ? "border-accent bg-accent text-white cursor-pointer"
+                ? "border-accent bg-accent text-on-color cursor-pointer"
                 : "border-rule-soft bg-rule-soft text-muted cursor-not-allowed"
             }`}
           >

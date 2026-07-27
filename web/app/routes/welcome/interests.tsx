@@ -9,10 +9,7 @@ import {
 import { ApiError } from "~/lib/api";
 import { useAuth } from "~/lib/auth";
 import { onboardingDraftStore } from "~/lib/onboarding-draft";
-import {
-  clearAuthFlowNotice,
-  setAuthFlowNotice,
-} from "~/lib/auth-flow";
+import { clearAuthFlowNotice, setAuthFlowNotice } from "~/lib/auth-flow";
 
 export function meta() {
   return [{ title: "What are you into? — UBC Discovery" }];
@@ -45,9 +42,7 @@ export default function OnboardingInterests() {
   }, [navigate, uid]);
 
   function toggle(id: string) {
-    setSelected((s) =>
-      s.includes(id) ? s.filter((x) => x !== id) : [...s, id]
-    );
+    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   }
 
   const enough = selected.length >= 3;
@@ -90,9 +85,7 @@ export default function OnboardingInterests() {
     } catch (requestError) {
       clearAuthFlowNotice();
       setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Profile setup failed. Try again."
+        requestError instanceof Error ? requestError.message : "Profile setup failed. Try again.",
       );
       setSaving(false);
     }
@@ -117,22 +110,16 @@ export default function OnboardingInterests() {
                 on ? "bg-ink text-bg" : "bg-transparent text-ink"
               }`}
               style={{
-                borderRight:
-                  i % 2 === 0 ? "1px solid var(--color-ink)" : "none",
-                borderBottom:
-                  i < VIBES.length - 2
-                    ? "1px solid var(--color-ink)"
-                    : "none",
+                borderRight: i % 2 === 0 ? "1px solid var(--color-ink)" : "none",
+                borderBottom: i < VIBES.length - 2 ? "1px solid var(--color-ink)" : "none",
               }}
             >
               <span
-                className={`size-4 rounded-full border-[1.5px] inline-flex items-center justify-center shrink-0 ${
+                className={`size-4 rounded-full border-2 inline-flex items-center justify-center shrink-0 ${
                   on ? "border-bg bg-accent" : "border-ink bg-transparent"
                 }`}
               >
-                {on && (
-                  <span className="size-1.5 rounded-full bg-white" />
-                )}
+                {on && <span className="size-1.5 rounded-full bg-on-color" />}
               </span>
               {v.label}
             </button>
@@ -146,11 +133,7 @@ export default function OnboardingInterests() {
     <div className="min-h-screen bg-bg text-ink font-body">
       {/* Mobile */}
       <div className="md:hidden pb-32">
-        <OnboardingTop
-          step={3}
-          total={3}
-          onBack={() => navigate("/welcome/academic")}
-        />
+        <OnboardingTop step={3} total={3} onBack={() => navigate("/welcome/academic")} />
         <div className="px-5.5 pt-6 pb-4">
           <div className="font-mono text-xs text-accent font-bold tracking-wide uppercase">
             Pick at least 3
@@ -161,15 +144,14 @@ export default function OnboardingInterests() {
             into?
           </h1>
           <p className="text-sm/relaxed text-ink-soft">
-            This helps us rank your <em>For you</em> feed around what you
-            actually like.
+            This helps us rank your <em>For you</em> feed around what you actually like.
           </p>
 
           <div className="mt-5">
             <InterestGrid />
           </div>
           {error ? (
-            <p className="mt-4 text-sm text-[#D63A2E]" role="alert">
+            <p className="mt-4 text-sm text-danger" role="alert">
               {error}
             </p>
           ) : null}
@@ -189,8 +171,7 @@ export default function OnboardingInterests() {
         title="What are you into?"
         subtitle={
           <>
-            This helps us rank your <em>For you</em> feed around what you
-            actually like.
+            This helps us rank your <em>For you</em> feed around what you actually like.
           </>
         }
         canContinue={enough && !saving}
@@ -200,7 +181,7 @@ export default function OnboardingInterests() {
       >
         <InterestGrid />
         {error ? (
-          <p className="mt-4 text-sm text-[#D63A2E]" role="alert">
+          <p className="mt-4 text-sm text-danger" role="alert">
             {error}
           </p>
         ) : null}

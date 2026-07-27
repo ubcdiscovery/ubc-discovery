@@ -42,7 +42,7 @@ export function MobileUtilityMenu() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-50 mt-1 w-48 border-2 border-ink bg-surface shadow-[4px_4px_0_var(--color-ink)]"
+          className="absolute right-0 top-full z-50 mt-1 w-48 border-2 border-ink bg-surface shadow-hard"
         >
           <Link
             to="/organizers"

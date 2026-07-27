@@ -111,11 +111,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setActiveIndex((prev) => Math.max(prev - 1, -1));
-      } else if (
-        e.key === "Enter" &&
-        activeIndex >= 0 &&
-        results[activeIndex]
-      ) {
+      } else if (e.key === "Enter" && activeIndex >= 0 && results[activeIndex]) {
         e.preventDefault();
         onClose();
         void navigate(`/events/${results[activeIndex].id}`);
@@ -128,7 +124,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
   return (
     <div
-      className="fixed inset-0 z-60 bg-ink/20 backdrop-blur-[2px]"
+      className="fixed inset-0 z-60 bg-ink/20 backdrop-blur-xs"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -162,9 +158,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               aria-controls="event-search-results"
               aria-expanded={results.length > 0}
               aria-activedescendant={
-                activeIndex >= 0
-                  ? `event-search-result-${results[activeIndex]?.id}`
-                  : undefined
+                activeIndex >= 0 ? `event-search-result-${results[activeIndex]?.id}` : undefined
               }
             />
             {loading && (
@@ -213,9 +207,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     }}
                     onMouseEnter={() => setActiveIndex(i)}
                     className={`w-full text-left px-4 py-3 flex items-start gap-3 border-b border-rule-soft last:border-b-0 cursor-pointer transition-colors ${
-                      i === activeIndex
-                        ? "bg-accent-soft"
-                        : "hover:bg-accent-soft"
+                      i === activeIndex ? "bg-accent-soft" : "hover:bg-accent-soft"
                     }`}
                   >
                     {/* Date chip */}
@@ -247,9 +239,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                             {event.club_name}
                           </span>
                         )}
-                        {event.club_name && (
-                          <span className="text-rule-soft">·</span>
-                        )}
+                        {event.club_name && <span className="text-rule-soft">·</span>}
                         <span className="font-mono text-xs text-muted tracking-wide truncate">
                           {event.location_name}
                         </span>
@@ -257,9 +247,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     </div>
 
                     {/* Arrow */}
-                    <span className="font-mono text-accent text-sm shrink-0 pt-1">
-                      →
-                    </span>
+                    <span className="font-mono text-accent text-sm shrink-0 pt-1">→</span>
                   </button>
                 );
               })

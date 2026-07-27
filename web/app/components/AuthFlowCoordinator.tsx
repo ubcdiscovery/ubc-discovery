@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  type QueryClient,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router";
 import { api, type UserResponse } from "~/lib/api";
 import { useAuth } from "~/lib/auth";
@@ -53,16 +50,14 @@ const authActionHandlers: Record<string, AuthActionHandler> = {
       });
     },
     failureTitle: "The event was not saved.",
-    failureMessage:
-      "Your sign-in succeeded. Retry the save when the connection is available.",
+    failureMessage: "Your sign-in succeeded. Retry the save when the connection is available.",
     retryLabel: "Retry save",
   },
 };
 
 const unknownActionHandler: Omit<AuthActionHandler, "run"> = {
   failureTitle: "The requested action could not be completed.",
-  failureMessage:
-    "Your sign-in succeeded, but this action is no longer supported.",
+  failureMessage: "Your sign-in succeeded, but this action is no longer supported.",
   retryLabel: "Retry action",
 };
 
@@ -70,7 +65,7 @@ function findFailedAction(actionId: string | null) {
   if (!actionId) return null;
   return (
     readAuthFlow()?.actions.find(
-      (action) => action.id === actionId && action.status === "failed"
+      (action) => action.id === actionId && action.status === "failed",
     ) ?? null
   );
 }
@@ -82,9 +77,7 @@ export function AuthFlowCoordinator() {
   const queryClient = useQueryClient();
   const running = useRef(false);
   const [failedActionId, setFailedActionId] = useState(
-    () =>
-      readAuthFlow()?.actions.find((action) => action.status === "failed")?.id ??
-      null
+    () => readAuthFlow()?.actions.find((action) => action.status === "failed")?.id ?? null,
   );
 
   const navigateToCompletion = useCallback(
@@ -100,7 +93,7 @@ export function AuthFlowCoordinator() {
           : undefined,
       });
     },
-    [navigate]
+    [navigate],
   );
 
   const runPendingActions = useCallback(async () => {
@@ -112,10 +105,7 @@ export function AuthFlowCoordinator() {
     try {
       const flow = readAuthFlow();
       if (!flow) {
-        if (
-          location.pathname === "/sign-in" ||
-          location.pathname.startsWith("/welcome/")
-        ) {
+        if (location.pathname === "/sign-in" || location.pathname.startsWith("/welcome/")) {
           void navigate("/", { replace: true });
         }
         return;
@@ -132,18 +122,14 @@ export function AuthFlowCoordinator() {
         if (completion) {
           navigateToCompletion(
             completion.returnTo,
-            completion.notice?.type === "onboarding-complete"
-              ? completion.notice
-              : undefined
+            completion.notice?.type === "onboarding-complete" ? completion.notice : undefined,
           );
         }
         return;
       }
 
       while (true) {
-        const action = readAuthFlow()?.actions.find(
-          (candidate) => candidate.status === "pending"
-        );
+        const action = readAuthFlow()?.actions.find((candidate) => candidate.status === "pending");
         if (!action) return;
 
         const handler = authActionHandlers[action.type];
@@ -173,9 +159,7 @@ export function AuthFlowCoordinator() {
         if (completion && !completion.hasRemainingActions) {
           navigateToCompletion(
             completion.returnTo,
-            completion.notice?.type === "onboarding-complete"
-              ? completion.notice
-              : undefined
+            completion.notice?.type === "onboarding-complete" ? completion.notice : undefined,
           );
           return;
         }
@@ -204,9 +188,7 @@ export function AuthFlowCoordinator() {
     if (completion) {
       navigateToCompletion(
         completion.returnTo,
-        completion.notice?.type === "onboarding-complete"
-          ? completion.notice
-          : undefined
+        completion.notice?.type === "onboarding-complete" ? completion.notice : undefined,
       );
     }
   }
@@ -214,7 +196,7 @@ export function AuthFlowCoordinator() {
   return (
     <div
       role="alert"
-      className="fixed bottom-20 inset-x-4 z-100 border-2 border-ink bg-bg p-4 shadow-[3px_3px_0_var(--color-ink)] md:left-auto md:right-6 md:bottom-6 md:w-95"
+      className="fixed bottom-20 inset-x-4 z-100 border-2 border-ink bg-bg p-4 shadow-hard-sm md:left-auto md:right-6 md:bottom-6 md:w-95"
     >
       <p className="font-display font-bold text-ink">{copy.failureTitle}</p>
       <p className="mt-1 text-sm text-ink-soft">{copy.failureMessage}</p>
@@ -226,7 +208,7 @@ export function AuthFlowCoordinator() {
             setFailedActionId(null);
             void runPendingActions();
           }}
-          className="border border-accent bg-accent px-3 py-2 font-mono text-xs font-bold uppercase text-white"
+          className="border border-accent bg-accent px-3 py-2 font-mono text-xs font-bold uppercase text-on-color"
         >
           {copy.retryLabel}
         </button>

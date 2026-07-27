@@ -8,20 +8,37 @@
   --text-2xs: 0.625rem;
   --text-2xs--line-height: 0.875rem;
 
+  --leading-display: 0.92;
+  --tracking-brand: 0.2em;
+  --tracking-otp: 0.5em;
+
   /* Semantic color tokens — override these per theme */
-  --color-bg: #FFFFFF;
-  --color-surface: #FFFFFF;
-  --color-ink: #0A0A0B;
-  --color-ink-soft: #2E3033;
-  --color-muted: #71757B;
-  --color-rule: #0A0A0B;
-  --color-rule-soft: #E4E5E7;
-  --color-accent: #1E40FF;
-  --color-accent-soft: #E6EAFF;
-  --color-hi: #E0FF4F;
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-ink: #0a0a0b;
+  --color-ink-soft: #2e3033;
+  --color-muted: #71757b;
+  --color-rule: #0a0a0b;
+  --color-rule-soft: #e4e5e7;
+  --color-accent: #1e40ff;
+  --color-accent-soft: #e6eaff;
+  --color-hi: #e0ff4f;
+  --color-danger: #d63a2e;
+  --color-on-color: #ffffff;
+  --color-on-hi: #0a0a0b;
+  --color-avatar-start: #1e40ff;
+  --color-avatar-end: #7990ff;
+  --color-scrim: #000000;
+
+  --shadow-keyline: 0 1px 0 var(--color-ink);
+  --shadow-hard-sm: 3px 3px 0 var(--color-ink);
+  --shadow-hard: 4px 4px 0 var(--color-ink);
+  --shadow-hard-lg: 6px 6px 0 var(--color-ink);
+  --shadow-sheet: 0 -16px 40px rgb(0 0 0 / 0.25);
 }
 
-html, body {
+html,
+body {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-body);
@@ -34,34 +51,48 @@ html, body {
 /* Falls back to system preference when no data-theme is set                */
 
 :root[data-theme="dark"],
-:root:not([data-theme="light"]):has(+ body) { /* fallback handled in JS */ }
+:root:not([data-theme="light"]):has(+ body) {
+  /* fallback handled in JS */
+}
 
 [data-theme="dark"] {
-  --color-bg: #0A0A0B;
-  --color-surface: #0F1012;
-  --color-ink: #F4F5F7;
-  --color-ink-soft: #C8CBD0;
-  --color-muted: #7E848C;
-  --color-rule: #F4F5F7;
-  --color-rule-soft: #22252A;
-  --color-accent: #7990FF;
-  --color-accent-soft: #0F1A4D;
-  --color-hi: #E0FF4F;
+  --color-bg: #0a0a0b;
+  --color-surface: #0f1012;
+  --color-ink: #f4f5f7;
+  --color-ink-soft: #c8cbd0;
+  --color-muted: #7e848c;
+  --color-rule: #f4f5f7;
+  --color-rule-soft: #22252a;
+  --color-accent: #7990ff;
+  --color-accent-soft: #0f1a4d;
+  --color-hi: #e0ff4f;
+  --color-danger: #d63a2e;
+  --color-on-color: #ffffff;
+  --color-on-hi: #0a0a0b;
+  --color-avatar-start: #1e40ff;
+  --color-avatar-end: #7990ff;
+  --color-scrim: #000000;
   color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not([data-theme="dark"]) {
-    --color-bg: #0A0A0B;
-    --color-surface: #0F1012;
-    --color-ink: #F4F5F7;
-    --color-ink-soft: #C8CBD0;
-    --color-muted: #7E848C;
-    --color-rule: #F4F5F7;
-    --color-rule-soft: #22252A;
-    --color-accent: #7990FF;
-    --color-accent-soft: #0F1A4D;
-    --color-hi: #E0FF4F;
+    --color-bg: #0a0a0b;
+    --color-surface: #0f1012;
+    --color-ink: #f4f5f7;
+    --color-ink-soft: #c8cbd0;
+    --color-muted: #7e848c;
+    --color-rule: #f4f5f7;
+    --color-rule-soft: #22252a;
+    --color-accent: #7990ff;
+    --color-accent-soft: #0f1a4d;
+    --color-hi: #e0ff4f;
+    --color-danger: #d63a2e;
+    --color-on-color: #ffffff;
+    --color-on-hi: #0a0a0b;
+    --color-avatar-start: #1e40ff;
+    --color-avatar-end: #7990ff;
+    --color-scrim: #000000;
     color-scheme: dark;
   }
 }

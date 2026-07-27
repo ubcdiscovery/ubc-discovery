@@ -32,19 +32,17 @@ export function RouteErrorState({
         </div>
 
         <div className="px-5 py-9 md:px-10 md:py-12">
-          <h1 className="max-w-2xl font-display font-extrabold text-4xl md:text-6xl text-ink tracking-[-1.5px] md:tracking-[-2px] leading-[0.95] text-balance">
+          <h1 className="max-w-2xl font-display font-extrabold text-4xl md:text-6xl text-ink tracking-tighter md:tracking-tight leading-none text-balance">
             {title}
           </h1>
-          <p className="mt-5 max-w-xl text-base/relaxed text-ink-soft">
-            {description}
-          </p>
+          <p className="mt-5 max-w-xl text-base/relaxed text-ink-soft">{description}</p>
 
           <div className="mt-7 flex flex-col sm:flex-row gap-2.5">
             {retry && (
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="px-5 py-3 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase cursor-pointer"
+                className="px-5 py-3 border border-accent bg-accent text-on-color font-mono text-xs font-bold tracking-wider uppercase cursor-pointer"
               >
                 Try again
               </button>

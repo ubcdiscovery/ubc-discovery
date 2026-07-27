@@ -6,11 +6,7 @@ type OnboardingCompleteNotice = {
 };
 
 function readNotice(value: unknown): OnboardingCompleteNotice | null {
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    !("onboardingComplete" in value)
-  ) {
+  if (typeof value !== "object" || value === null || !("onboardingComplete" in value)) {
     return null;
   }
   const notice = value.onboardingComplete;
@@ -36,24 +32,13 @@ export function OnboardingCompleteModal() {
 
     setNotice(nextNotice);
     const nextState =
-      typeof location.state === "object" && location.state !== null
-        ? { ...location.state }
-        : {};
+      typeof location.state === "object" && location.state !== null ? { ...location.state } : {};
     delete nextState.onboardingComplete;
-    void navigate(
-      `${location.pathname}${location.search}${location.hash}`,
-      {
-        replace: true,
-        state: Object.keys(nextState).length > 0 ? nextState : null,
-      }
-    );
-  }, [
-    location.hash,
-    location.pathname,
-    location.search,
-    location.state,
-    navigate,
-  ]);
+    void navigate(`${location.pathname}${location.search}${location.hash}`, {
+      replace: true,
+      state: Object.keys(nextState).length > 0 ? nextState : null,
+    });
+  }, [location.hash, location.pathname, location.search, location.state, navigate]);
 
   useEffect(() => {
     if (!notice) return;
@@ -78,9 +63,9 @@ export function OnboardingCompleteModal() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="onboarding-complete-title"
-        className="w-full max-w-130 border-2 border-ink bg-bg p-6 shadow-[6px_6px_0_var(--color-ink)] md:p-8"
+        className="w-full max-w-130 border-2 border-ink bg-bg p-6 shadow-hard-lg md:p-8"
       >
-        <div className="flex size-12 items-center justify-center bg-accent font-display text-2xl font-extrabold text-white">
+        <div className="flex size-12 items-center justify-center bg-accent font-display text-2xl font-extrabold text-on-color">
           ✓
         </div>
         <div className="mt-5 font-mono text-xs font-bold uppercase tracking-wider text-accent">
@@ -93,14 +78,14 @@ export function OnboardingCompleteModal() {
           You&rsquo;re in, {notice.preferredName}.
         </h2>
         <p className="mt-4 text-sm/relaxed text-ink-soft md:text-base">
-          Your For you feed now reflects your interests and will keep improving
-          as you save and rate events.
+          Your For you feed now reflects your interests and will keep improving as you save and rate
+          events.
         </p>
         <button
           type="button"
           autoFocus
           onClick={() => setNotice(null)}
-          className="mt-6 w-full border border-accent bg-accent px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white"
+          className="mt-6 w-full border border-accent bg-accent px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-on-color"
         >
           Start exploring
         </button>

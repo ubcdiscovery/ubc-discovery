@@ -47,12 +47,12 @@ function Poster({
       ) : (
         <div
           aria-hidden="true"
-          className="flex size-full flex-col justify-between bg-accent p-[9%] text-white"
+          className="flex size-full flex-col justify-between bg-accent p-[9%] text-on-color"
         >
-          <span className="font-mono text-xs font-bold tracking-[0.2em] uppercase">
+          <span className="font-mono text-xs font-bold tracking-brand uppercase">
             UBC Discovery
           </span>
-          <strong className="max-w-[13ch] font-display text-3xl leading-[0.94] tracking-tight">
+          <strong className="max-w-[13ch] font-display text-3xl leading-none tracking-tight">
             {event.title}
           </strong>
           <span className="font-mono text-xs font-bold tracking-wider uppercase">
@@ -60,7 +60,7 @@ function Poster({
           </span>
         </div>
       )}
-      <div className="absolute bottom-0 left-0 z-20 bg-hi px-3 py-2 font-mono text-xs font-extrabold tracking-wider text-black uppercase">
+      <div className="absolute bottom-0 left-0 z-20 bg-hi px-3 py-2 font-mono text-xs font-extrabold tracking-wider text-on-hi uppercase">
         <EventDate event={event} />
       </div>
     </div>
@@ -71,7 +71,7 @@ function CardDetails({ event }: { event: ApiEvent }) {
   return (
     <div className="min-w-0">
       <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
-      <h2 className="mt-2 max-w-[25ch] font-display text-2xl font-extrabold leading-[1.02] tracking-tight text-balance lg:text-3xl">
+      <h2 className="mt-2 max-w-[25ch] font-display text-2xl font-extrabold leading-none tracking-tight text-balance lg:text-3xl">
         {event.title}
       </h2>
       <p className="mt-3 font-mono text-xs tracking-wide text-muted uppercase">
@@ -114,7 +114,7 @@ export function EventPosterFeed({ events }: { events: ApiEvent[] }) {
             eventId={event.id}
             event={event}
             variant="largeIcon"
-            className="absolute right-3 top-3 z-30 bg-bg shadow-[3px_3px_0_var(--color-ink)]"
+            className="absolute right-3 top-3 z-30 bg-bg shadow-hard-sm"
           />
         </article>
       ))}

@@ -42,9 +42,7 @@ function Pill({
     <button
       onClick={onClick}
       className={`px-2.5 py-1 border font-mono text-xs font-semibold tracking-wide uppercase cursor-pointer whitespace-nowrap shrink-0 ${
-        active
-          ? "border-accent bg-accent text-white"
-          : "border-ink bg-transparent text-ink"
+        active ? "border-accent bg-accent text-on-color" : "border-ink bg-transparent text-ink"
       }`}
     >
       {children}
@@ -52,13 +50,7 @@ function Pill({
   );
 }
 
-function FilterBlock({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function FilterBlock({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
       <div className="font-mono text-xs text-ink tracking-wider uppercase mb-2.5 pb-1 border-b border-ink">
@@ -85,9 +77,7 @@ function RowSelect({
         active ? "font-bold text-ink" : "font-normal text-muted"
       }`}
     >
-      <span className={`w-3 ${active ? "text-accent" : "text-transparent"}`}>
-        →
-      </span>
+      <span className={`w-3 ${active ? "text-accent" : "text-transparent"}`}>→</span>
       <span>{label}</span>
     </div>
   );
@@ -97,7 +87,7 @@ type SortMode = "upcoming" | "newest" | "a-z";
 
 const SORT_OPTIONS: { id: SortMode; label: string }[] = [
   { id: "upcoming", label: "Upcoming" },
-  { id: "newest", label: "Recently added" }
+  { id: "newest", label: "Recently added" },
 ];
 
 function sortEvents(events: ApiEvent[], mode: SortMode): ApiEvent[] {
@@ -111,12 +101,11 @@ function sortEvents(events: ApiEvent[], mode: SortMode): ApiEvent[] {
       });
     case "newest":
       return sorted.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
     case "a-z":
       return sorted.sort((a, b) =>
-        a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
+        a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
       );
   }
 }
@@ -130,8 +119,7 @@ export default function Discover() {
   const events = useMemo(() => {
     let filtered: ApiEvent[] = data?.events ?? [];
     if (activeVibe) filtered = filtered.filter((e) => e.vibes.includes(activeVibe));
-    if (activeSource !== "all")
-      filtered = filtered.filter((e) => e.source_label === activeSource);
+    if (activeSource !== "all") filtered = filtered.filter((e) => e.source_label === activeSource);
     return sortEvents(filtered, sortBy);
   }, [data, activeVibe, activeSource, sortBy]);
 
@@ -172,9 +160,7 @@ export default function Discover() {
                 {VIBES.map((vibe) => (
                   <button
                     key={vibe.id}
-                    onClick={() =>
-                      setActiveVibe(activeVibe === vibe.id ? null : vibe.id)
-                    }
+                    onClick={() => setActiveVibe(activeVibe === vibe.id ? null : vibe.id)}
                     className="cursor-pointer border-none bg-transparent p-0"
                   >
                     <VibeTag vibe={vibe.id} active={activeVibe === vibe.id} />
@@ -223,9 +209,7 @@ export default function Discover() {
                 {VIBES.map((v) => (
                   <button
                     key={v.id}
-                    onClick={() =>
-                      setActiveVibe(activeVibe === v.id ? null : v.id)
-                    }
+                    onClick={() => setActiveVibe(activeVibe === v.id ? null : v.id)}
                     className="p-0 border-none bg-transparent cursor-pointer"
                   >
                     <VibeTag vibe={v.id} active={activeVibe === v.id} />

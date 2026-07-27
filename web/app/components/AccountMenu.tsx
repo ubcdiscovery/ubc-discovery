@@ -48,31 +48,23 @@ export function AccountMenu({ memberName }: { memberName: string }) {
         className="flex items-center gap-2 border border-transparent px-1.5 py-1 hover:border-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={memberName}
-            className="size-7 object-cover"
-          />
+          <img src={avatarUrl} alt={memberName} className="size-7 object-cover" />
         ) : (
-          <span className="flex size-7 items-center justify-center bg-linear-to-br from-accent to-[#7990FF] font-display text-sm font-extrabold text-white">
+          <span className="flex size-7 items-center justify-center bg-linear-to-br from-avatar-start to-avatar-end font-display text-sm font-extrabold text-on-color">
             {initial}
           </span>
         )}
-        <span className="max-w-35 truncate font-mono text-xs font-semibold">
-          {memberName}
-        </span>
+        <span className="max-w-35 truncate font-mono text-xs font-semibold">{memberName}</span>
         <FiChevronDown
           aria-hidden="true"
-          className={`size-3.5 text-muted transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
+          className={`size-3.5 text-muted transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
 
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-50 mt-2 w-44 border-2 border-ink bg-surface shadow-[4px_4px_0_var(--color-ink)]"
+          className="absolute right-0 top-full z-50 mt-2 w-44 border-2 border-ink bg-surface shadow-hard"
         >
           <Link
             to="/profile"

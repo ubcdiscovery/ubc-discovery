@@ -4,10 +4,7 @@ import { EventCard } from "~/components/EventCard";
 import { VibeTag } from "~/components/VibeTag";
 import type { ApiEvent } from "~/lib/api";
 import { MemberBoundary } from "~/components/MemberBoundary";
-import {
-  useSavedEventDetails,
-  useSavedEventIds,
-} from "~/lib/saved-events-query";
+import { useSavedEventDetails, useSavedEventIds } from "~/lib/saved-events-query";
 
 export function meta() {
   return [{ title: "Saved — UBC Discovery" }];
@@ -37,13 +34,12 @@ function VisitorSaved() {
               SHORTLIST.
             </h2>
             <p className="mt-3 text-sm/relaxed text-ink-soft">
-              Keep events you&rsquo;re thinking about in one place. Members also
-              get a re-ranked For You feed weighted to their interests, saves,
-              and ratings.
+              Keep events you&rsquo;re thinking about in one place. Members also get a re-ranked For
+              You feed weighted to their interests, saves, and ratings.
             </p>
             <Link
               to="/sign-in"
-              className="mt-4 inline-block px-4 py-3 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase no-underline"
+              className="mt-4 inline-block px-4 py-3 border border-accent bg-accent text-on-color font-mono text-xs font-bold tracking-wider uppercase no-underline"
             >
               SIGN IN TO SAVE →
             </Link>
@@ -58,17 +54,16 @@ function VisitorSaved() {
             <div className="font-mono text-xs text-accent font-bold tracking-wider uppercase">
               Member feature
             </div>
-            <h1 className="mt-3 mb-2 font-display font-extrabold text-6xl text-ink tracking-tighter leading-[0.92]">
+            <h1 className="mt-3 mb-2 font-display font-extrabold text-6xl/display text-ink tracking-tighter">
               Build a shortlist.
             </h1>
             <p className="mt-3.5 text-base/relaxed text-ink-soft max-w-135">
-              Save events you&rsquo;re considering and they&rsquo;ll wait here.
-              Saving also nudges your <em>For you</em> feed toward what
-              you&rsquo;re actually into.
+              Save events you&rsquo;re considering and they&rsquo;ll wait here. Saving also nudges
+              your <em>For you</em> feed toward what you&rsquo;re actually into.
             </p>
             <Link
               to="/sign-in"
-              className="mt-5 inline-block px-4 py-3 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase no-underline"
+              className="mt-5 inline-block px-4 py-3 border border-accent bg-accent text-on-color font-mono text-xs font-bold tracking-wider uppercase no-underline"
             >
               Sign in to save events →
             </Link>
@@ -79,13 +74,7 @@ function VisitorSaved() {
   );
 }
 
-function StarRating({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-}) {
+function StarRating({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   const [hover, setHover] = useState(0);
   const active = hover || value;
   const size = 28;
@@ -101,7 +90,7 @@ function StarRating({
             onMouseEnter={() => setHover(n)}
             onMouseLeave={() => setHover(0)}
             className={`flex items-center justify-center border border-ink cursor-pointer p-0 ${
-              on ? "bg-accent text-white" : "bg-transparent text-ink"
+              on ? "bg-accent text-on-color" : "bg-transparent text-ink"
             }`}
             style={{ width: size + 12, height: size + 12 }}
           >
@@ -123,25 +112,19 @@ function StarRating({
   );
 }
 
-function RateSheet({
-  onClose,
-}: {
-  onClose: () => void;
-}) {
+function RateSheet({ onClose }: { onClose: () => void }) {
   const [stars, setStars] = useState(0);
   const [strongVibes, setStrongVibes] = useState<string[]>([]);
   const [note, setNote] = useState("");
 
   function toggleVibe(id: string) {
-    setStrongVibes((s) =>
-      s.includes(id) ? s.filter((x) => x !== id) : [...s, id]
-    );
+    setStrongVibes((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   }
 
   return (
     <div className="fixed inset-0 z-100">
-      <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" />
-      <div className="absolute bottom-0 inset-x-0 bg-bg text-ink border-t-2 border-ink pb-7 max-h-[90%] overflow-auto shadow-[0_-16px_40px_rgba(0,0,0,0.25)]">
+      <div className="absolute inset-0 bg-scrim/55 backdrop-blur-sm" />
+      <div className="absolute bottom-0 inset-x-0 bg-bg text-ink border-t-2 border-ink pb-7 max-h-[90%] overflow-auto shadow-sheet">
         <div className="flex justify-between items-center px-4 py-3 border-b border-rule-soft">
           <span className="font-mono text-xs text-muted tracking-wider uppercase">
             Rate this event
@@ -176,17 +159,15 @@ function RateSheet({
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {["social", "arts", "food", "wellness", "culture", "outdoors"].map(
-              (v) => (
-                <button
-                  key={v}
-                  onClick={() => toggleVibe(v)}
-                  className="p-0 border-none bg-transparent cursor-pointer"
-                >
-                  <VibeTag vibe={v} active={strongVibes.includes(v)} />
-                </button>
-              )
-            )}
+            {["social", "arts", "food", "wellness", "culture", "outdoors"].map((v) => (
+              <button
+                key={v}
+                onClick={() => toggleVibe(v)}
+                className="p-0 border-none bg-transparent cursor-pointer"
+              >
+                <VibeTag vibe={v} active={strongVibes.includes(v)} />
+              </button>
+            ))}
           </div>
         </div>
 
@@ -218,7 +199,7 @@ function RateSheet({
             disabled={stars === 0}
             className={`flex-1 py-3 border font-mono text-xs font-bold tracking-wide uppercase ${
               stars > 0
-                ? "border-accent bg-accent text-white cursor-pointer"
+                ? "border-accent bg-accent text-on-color cursor-pointer"
                 : "border-rule-soft bg-rule-soft text-muted cursor-not-allowed"
             }`}
           >
@@ -235,11 +216,7 @@ function RateSheet({
 }
 
 export default function Saved() {
-  return (
-    <MemberBoundary fallback={<VisitorSaved />}>
-      {() => <MemberSaved />}
-    </MemberBoundary>
-  );
+  return <MemberBoundary fallback={<VisitorSaved />}>{() => <MemberSaved />}</MemberBoundary>;
 }
 
 function EmptySavedState({ tab, mobile }: { tab: "upcoming" | "past"; mobile?: boolean }) {
@@ -258,8 +235,8 @@ function EmptySavedState({ tab, mobile }: { tab: "upcoming" | "past"; mobile?: b
             mobile ? "text-sm" : "text-base text-muted max-w-120"
           }`}
         >
-          Tap the ♡ on any event on Discover to keep it here. Saving also tunes
-          your <em>For you</em> feed.
+          Tap the ♡ on any event on Discover to keep it here. Saving also tunes your{" "}
+          <em>For you</em> feed.
         </p>
         {!mobile && (
           <Link
@@ -293,13 +270,7 @@ function EmptySavedState({ tab, mobile }: { tab: "upcoming" | "past"; mobile?: b
   );
 }
 
-function SavedEventList({
-  events,
-  tab,
-}: {
-  events: ApiEvent[];
-  tab: "upcoming" | "past";
-}) {
+function SavedEventList({ events, tab }: { events: ApiEvent[]; tab: "upcoming" | "past" }) {
   if (events.length === 0) return <EmptySavedState tab={tab} />;
 
   return (
@@ -326,10 +297,10 @@ function MemberSaved() {
       : events.filter((event) => savedEventIds.has(event.id));
   const now = new Date();
   const upcomingEvents = visibleEvents.filter(
-    (event) => !event.event_date || new Date(event.event_date) >= now
+    (event) => !event.event_date || new Date(event.event_date) >= now,
   );
   const pastEvents = visibleEvents.filter(
-    (event) => event.event_date && new Date(event.event_date) < now
+    (event) => event.event_date && new Date(event.event_date) < now,
   );
   const activeEvents = tab === "upcoming" ? upcomingEvents : pastEvents;
   const tabCounts = { upcoming: upcomingEvents.length, past: pastEvents.length };
@@ -371,7 +342,7 @@ function MemberSaved() {
                 <span>{t.label}</span>
                 <span
                   className={`px-1.5 text-xs ${
-                    on ? "bg-accent text-white" : "bg-rule-soft text-muted"
+                    on ? "bg-accent text-on-color" : "bg-rule-soft text-muted"
                   }`}
                 >
                   {t.count}
@@ -387,7 +358,7 @@ function MemberSaved() {
               Loading saved events...
             </div>
           ) : error ? (
-            <div className="py-10 text-center text-sm text-[#D63A2E]">
+            <div className="py-10 text-center text-sm text-danger">
               {error instanceof Error ? error.message : "Could not load saved events."}
             </div>
           ) : activeEvents.length > 0 ? (
@@ -405,12 +376,12 @@ function MemberSaved() {
       {/* Desktop */}
       <div className="hidden md:block">
         <div className="px-8 pt-6 pb-4 border-b border-ink">
-          <div className="grid grid-cols-[1fr_auto] items-end gap-7">
+          <div>
             <div>
               <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
                 Your shortlist & history
               </div>
-              <h1 className="font-display font-extrabold text-5xl text-ink tracking-[-1.5px] leading-[0.92]">
+              <h1 className="font-display font-extrabold text-5xl/display text-ink tracking-tight">
                 Saved.
               </h1>
             </div>
@@ -431,8 +402,8 @@ function MemberSaved() {
                 onClick={() => setTab(t.id)}
                 className={`px-5 py-3.5 border-none bg-transparent cursor-pointer flex items-center gap-2.5 font-display font-extrabold text-lg tracking-tight -mb-0.5 ${
                   on
-                    ? "text-ink border-b-[3px] border-b-accent"
-                    : "text-muted border-b-[3px] border-b-transparent"
+                    ? "text-ink border-b-2 border-b-accent"
+                    : "text-muted border-b-2 border-b-transparent"
                 }`}
               >
                 {t.label}
@@ -454,7 +425,7 @@ function MemberSaved() {
               Loading saved events...
             </div>
           ) : error ? (
-            <div className="py-16 text-base text-[#D63A2E]">
+            <div className="py-16 text-base text-danger">
               {error instanceof Error ? error.message : "Could not load saved events."}
             </div>
           ) : (

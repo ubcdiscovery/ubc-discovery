@@ -11,13 +11,7 @@ export function meta() {
   return [{ title: "Profile — UBC Discovery" }];
 }
 
-function Section({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="p-4.5 border-b border-rule-soft md:p-0">
       <div className="font-mono text-xs text-muted tracking-wider uppercase mb-3 pb-1.5 border-b border-ink md:flex md:justify-between md:items-baseline">
@@ -28,13 +22,7 @@ function Section({
   );
 }
 
-function KV({
-  k,
-  v,
-}: {
-  k: string;
-  v: string;
-}) {
+function KV({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-center justify-between border-b border-dotted border-rule-soft py-2 font-mono text-xs tracking-wide text-ink">
       <span className="text-muted">{k}</span>
@@ -51,7 +39,7 @@ function VisitorProfile() {
         <div className="font-mono text-xs text-accent font-bold tracking-wider uppercase">
           Join UBC Discovery
         </div>
-        <h1 className="mt-2 font-display font-extrabold text-5xl text-ink tracking-tighter leading-[0.92]">
+        <h1 className="mt-2 font-display font-extrabold text-5xl/display text-ink tracking-tighter">
           Sign in
           <br />
           to make it
@@ -63,7 +51,7 @@ function VisitorProfile() {
         </p>
         <Link
           to="/sign-in"
-          className="mt-6 block py-3.5 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase text-center no-underline"
+          className="mt-6 block py-3.5 border border-accent bg-accent text-on-color font-mono text-xs font-bold tracking-wider uppercase text-center no-underline"
         >
           SIGN IN →
         </Link>
@@ -75,16 +63,16 @@ function VisitorProfile() {
           <div className="font-mono text-xs text-accent font-bold tracking-wider uppercase">
             Member feature
           </div>
-          <h1 className="mt-3 mb-2 font-display font-extrabold text-6xl text-ink tracking-tighter leading-[0.92]">
+          <h1 className="mt-3 mb-2 font-display font-extrabold text-6xl/display text-ink tracking-tighter">
             Sign in for a profile.
           </h1>
           <p className="mt-3.5 text-base/relaxed text-ink-soft max-w-135">
-            Members get a profile with their interests and academic context, a
-            saved-event shortlist, and a re-ranked <em>For you</em> feed.
+            Members get a profile with their interests and academic context, a saved-event
+            shortlist, and a re-ranked <em>For you</em> feed.
           </p>
           <Link
             to="/sign-in"
-            className="mt-5 inline-block px-4 py-3 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase no-underline"
+            className="mt-5 inline-block px-4 py-3 border border-accent bg-accent text-on-color font-mono text-xs font-bold tracking-wider uppercase no-underline"
           >
             Sign in →
           </Link>
@@ -135,9 +123,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
   }
 
   function toggle(id: string) {
-    setInterests((s) =>
-      s.includes(id) ? s.filter((x) => x !== id) : [...s, id]
-    );
+    setInterests((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   }
 
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -147,9 +133,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
     try {
       await uploadProfilePhoto(f);
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Could not upload profile photo."
-      );
+      setError(e instanceof Error ? e.message : "Could not upload profile photo.");
     }
   }
 
@@ -187,12 +171,8 @@ function MemberProfile({ user }: { user: UserResponse }) {
         <div className="px-4.5 py-5 border-b-2 border-ink flex items-center gap-3.5">
           <div className="relative shrink-0">
             <div
-              className="size-19 border-[1.5px] border-ink flex items-center justify-center font-display font-extrabold text-3xl text-white tracking-tight"
-              style={{
-                background: avatar
-                  ? `url(${avatar}) center/cover`
-                  : "linear-gradient(135deg, #1E40FF, #7990FF)",
-              }}
+              className="size-19 border-2 border-ink flex items-center justify-center bg-linear-to-br from-avatar-start to-avatar-end bg-center bg-cover font-display font-extrabold text-3xl text-on-color tracking-tight"
+              style={avatar ? { backgroundImage: `url(${avatar})` } : undefined}
             >
               {!avatar && name[0]?.toUpperCase()}
             </div>
@@ -202,12 +182,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                   onClick={() => fileRef.current?.click()}
                   className="absolute -bottom-1.5 -right-1.5 size-7 bg-ink text-bg border-2 border-bg cursor-pointer flex items-center justify-center p-0"
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                  >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                     <rect
                       x="1"
                       y="4"
@@ -216,20 +191,8 @@ function MemberProfile({ user }: { user: UserResponse }) {
                       stroke="currentColor"
                       strokeWidth="1.4"
                     />
-                    <circle
-                      cx="8"
-                      cy="9"
-                      r="2.5"
-                      stroke="currentColor"
-                      strokeWidth="1.4"
-                    />
-                    <rect
-                      x="5"
-                      y="2"
-                      width="6"
-                      height="2"
-                      fill="currentColor"
-                    />
+                    <circle cx="8" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.4" />
+                    <rect x="5" y="2" width="6" height="2" fill="currentColor" />
                   </svg>
                 </button>
                 <input
@@ -342,7 +305,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
         <Section label="Account">
           <KV k="Email" v={user.email} />
           <KV k="UBC verified" v={user.ubc_verified ? "Yes" : "No"} />
-          {error && <p className="mt-2 text-xs text-[#D63A2E] font-mono">{error}</p>}
+          {error && <p className="mt-2 text-xs text-danger font-mono">{error}</p>}
         </Section>
 
         {editing && (
@@ -356,7 +319,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
             <button
               onClick={saveProfile}
               disabled={saving || !name.trim()}
-              className="flex-1 py-3 border border-accent bg-accent text-white cursor-pointer font-mono text-xs font-bold tracking-wide uppercase disabled:opacity-50"
+              className="flex-1 py-3 border border-accent bg-accent text-on-color cursor-pointer font-mono text-xs font-bold tracking-wide uppercase disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save changes"}
             </button>
@@ -371,12 +334,8 @@ function MemberProfile({ user }: { user: UserResponse }) {
           <div className="max-w-270 mx-auto flex gap-7 items-center">
             <div className="relative shrink-0">
               <div
-                className="size-33 border-2 border-ink flex items-center justify-center font-display font-extrabold text-6xl text-white tracking-tighter"
-                style={{
-                  background: avatar
-                    ? `url(${avatar}) center/cover`
-                    : "linear-gradient(135deg, #1E40FF, #7990FF)",
-                }}
+                className="size-33 border-2 border-ink flex items-center justify-center bg-linear-to-br from-avatar-start to-avatar-end bg-center bg-cover font-display font-extrabold text-6xl text-on-color tracking-tighter"
+                style={avatar ? { backgroundImage: `url(${avatar})` } : undefined}
               >
                 {!avatar && name[0]?.toUpperCase()}
               </div>
@@ -386,12 +345,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                     onClick={() => fileRef.current?.click()}
                     className="absolute -bottom-2.5 -right-2.5 bg-ink text-bg border-2 border-bg cursor-pointer px-3 py-1.5 font-mono text-xs font-bold tracking-wide uppercase flex items-center gap-1.5"
                   >
-                    <svg
-                      width="13"
-                      height="13"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                    >
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                       <rect
                         x="1"
                         y="4"
@@ -400,20 +354,8 @@ function MemberProfile({ user }: { user: UserResponse }) {
                         stroke="currentColor"
                         strokeWidth="1.4"
                       />
-                      <circle
-                        cx="8"
-                        cy="9"
-                        r="2.5"
-                        stroke="currentColor"
-                        strokeWidth="1.4"
-                      />
-                      <rect
-                        x="5"
-                        y="2"
-                        width="6"
-                        height="2"
-                        fill="currentColor"
-                      />
+                      <circle cx="8" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.4" />
+                      <rect x="5" y="2" width="6" height="2" fill="currentColor" />
                     </svg>
                     Change
                   </button>
@@ -430,7 +372,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
             <div className="flex-1 min-w-0">
               {editing ? (
                 <div className="flex gap-3 flex-wrap">
-                  <div className="flex-[1_1_280px] min-w-0">
+                  <div className="min-w-0 basis-70 grow shrink">
                     <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
                       Preferred name
                     </div>
@@ -447,9 +389,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                     {name}.
                   </h1>
                   <div className="mt-2 flex gap-3.5 items-center text-sm text-ink-soft">
-                    <span>
-                      {[major, year].filter(Boolean).join(" · ") || "Profile ready"}
-                    </span>
+                    <span>{[major, year].filter(Boolean).join(" · ") || "Profile ready"}</span>
                     <span className="size-1 rounded-full bg-muted" />
                     <span className="font-mono text-xs text-muted tracking-wide">
                       Member since {memberSince}
@@ -532,10 +472,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
                       onClick={() => toggle(v.id)}
                       className="p-0 border-none bg-transparent cursor-pointer"
                     >
-                      <VibeTag
-                        vibe={v.id}
-                        active={interests.includes(v.id)}
-                      />
+                      <VibeTag vibe={v.id} active={interests.includes(v.id)} />
                     </button>
                   ))}
                 </div>
@@ -555,7 +492,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
             <Section label="Account">
               <KV k="Email" v={user.email} />
               <KV k="UBC verified" v={user.ubc_verified ? "Yes" : "No"} />
-              {error && <p className="mt-2 text-xs text-[#D63A2E] font-mono">{error}</p>}
+              {error && <p className="mt-2 text-xs text-danger font-mono">{error}</p>}
             </Section>
           </div>
         </div>
@@ -571,7 +508,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
             <button
               onClick={saveProfile}
               disabled={saving || !name.trim()}
-              className="px-4 py-2.5 border border-accent bg-accent text-white cursor-pointer font-mono text-xs font-bold tracking-wide uppercase disabled:opacity-50"
+              className="px-4 py-2.5 border border-accent bg-accent text-on-color cursor-pointer font-mono text-xs font-bold tracking-wide uppercase disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save changes →"}
             </button>
