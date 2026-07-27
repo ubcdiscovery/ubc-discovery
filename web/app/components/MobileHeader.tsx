@@ -18,7 +18,7 @@ export function MobileHeader({
           className="flex min-h-11 min-w-0 items-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           aria-label="UBC Discovery home"
         >
-          <span className="px-1.5 py-0.5 bg-ink text-bg font-mono text-[11px] font-bold tracking-wider">
+          <span className="px-1.5 py-0.5 bg-ink text-bg font-mono text-xs font-bold tracking-wider">
             UBC
           </span>
           <span className="truncate font-display text-lg font-bold text-ink tracking-tight">

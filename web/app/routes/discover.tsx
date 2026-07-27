@@ -264,7 +264,7 @@ export default function Discover() {
                   setActiveVibe(null);
                   setActiveSource("all");
                 }}
-                className="mt-5 cursor-pointer border border-ink bg-bg px-4 py-2.5 font-mono text-[11px] font-bold tracking-wide text-ink uppercase"
+                className="mt-5 cursor-pointer border border-ink bg-bg px-4 py-2.5 font-mono text-xs font-bold tracking-wide text-ink uppercase"
               >
                 Clear filters
               </button>

@@ -74,7 +74,7 @@ export function AccountMenu({
         )}
         {!compact && (
           <>
-            <span className="max-w-35 truncate font-mono text-[11px] font-semibold">
+            <span className="max-w-35 truncate font-mono text-xs font-semibold">
               {memberName}
             </span>
             <FiChevronDown
@@ -96,7 +96,7 @@ export function AccountMenu({
             to="/profile"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 border-b border-rule-soft px-3 py-2.5 font-mono text-[11px] font-bold uppercase tracking-wide text-ink hover:bg-accent-soft"
+            className="flex items-center gap-2 border-b border-rule-soft px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wide text-ink hover:bg-accent-soft"
           >
             <FiUser aria-hidden="true" className="size-3.5" />
             Profile
@@ -105,7 +105,7 @@ export function AccountMenu({
             type="button"
             role="menuitem"
             onClick={handleSignOut}
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left font-mono text-[11px] font-bold uppercase tracking-wide text-ink hover:bg-accent-soft"
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-left font-mono text-xs font-bold uppercase tracking-wide text-ink hover:bg-accent-soft"
           >
             <FiLogOut aria-hidden="true" className="size-3.5" />
             Sign out

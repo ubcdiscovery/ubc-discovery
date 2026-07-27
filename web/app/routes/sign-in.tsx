@@ -166,7 +166,7 @@ export default function SignIn() {
         <div className="border-b-2 border-ink">
           <div className="px-4.5 py-2 flex items-baseline gap-2">
             <Link to="/" className="flex items-baseline gap-2">
-              <span className="px-1.5 py-0.5 bg-ink text-bg font-mono text-[11px] font-bold tracking-wider">
+              <span className="px-1.5 py-0.5 bg-ink text-bg font-mono text-xs font-bold tracking-wider">
                 UBC
               </span>
               <span className="font-display text-lg font-bold text-ink tracking-tight">
@@ -197,7 +197,7 @@ export default function SignIn() {
                 <button
                   onClick={handleGoogleSignIn}
                   disabled={loading || !firebaseReady}
-                  className="py-3.5 border border-ink bg-bg text-ink cursor-pointer flex items-center justify-center gap-2.5 font-mono text-[11px] font-bold tracking-wider uppercase disabled:opacity-50"
+                  className="py-3.5 border border-ink bg-bg text-ink cursor-pointer flex items-center justify-center gap-2.5 font-mono text-xs font-bold tracking-wider uppercase disabled:opacity-50"
                 >
                   <FcGoogle aria-hidden="true" size={14} />
                   CONTINUE WITH GOOGLE
@@ -224,7 +224,7 @@ export default function SignIn() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="py-3.5 border border-accent bg-accent text-white cursor-pointer font-mono text-[11px] font-bold tracking-wider uppercase disabled:opacity-50"
+                    className="py-3.5 border border-accent bg-accent text-white cursor-pointer font-mono text-xs font-bold tracking-wider uppercase disabled:opacity-50"
                   >
                     {loading ? "SENDING..." : "SEND SIGN-IN CODE →"}
                   </button>
@@ -251,7 +251,7 @@ export default function SignIn() {
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                   className="px-3.5 py-3 border border-ink bg-surface font-mono text-base text-ink outline-none tracking-[0.5em] text-center"
                 />
-                <p className="font-mono text-[11px] text-muted">
+                <p className="font-mono text-xs text-muted">
                   {codeExpired
                     ? "This code has expired. Request a new one."
                     : `Code expires in ${Math.floor(secondsRemaining / 60)}:${String(secondsRemaining % 60).padStart(2, "0")}.`}
@@ -264,7 +264,7 @@ export default function SignIn() {
                 <button
                   type="submit"
                   disabled={loading || codeExpired || code.length !== 6}
-                  className="py-3.5 border border-accent bg-accent text-white cursor-pointer font-mono text-[11px] font-bold tracking-wider uppercase disabled:opacity-50"
+                  className="py-3.5 border border-accent bg-accent text-white cursor-pointer font-mono text-xs font-bold tracking-wider uppercase disabled:opacity-50"
                 >
                   {loading ? "VERIFYING..." : "VERIFY →"}
                 </button>
@@ -272,14 +272,14 @@ export default function SignIn() {
                   type="button"
                   onClick={handleResendOtp}
                   disabled={loading || resendSeconds > 0}
-                  className="font-mono text-[11px] text-accent font-bold tracking-wide uppercase bg-transparent border-none cursor-pointer disabled:text-muted disabled:cursor-not-allowed"
+                  className="font-mono text-xs text-accent font-bold tracking-wide uppercase bg-transparent border-none cursor-pointer disabled:text-muted disabled:cursor-not-allowed"
                 >
                   {resendSeconds > 0 ? `Resend code in ${resendSeconds}s` : "Resend code"}
                 </button>
                 <button
                   type="button"
                   onClick={handleChangeEmail}
-                  className="font-mono text-[11px] text-muted tracking-wide uppercase bg-transparent border-none cursor-pointer"
+                  className="font-mono text-xs text-muted tracking-wide uppercase bg-transparent border-none cursor-pointer"
                 >
                   ← Change email
                 </button>
@@ -323,7 +323,7 @@ export default function SignIn() {
             and community organizers — filterable by what you&rsquo;re into.
           </p>
 
-          <div className="mt-auto pt-6 font-mono text-[11px] text-bg opacity-50 tracking-wide uppercase">
+          <div className="mt-auto pt-6 font-mono text-xs text-bg opacity-50 tracking-wide uppercase">
             You can change all of this on your profile later
           </div>
         </aside>
@@ -380,7 +380,7 @@ export default function SignIn() {
                       <button
                         type="submit"
                         disabled={loading}
-                        className="px-6 py-3 border border-accent bg-accent text-white cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase disabled:opacity-50"
+                        className="px-6 py-3 border border-accent bg-accent text-white cursor-pointer font-mono text-xs font-bold tracking-wide uppercase disabled:opacity-50"
                       >
                         {loading ? "Sending..." : "Continue with email →"}
                       </button>
@@ -410,7 +410,7 @@ export default function SignIn() {
                       className="w-full px-3 py-2.5 border border-ink bg-surface font-mono text-lg text-ink outline-none tracking-[0.5em] text-center"
                     />
                   </div>
-                  <p className="font-mono text-[11px] text-muted">
+                  <p className="font-mono text-xs text-muted">
                     {codeExpired
                       ? "This code has expired. Request a new one."
                       : `Code expires in ${Math.floor(secondsRemaining / 60)}:${String(secondsRemaining % 60).padStart(2, "0")}.`}
@@ -424,7 +424,7 @@ export default function SignIn() {
                     <button
                       type="button"
                       onClick={handleChangeEmail}
-                      className="font-mono text-[11px] text-muted font-bold tracking-wide uppercase bg-transparent border-none cursor-pointer"
+                      className="font-mono text-xs text-muted font-bold tracking-wide uppercase bg-transparent border-none cursor-pointer"
                     >
                       ← Change email
                     </button>
@@ -433,14 +433,14 @@ export default function SignIn() {
                         type="button"
                         onClick={handleResendOtp}
                         disabled={loading || resendSeconds > 0}
-                        className="font-mono text-[11px] text-accent font-bold tracking-wide uppercase bg-transparent border-none cursor-pointer disabled:text-muted disabled:cursor-not-allowed"
+                        className="font-mono text-xs text-accent font-bold tracking-wide uppercase bg-transparent border-none cursor-pointer disabled:text-muted disabled:cursor-not-allowed"
                       >
                         {resendSeconds > 0 ? `Resend in ${resendSeconds}s` : "Resend code"}
                       </button>
                       <button
                         type="submit"
                         disabled={loading || codeExpired || code.length !== 6}
-                        className="px-6 py-3 border border-accent bg-accent text-white cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase disabled:opacity-50"
+                        className="px-6 py-3 border border-accent bg-accent text-white cursor-pointer font-mono text-xs font-bold tracking-wide uppercase disabled:opacity-50"
                       >
                         {loading ? "Verifying..." : "Verify →"}
                       </button>

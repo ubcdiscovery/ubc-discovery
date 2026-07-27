@@ -226,14 +226,14 @@ export function AuthFlowCoordinator() {
             setFailedActionId(null);
             void runPendingActions();
           }}
-          className="border border-accent bg-accent px-3 py-2 font-mono text-[11px] font-bold uppercase text-white"
+          className="border border-accent bg-accent px-3 py-2 font-mono text-xs font-bold uppercase text-white"
         >
           {copy.retryLabel}
         </button>
         <button
           type="button"
           onClick={() => dismissFailedAction(failedAction)}
-          className="border border-ink bg-bg px-3 py-2 font-mono text-[11px] font-bold uppercase text-ink"
+          className="border border-ink bg-bg px-3 py-2 font-mono text-xs font-bold uppercase text-ink"
         >
           Dismiss
         </button>

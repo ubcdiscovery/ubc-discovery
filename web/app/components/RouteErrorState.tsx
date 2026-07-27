@@ -44,7 +44,7 @@ export function RouteErrorState({
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="px-5 py-3 border border-accent bg-accent text-white font-mono text-[11px] font-bold tracking-wider uppercase cursor-pointer"
+                className="px-5 py-3 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase cursor-pointer"
               >
                 Try again
               </button>
@@ -52,7 +52,7 @@ export function RouteErrorState({
             {link && (
               <Link
                 to={link.to}
-                className="px-5 py-3 border border-ink bg-bg text-ink font-mono text-[11px] font-bold tracking-wider uppercase text-center no-underline"
+                className="px-5 py-3 border border-ink bg-bg text-ink font-mono text-xs font-bold tracking-wider uppercase text-center no-underline"
               >
                 {link.label}
               </Link>

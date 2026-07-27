@@ -18,8 +18,8 @@ type SaveEventButtonProps = {
 const variantClasses = {
   icon: "size-8 p-0 text-base",
   largeIcon: "size-11 p-0 text-base",
-  bar: "px-3.5 py-3 text-[11px]",
-  wide: "w-full py-3.5 text-[11px]",
+  bar: "px-3.5 py-3 text-xs",
+  wide: "w-full py-3.5 text-xs",
 };
 
 export function SaveEventButton({

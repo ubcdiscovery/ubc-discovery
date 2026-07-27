@@ -48,7 +48,7 @@ export function MobileUtilityMenu() {
             to="/organizers"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="flex min-h-11 items-center border-b border-rule-soft px-3 font-mono text-[11px] font-bold tracking-wide text-ink uppercase hover:bg-accent-soft"
+            className="flex min-h-11 items-center border-b border-rule-soft px-3 font-mono text-xs font-bold tracking-wide text-ink uppercase hover:bg-accent-soft"
           >
             For organizers
           </Link>
@@ -56,7 +56,7 @@ export function MobileUtilityMenu() {
             type="button"
             role="menuitem"
             onClick={toggleTheme}
-            className="flex min-h-11 w-full items-center px-3 text-left font-mono text-[11px] font-bold tracking-wide text-ink uppercase hover:bg-accent-soft"
+            className="flex min-h-11 w-full items-center px-3 text-left font-mono text-xs font-bold tracking-wide text-ink uppercase hover:bg-accent-soft"
           >
             {resolvedTheme === "dark" ? "Use light mode" : "Use dark mode"}
           </button>

@@ -100,7 +100,7 @@ export function OnboardingCompleteModal() {
           type="button"
           autoFocus
           onClick={() => setNotice(null)}
-          className="mt-6 w-full border border-accent bg-accent px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-white"
+          className="mt-6 w-full border border-accent bg-accent px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white"
         >
           Start exploring
         </button>

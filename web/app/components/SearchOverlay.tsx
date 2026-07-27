@@ -193,7 +193,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
           >
             {results.length === 0 ? (
               <div className="px-4 py-8 text-center">
-                <p className="font-mono text-[11px] text-muted tracking-wider uppercase">
+                <p className="font-mono text-xs text-muted tracking-wider uppercase">
                   No events found for "{query.trim()}"
                 </p>
               </div>

@@ -32,7 +32,7 @@ export default function Organizers() {
             href="https://instagram.com/ubcdiscovery"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block px-5 py-2.5 bg-ink text-bg font-mono text-[11px] font-bold tracking-wide uppercase"
+            className="inline-block px-5 py-2.5 bg-ink text-bg font-mono text-xs font-bold tracking-wide uppercase"
           >
             DM us on Instagram →
           </a>

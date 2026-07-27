@@ -37,7 +37,7 @@ export function TopNav({
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `font-mono text-[11px] font-semibold tracking-wide uppercase pb-1 border-b-2 ${
+                `font-mono text-xs font-semibold tracking-wide uppercase pb-1 border-b-2 ${
                   isActive
                     ? "text-ink border-accent"
                     : "text-muted border-transparent"
@@ -80,7 +80,7 @@ export function TopNav({
         ) : (
           <Link
             to="/sign-in"
-            className="px-4 py-2 border border-ink bg-ink text-bg font-mono text-[11px] font-bold tracking-wide uppercase"
+            className="px-4 py-2 border border-ink bg-ink text-bg font-mono text-xs font-bold tracking-wide uppercase"
           >
             Sign in →
           </Link>

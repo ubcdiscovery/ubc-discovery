@@ -13,7 +13,7 @@ export function OnboardingTop({
     <div className="px-4.5 py-4 flex items-center justify-between border-b border-rule-soft md:hidden">
       <button
         onClick={onBack}
-        className={`bg-transparent border-none cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase p-0 ${
+        className={`bg-transparent border-none cursor-pointer font-mono text-xs font-bold tracking-wide uppercase p-0 ${
           step > 1 ? "text-ink" : "text-transparent"
         }`}
       >
@@ -58,7 +58,7 @@ export function OnboardingFooter({
         {onSkip && (
           <button
             onClick={onSkip}
-            className="px-4 py-3 border border-ink bg-transparent text-ink cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase"
+            className="px-4 py-3 border border-ink bg-transparent text-ink cursor-pointer font-mono text-xs font-bold tracking-wide uppercase"
           >
             Skip
           </button>
@@ -66,7 +66,7 @@ export function OnboardingFooter({
         <button
           onClick={onContinue}
           disabled={!canContinue}
-          className={`flex-1 py-3 px-4 border font-mono text-[11px] font-bold tracking-wide uppercase ${
+          className={`flex-1 py-3 px-4 border font-mono text-xs font-bold tracking-wide uppercase ${
             canContinue
               ? "border-accent bg-accent text-white cursor-pointer"
               : "border-rule-soft bg-rule-soft text-muted cursor-not-allowed"
@@ -126,7 +126,7 @@ export function OnboardingDesktopShell({
           </span>
         </Link>
 
-        <div className="mt-10 font-mono text-[11px] text-bg opacity-60 tracking-wide uppercase">
+        <div className="mt-10 font-mono text-xs text-bg opacity-60 tracking-wide uppercase">
           Step {step} of {total}
         </div>
         <div className="flex gap-1 mt-2">
@@ -147,7 +147,7 @@ export function OnboardingDesktopShell({
           </p>
         )}
 
-        <div className="mt-auto pt-6 font-mono text-[11px] text-bg opacity-50 tracking-wide uppercase">
+        <div className="mt-auto pt-6 font-mono text-xs text-bg opacity-50 tracking-wide uppercase">
           You can change all of this on your profile later
         </div>
       </aside>
@@ -157,7 +157,7 @@ export function OnboardingDesktopShell({
           <button
             onClick={onBack}
             disabled={step <= 1}
-            className={`bg-transparent border-none font-mono text-[11px] font-bold tracking-wide uppercase p-0 ${
+            className={`bg-transparent border-none font-mono text-xs font-bold tracking-wide uppercase p-0 ${
               step > 1 ? "text-ink cursor-pointer" : "text-transparent"
             }`}
           >
@@ -166,7 +166,7 @@ export function OnboardingDesktopShell({
           {onSkip && (
             <button
               onClick={onSkip}
-              className="bg-transparent border-none cursor-pointer font-mono text-[11px] font-bold text-muted tracking-wide uppercase p-0"
+              className="bg-transparent border-none cursor-pointer font-mono text-xs font-bold text-muted tracking-wide uppercase p-0"
             >
               Skip this step
             </button>
@@ -192,7 +192,7 @@ export function OnboardingDesktopShell({
           <button
             onClick={onContinue}
             disabled={!canContinue}
-            className={`px-6 py-3 border font-mono text-[11px] font-bold tracking-wide uppercase ${
+            className={`px-6 py-3 border font-mono text-xs font-bold tracking-wide uppercase ${
               canContinue
                 ? "border-accent bg-accent text-white cursor-pointer"
                 : "border-rule-soft bg-rule-soft text-muted cursor-not-allowed"

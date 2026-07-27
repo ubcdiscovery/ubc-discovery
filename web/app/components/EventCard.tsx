@@ -18,7 +18,7 @@ export function EventCard({ event }: { event: ApiEvent }) {
           <div className="flex items-baseline gap-1.5 pr-13 pt-0.5 md:block md:pr-0 md:pt-1">
             {d && (
               <>
-                <div className="font-mono text-[11px] text-muted tracking-wider uppercase">
+                <div className="font-mono text-xs text-muted tracking-wider uppercase">
                   {fmtMonth(d)}
                 </div>
                 <div className="font-display text-2xl font-bold leading-none text-ink tabular-nums md:mt-0.5 md:text-3xl">
@@ -45,7 +45,7 @@ export function EventCard({ event }: { event: ApiEvent }) {
             <h3 className="mb-1 mt-1.5 max-w-[30ch] font-display text-xl/tight font-bold tracking-tight text-ink text-balance md:max-w-none">
               {event.title}
             </h3>
-            <div className="mb-2 font-mono text-[11px] tracking-wide text-muted uppercase">
+            <div className="mb-2 font-mono text-xs tracking-wide text-muted uppercase">
               ↳ {event.location_name}
             </div>
             <div className="flex gap-1.5 flex-wrap">

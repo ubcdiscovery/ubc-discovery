@@ -69,7 +69,7 @@ function VisitorProfile() {
         </p>
         <Link
           to="/sign-in"
-          className="mt-6 block py-3.5 border border-accent bg-accent text-white font-mono text-[11px] font-bold tracking-wider uppercase text-center no-underline"
+          className="mt-6 block py-3.5 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase text-center no-underline"
         >
           SIGN IN →
         </Link>
@@ -90,7 +90,7 @@ function VisitorProfile() {
           </p>
           <Link
             to="/sign-in"
-            className="mt-5 inline-block px-4 py-3 border border-accent bg-accent text-white font-mono text-[11px] font-bold tracking-wider uppercase no-underline"
+            className="mt-5 inline-block px-4 py-3 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase no-underline"
           >
             Sign in →
           </Link>
@@ -353,14 +353,14 @@ function MemberProfile({ user }: { user: UserResponse }) {
           <div className="fixed bottom-0 inset-x-0 px-4.5 py-3 pb-7 bg-bg border-t border-ink flex gap-2 z-50 md:hidden">
             <button
               onClick={resetForm}
-              className="px-3.5 py-3 border border-ink bg-transparent text-ink cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase"
+              className="px-3.5 py-3 border border-ink bg-transparent text-ink cursor-pointer font-mono text-xs font-bold tracking-wide uppercase"
             >
               Cancel
             </button>
             <button
               onClick={saveProfile}
               disabled={saving || !name.trim()}
-              className="flex-1 py-3 border border-accent bg-accent text-white cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase disabled:opacity-50"
+              className="flex-1 py-3 border border-accent bg-accent text-white cursor-pointer font-mono text-xs font-bold tracking-wide uppercase disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save changes"}
             </button>
@@ -465,7 +465,7 @@ function MemberProfile({ user }: { user: UserResponse }) {
             {!editing && (
               <button
                 onClick={() => setEditing(true)}
-                className="px-4 py-2.5 border border-ink bg-transparent text-ink font-mono text-[11px] font-bold tracking-wide uppercase cursor-pointer shrink-0 self-start mt-3.5"
+                className="px-4 py-2.5 border border-ink bg-transparent text-ink font-mono text-xs font-bold tracking-wide uppercase cursor-pointer shrink-0 self-start mt-3.5"
               >
                 Edit profile
               </button>
@@ -568,14 +568,14 @@ function MemberProfile({ user }: { user: UserResponse }) {
           <div className="sticky bottom-0 inset-x-0 px-8 py-3 bg-bg border-t-2 border-ink flex justify-end gap-2.5">
             <button
               onClick={resetForm}
-              className="px-4 py-2.5 border border-ink bg-transparent text-ink cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase"
+              className="px-4 py-2.5 border border-ink bg-transparent text-ink cursor-pointer font-mono text-xs font-bold tracking-wide uppercase"
             >
               Cancel
             </button>
             <button
               onClick={saveProfile}
               disabled={saving || !name.trim()}
-              className="px-4 py-2.5 border border-accent bg-accent text-white cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase disabled:opacity-50"
+              className="px-4 py-2.5 border border-accent bg-accent text-white cursor-pointer font-mono text-xs font-bold tracking-wide uppercase disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save changes →"}
             </button>

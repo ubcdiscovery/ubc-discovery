@@ -43,7 +43,7 @@ function VisitorSaved() {
             </p>
             <Link
               to="/sign-in"
-              className="mt-4 inline-block px-4 py-3 border border-accent bg-accent text-white font-mono text-[11px] font-bold tracking-wider uppercase no-underline"
+              className="mt-4 inline-block px-4 py-3 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase no-underline"
             >
               SIGN IN TO SAVE →
             </Link>
@@ -68,7 +68,7 @@ function VisitorSaved() {
             </p>
             <Link
               to="/sign-in"
-              className="mt-5 inline-block px-4 py-3 border border-accent bg-accent text-white font-mono text-[11px] font-bold tracking-wider uppercase no-underline"
+              className="mt-5 inline-block px-4 py-3 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase no-underline"
             >
               Sign in to save events →
             </Link>
@@ -182,7 +182,7 @@ function RateSheet({
           </span>
           <button
             onClick={onClose}
-            className="bg-transparent border-none cursor-pointer font-mono text-[11px] font-bold text-ink tracking-wide uppercase"
+            className="bg-transparent border-none cursor-pointer font-mono text-xs font-bold text-ink tracking-wide uppercase"
           >
             Close ✕
           </button>
@@ -244,13 +244,13 @@ function RateSheet({
         <div className="px-4.5 pt-3.5 flex gap-2.5">
           <button
             onClick={onClose}
-            className="px-4 py-3 border border-ink bg-transparent text-ink cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase"
+            className="px-4 py-3 border border-ink bg-transparent text-ink cursor-pointer font-mono text-xs font-bold tracking-wide uppercase"
           >
             Skip
           </button>
           <button
             disabled={stars === 0}
-            className={`flex-1 py-3 border font-mono text-[11px] font-bold tracking-wide uppercase ${
+            className={`flex-1 py-3 border font-mono text-xs font-bold tracking-wide uppercase ${
               stars > 0
                 ? "border-accent bg-accent text-white cursor-pointer"
                 : "border-rule-soft bg-rule-soft text-muted cursor-not-allowed"
@@ -298,7 +298,7 @@ function EmptySavedState({ tab, mobile }: { tab: "upcoming" | "past"; mobile?: b
         {!mobile && (
           <Link
             to="/"
-            className="mt-4 inline-block px-4 py-2.5 border border-ink bg-ink text-bg font-mono text-[11px] font-bold tracking-wide uppercase no-underline"
+            className="mt-4 inline-block px-4 py-2.5 border border-ink bg-ink text-bg font-mono text-xs font-bold tracking-wide uppercase no-underline"
           >
             Go to Discover →
           </Link>
@@ -395,7 +395,7 @@ function MemberSaved() {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`flex-1 py-3 border-none cursor-pointer font-mono text-[11px] font-bold tracking-wide uppercase flex items-center justify-center gap-2 ${
+                className={`flex-1 py-3 border-none cursor-pointer font-mono text-xs font-bold tracking-wide uppercase flex items-center justify-center gap-2 ${
                   on ? "bg-ink text-bg" : "bg-bg text-ink"
                 } ${i === 0 ? "border-r border-r-ink" : ""}`}
                 style={{
@@ -417,7 +417,7 @@ function MemberSaved() {
 
         <div className="px-4.5 py-4">
           {loadingEvents ? (
-            <div className="py-10 text-center font-mono text-[11px] text-muted tracking-wide uppercase">
+            <div className="py-10 text-center font-mono text-xs text-muted tracking-wide uppercase">
               Loading saved events...
             </div>
           ) : error ? (
@@ -441,7 +441,7 @@ function MemberSaved() {
         <div className="px-8 pt-6 pb-4 border-b border-ink">
           <div className="grid grid-cols-[1fr_auto] items-end gap-7">
             <div>
-              <div className="font-mono text-[11px] text-muted tracking-wider uppercase mb-1.5">
+              <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
                 Your shortlist & history
               </div>
               <h1 className="font-display font-extrabold text-5xl text-ink tracking-[-1.5px] leading-[0.92]">
@@ -471,7 +471,7 @@ function MemberSaved() {
               >
                 {t.label}
                 <span
-                  className={`px-1.5 py-0.5 font-mono text-[11px] tracking-wide font-bold ${
+                  className={`px-1.5 py-0.5 font-mono text-xs tracking-wide font-bold ${
                     on ? "bg-ink text-bg" : "bg-rule-soft text-muted"
                   }`}
                 >
@@ -484,7 +484,7 @@ function MemberSaved() {
 
         <div className="px-8 py-6 pb-14">
           {loadingEvents ? (
-            <div className="py-16 font-mono text-[11px] text-muted tracking-wide uppercase">
+            <div className="py-16 font-mono text-xs text-muted tracking-wide uppercase">
               Loading saved events...
             </div>
           ) : error ? (
