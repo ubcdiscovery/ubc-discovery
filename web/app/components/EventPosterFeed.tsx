@@ -52,7 +52,7 @@ function Poster({
           <span className="font-mono text-xs font-bold tracking-[0.2em] uppercase">
             UBC Discovery
           </span>
-          <strong className="max-w-[13ch] font-display text-[clamp(1.6rem,5vw,3.5rem)] leading-[0.94] tracking-tight">
+          <strong className="max-w-[13ch] font-display text-3xl leading-[0.94] tracking-tight">
             {event.title}
           </strong>
           <span className="font-mono text-xs font-bold tracking-wider uppercase">

@@ -103,6 +103,19 @@ export default defineConfig({
           "valid-typeof": "error",
           "max-lines": ["error", 300],
           "better-tailwindcss/enforce-canonical-classes": "error",
+          "better-tailwindcss/no-restricted-classes": [
+            "error",
+            {
+              restrict: [
+                {
+                  pattern:
+                    "text-\\[(?:(?:length:)?[0-9.]+(?:[a-z]+|%)|(?:clamp|min|max|calc)\\([^\\]]+\\))\\]$",
+                  message:
+                    "Use a Tailwind font-size utility or add a named --text-* theme token.",
+                },
+              ],
+            },
+          ],
         },
         env: {
           browser: true,
