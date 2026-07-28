@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { EventCard } from "~/components/EventCard";
-import { VibeTag } from "~/components/VibeTag";
-import type { ApiEvent } from "~/lib/api";
 import { MemberBoundary } from "~/components/MemberBoundary";
-import { useSavedEventDetails, useSavedEventIds } from "~/lib/saved-events-query";
+import type { ApiEvent } from "~/lib/api";
+import { useSavedEventDetails } from "~/lib/saved-events-query";
+
+type SavedTab = "upcoming" | "past";
 
 export function meta() {
   return [{ title: "Saved — UBC Discovery" }];
@@ -13,264 +13,68 @@ export function meta() {
 function VisitorSaved() {
   return (
     <div>
-      {/* Mobile */}
-      <div className="md:hidden">
-        <div className="px-4.5 py-3.5 border-b border-rule-soft">
-          <div className="font-mono text-xs text-muted tracking-wider uppercase">
-            Your shortlist
-          </div>
-          <h1 className="mt-1 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
-            Saved
-          </h1>
-        </div>
-        <div className="px-5.5 py-8">
-          <div className="border border-ink p-5.5">
-            <div className="font-mono text-xs text-accent font-bold tracking-wide uppercase">
-              MEMBER FEATURE
-            </div>
-            <h2 className="mt-2 mb-1.5 font-display font-extrabold text-3xl text-ink tracking-tight leading-none">
-              BUILD A
-              <br />
-              SHORTLIST.
-            </h2>
-            <p className="mt-3 text-sm/relaxed text-ink-soft">
-              Keep events you&rsquo;re thinking about in one place. Members also get a re-ranked For
-              You feed weighted to their interests, saves, and ratings.
-            </p>
-            <Link
-              to="/sign-in"
-              className="mt-4 inline-block px-4 py-3 border border-accent bg-accent text-on-color font-mono text-xs font-bold tracking-wider uppercase no-underline"
-            >
-              SIGN IN TO SAVE →
-            </Link>
-          </div>
-        </div>
+      <div className="border-b border-rule-soft px-4.5 py-3.5 md:hidden">
+        <div className="font-mono text-xs tracking-wider text-muted uppercase">Your shortlist</div>
+        <h1 className="mt-1 font-display text-4xl leading-none font-extrabold tracking-tight text-ink">
+          Saved
+        </h1>
       </div>
 
-      {/* Desktop */}
-      <div className="hidden md:block">
-        <div className="max-w-180 mx-auto px-8 py-20">
-          <div className="border border-ink p-10 px-12">
-            <div className="font-mono text-xs text-accent font-bold tracking-wider uppercase">
-              Member feature
-            </div>
-            <h1 className="mt-3 mb-2 font-display font-extrabold text-6xl/display text-ink tracking-tighter">
-              Build a shortlist.
-            </h1>
-            <p className="mt-3.5 text-base/relaxed text-ink-soft max-w-135">
-              Save events you&rsquo;re considering and they&rsquo;ll wait here. Saving also nudges
-              your <em>For you</em> feed toward what you&rsquo;re actually into.
-            </p>
-            <Link
-              to="/sign-in"
-              className="mt-5 inline-block px-4 py-3 border border-accent bg-accent text-on-color font-mono text-xs font-bold tracking-wider uppercase no-underline"
-            >
-              Sign in to save events →
-            </Link>
+      <div className="mx-auto max-w-180 px-5.5 py-8 md:px-8 md:py-20">
+        <div className="border border-ink p-5.5 md:px-12 md:py-10">
+          <div className="font-mono text-xs font-bold tracking-wider text-accent uppercase">
+            Member feature
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StarRating({ value, onChange }: { value: number; onChange: (n: number) => void }) {
-  const [hover, setHover] = useState(0);
-  const active = hover || value;
-  const size = 28;
-
-  return (
-    <div className="flex gap-1.5">
-      {[1, 2, 3, 4, 5].map((n) => {
-        const on = n <= active;
-        return (
-          <button
-            key={n}
-            onClick={() => onChange(n === value ? 0 : n)}
-            onMouseEnter={() => setHover(n)}
-            onMouseLeave={() => setHover(0)}
-            className={`flex items-center justify-center border border-ink cursor-pointer p-0 ${
-              on ? "bg-accent text-on-color" : "bg-transparent text-ink"
-            }`}
-            style={{ width: size + 12, height: size + 12 }}
-          >
-            <svg
-              width={size * 0.72}
-              height={size * 0.72}
-              viewBox="0 0 24 24"
-              fill={on ? "#fff" : "none"}
-              stroke={on ? "#fff" : "currentColor"}
-              strokeWidth="2"
-              strokeLinejoin="round"
-            >
-              <path d="M12 2l2.9 6.4 7 .7-5.2 4.6 1.5 6.9L12 17l-6.2 3.6 1.5-6.9L2.1 9.1l7-.7L12 2z" />
-            </svg>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function RateSheet({ onClose }: { onClose: () => void }) {
-  const [stars, setStars] = useState(0);
-  const [strongVibes, setStrongVibes] = useState<string[]>([]);
-  const [note, setNote] = useState("");
-
-  function toggleVibe(id: string) {
-    setStrongVibes((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
-  }
-
-  return (
-    <div className="fixed inset-0 z-100">
-      <div className="absolute inset-0 bg-scrim/55 backdrop-blur-sm" />
-      <div className="absolute bottom-0 inset-x-0 bg-bg text-ink border-t-2 border-ink pb-7 max-h-[90%] overflow-auto shadow-sheet">
-        <div className="flex justify-between items-center px-4 py-3 border-b border-rule-soft">
-          <span className="font-mono text-xs text-muted tracking-wider uppercase">
-            Rate this event
-          </span>
-          <button
-            onClick={onClose}
-            className="bg-transparent border-none cursor-pointer font-mono text-xs font-bold text-ink tracking-wide uppercase"
-          >
-            Close ✕
-          </button>
-        </div>
-
-        <div className="px-4.5 pt-5">
-          <div className="flex items-baseline justify-between mb-3">
-            <div className="font-mono text-xs text-ink font-bold tracking-wide uppercase">
-              <span className="text-accent">1</span> · How was it?
-            </div>
-            <div className="font-mono text-2xs text-muted tracking-wide uppercase">
-              1 = wouldn&rsquo;t go again · 5 = loved it
-            </div>
-          </div>
-          <StarRating value={stars} onChange={setStars} />
-        </div>
-
-        <div className="px-4.5 pt-5">
-          <div className="flex items-baseline justify-between mb-3">
-            <div className="font-mono text-xs text-ink font-bold tracking-wide uppercase">
-              <span className="text-accent">2</span> · What stood out?
-            </div>
-            <div className="font-mono text-2xs text-muted tracking-wide uppercase">
-              Pick any · optional
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {["social", "arts", "food", "wellness", "culture", "outdoors"].map((v) => (
-              <button
-                key={v}
-                onClick={() => toggleVibe(v)}
-                className="p-0 border-none bg-transparent cursor-pointer"
-              >
-                <VibeTag vibe={v} active={strongVibes.includes(v)} />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="px-4.5 pt-5">
-          <div className="flex items-baseline justify-between mb-3">
-            <div className="font-mono text-xs text-ink font-bold tracking-wide uppercase">
-              <span className="text-accent">3</span> · One-line note
-            </div>
-            <div className="font-mono text-2xs text-muted tracking-wide uppercase">
-              Just for you · optional
-            </div>
-          </div>
-          <input
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. great DJ, food line was rough"
-            className="w-full px-3.5 py-3 border border-ink bg-surface font-body text-sm text-ink outline-none"
-          />
-        </div>
-
-        <div className="px-4.5 pt-3.5 flex gap-2.5">
-          <button
-            onClick={onClose}
-            className="px-4 py-3 border border-ink bg-transparent text-ink cursor-pointer font-mono text-xs font-bold tracking-wide uppercase"
-          >
-            Skip
-          </button>
-          <button
-            disabled={stars === 0}
-            className={`flex-1 py-3 border font-mono text-xs font-bold tracking-wide uppercase ${
-              stars > 0
-                ? "border-accent bg-accent text-on-color cursor-pointer"
-                : "border-rule-soft bg-rule-soft text-muted cursor-not-allowed"
-            }`}
-          >
-            {stars === 0 ? "Pick a rating" : "Submit rating →"}
-          </button>
-        </div>
-
-        <div className="px-4.5 pt-3.5 text-xs/relaxed text-muted text-center">
-          Helps us find better events for you.
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function Saved() {
-  return <MemberBoundary fallback={<VisitorSaved />}>{() => <MemberSaved />}</MemberBoundary>;
-}
-
-function EmptySavedState({ tab, mobile }: { tab: "upcoming" | "past"; mobile?: boolean }) {
-  if (tab === "upcoming") {
-    return (
-      <div className={`${mobile ? "text-center py-10" : "py-16 text-left"}`}>
-        <h3
-          className={`font-display font-extrabold text-ink tracking-tight leading-none ${
-            mobile ? "text-3xl" : "text-4xl"
-          }`}
-        >
-          Your shortlist is empty.
-        </h3>
-        <p
-          className={`mt-2.5 text-ink-soft leading-relaxed ${
-            mobile ? "text-sm" : "text-base text-muted max-w-120"
-          }`}
-        >
-          Tap the ♡ on any event on Discover to keep it here. Saving also tunes your{" "}
-          <em>For you</em> feed.
-        </p>
-        {!mobile && (
+          <h2 className="mt-2 font-display text-3xl leading-none font-extrabold tracking-tight text-ink md:mt-3 md:text-6xl/display md:tracking-tighter">
+            Build a shortlist.
+          </h2>
+          <p className="mt-3 max-w-135 text-sm/relaxed text-ink-soft md:mt-3.5 md:text-base/relaxed">
+            Keep events you&rsquo;re thinking about in one place. Saving also nudges your{" "}
+            <em>For you</em> feed toward what you&rsquo;re actually into.
+          </p>
           <Link
-            to="/"
-            className="mt-4 inline-block px-4 py-2.5 border border-ink bg-ink text-bg font-mono text-xs font-bold tracking-wide uppercase no-underline"
+            to="/sign-in?redirect=%2Fsaved"
+            className="mt-4 inline-block border border-accent bg-accent px-4 py-3 font-mono text-xs font-bold tracking-wider text-on-color uppercase no-underline md:mt-5"
           >
-            Go to Discover →
+            Sign in to save events →
           </Link>
-        )}
+        </div>
       </div>
-    );
-  }
-
-  return (
-    <div className={`${mobile ? "text-center py-10" : "py-16 text-left"}`}>
-      <h3
-        className={`font-display font-extrabold text-ink tracking-tight leading-none ${
-          mobile ? "text-3xl" : "text-4xl"
-        }`}
-      >
-        No past saved events yet.
-      </h3>
-      <p
-        className={`mt-2.5 text-ink-soft leading-relaxed ${
-          mobile ? "text-sm" : "text-base text-muted max-w-130"
-        }`}
-      >
-        Events you saved will move here after their date passes.
-      </p>
     </div>
   );
 }
 
-function SavedEventList({ events, tab }: { events: ApiEvent[]; tab: "upcoming" | "past" }) {
+function EmptySavedState({ tab }: { tab: SavedTab }) {
+  const upcoming = tab === "upcoming";
+
+  return (
+    <div className="py-10 text-center md:py-16 md:text-left">
+      <h3 className="font-display text-3xl leading-none font-extrabold tracking-tight text-ink md:text-4xl">
+        {upcoming ? "Your shortlist is empty." : "No past saved events yet."}
+      </h3>
+      <p className="mt-2.5 text-sm/relaxed text-ink-soft md:max-w-130 md:text-base/relaxed md:text-muted">
+        {upcoming ? (
+          <>
+            Tap the ♡ on any event on Discover to keep it here. Saving also tunes your{" "}
+            <em>For you</em> feed.
+          </>
+        ) : (
+          "Events you saved will move here after they end."
+        )}
+      </p>
+      {upcoming && (
+        <Link
+          to="/"
+          className="mt-4 hidden border border-ink bg-ink px-4 py-2.5 font-mono text-xs font-bold tracking-wide text-bg uppercase no-underline md:inline-block"
+        >
+          Go to Discover →
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function SavedEventList({ events, tab }: { events: ApiEvent[]; tab: SavedTab }) {
   if (events.length === 0) return <EmptySavedState tab={tab} />;
 
   return (
@@ -282,159 +86,126 @@ function SavedEventList({ events, tab }: { events: ApiEvent[]; tab: "upcoming" |
   );
 }
 
-function MemberSaved() {
-  const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
-  const [rateSheetOpen, setRateSheetOpen] = useState(false);
-  const { data: savedEventIds, isLoading: loadingSavedIds } = useSavedEventIds();
-  const savedEventDetails = useSavedEventDetails();
-  const events = savedEventDetails.data;
-  const error = savedEventDetails.error;
-  const loadingEvents = savedEventDetails.isLoading;
+function SavedTabs({
+  counts,
+  selected,
+  onSelect,
+}: {
+  counts: Record<SavedTab, number>;
+  selected: SavedTab;
+  onSelect: (tab: SavedTab) => void;
+}) {
+  const tabs = [
+    { id: "upcoming" as const, label: "Coming up" },
+    { id: "past" as const, label: "Past events" },
+  ];
 
-  const visibleEvents =
-    loadingSavedIds && savedEventIds.size === 0
-      ? events
-      : events.filter((event) => savedEventIds.has(event.id));
-  const now = new Date();
-  const upcomingEvents = visibleEvents.filter(
-    (event) => !event.event_date || new Date(event.event_date) >= now,
+  return (
+    <div
+      className="flex items-stretch border-b-2 border-ink md:px-8"
+      role="tablist"
+      aria-label="Saved events"
+    >
+      {tabs.map((tab) => {
+        const active = tab.id === selected;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-controls="saved-events-panel"
+            aria-selected={active}
+            onClick={() => onSelect(tab.id)}
+            className={`flex flex-1 cursor-pointer items-center justify-center gap-2 border-0 px-2 py-3 font-mono text-xs font-bold tracking-wide uppercase first:border-r first:border-r-ink md:-mb-0.5 md:flex-none md:border-b-2 md:px-5 md:py-3.5 md:font-display md:text-lg md:normal-case md:tracking-tight md:first:border-r-0 ${
+              active
+                ? "bg-ink text-bg md:border-b-accent md:bg-transparent md:text-ink"
+                : "bg-bg text-ink md:border-b-transparent md:bg-transparent md:text-muted"
+            }`}
+          >
+            <span>{tab.label}</span>
+            <span
+              className={`px-1.5 text-xs ${
+                active ? "bg-accent text-on-color md:bg-ink md:text-bg" : "bg-rule-soft text-muted"
+              }`}
+            >
+              {counts[tab.id]}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
-  const pastEvents = visibleEvents.filter(
-    (event) => event.event_date && new Date(event.event_date) < now,
-  );
-  const activeEvents = tab === "upcoming" ? upcomingEvents : pastEvents;
-  const tabCounts = { upcoming: upcomingEvents.length, past: pastEvents.length };
+}
+
+function partitionSavedEvents(events: ApiEvent[], now: Date) {
+  const upcoming: ApiEvent[] = [];
+  const past: ApiEvent[] = [];
+
+  for (const event of events) {
+    const finalDate = event.event_end_date ?? event.event_date;
+    if (finalDate && new Date(finalDate) < now) {
+      past.push(event);
+    } else {
+      upcoming.push(event);
+    }
+  }
+
+  return { upcoming, past };
+}
+
+export default function Saved() {
+  return <MemberBoundary fallback={<VisitorSaved />}>{() => <MemberSaved />}</MemberBoundary>;
+}
+
+function MemberSaved() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab: SavedTab = searchParams.get("tab") === "past" ? "past" : "upcoming";
+  const { data: events, error, isLoading } = useSavedEventDetails();
+  const partitionedEvents = partitionSavedEvents(events, new Date());
+  const activeEvents = partitionedEvents[tab];
+
+  function selectTab(nextTab: SavedTab) {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set("tab", nextTab);
+    setSearchParams(nextSearchParams);
+  }
 
   return (
     <div>
-      {/* Mobile */}
-      <div className="md:hidden">
-        <div className="px-4.5 py-3.5 border-b border-rule-soft flex items-end justify-between">
-          <div>
-            <div className="font-mono text-xs text-muted tracking-wider uppercase">
-              Your shortlist & history
-            </div>
-            <h1 className="mt-1 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
-              Saved
-            </h1>
-          </div>
+      <div className="border-b border-rule-soft px-4.5 py-3.5 md:border-ink md:px-8 md:pt-6 md:pb-4">
+        <div className="font-mono text-xs tracking-wider text-muted uppercase md:mb-1.5">
+          Your shortlist &amp; history
         </div>
-
-        <div className="flex border-b border-ink">
-          {(
-            [
-              { id: "upcoming" as const, label: "Coming up", count: tabCounts.upcoming },
-              { id: "past" as const, label: "Past", count: tabCounts.past },
-            ] as const
-          ).map((t, i) => {
-            const on = t.id === tab;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex-1 py-3 border-none cursor-pointer font-mono text-xs font-bold tracking-wide uppercase flex items-center justify-center gap-2 ${
-                  on ? "bg-ink text-bg" : "bg-bg text-ink"
-                } ${i === 0 ? "border-r border-r-ink" : ""}`}
-                style={{
-                  borderRight: i === 0 ? "1px solid var(--color-ink)" : "none",
-                }}
-              >
-                <span>{t.label}</span>
-                <span
-                  className={`px-1.5 text-xs ${
-                    on ? "bg-accent text-on-color" : "bg-rule-soft text-muted"
-                  }`}
-                >
-                  {t.count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="px-4.5 py-4">
-          {loadingEvents ? (
-            <div className="py-10 text-center font-mono text-xs text-muted tracking-wide uppercase">
-              Loading saved events...
-            </div>
-          ) : error ? (
-            <div className="py-10 text-center text-sm text-danger">
-              {error instanceof Error ? error.message : "Could not load saved events."}
-            </div>
-          ) : activeEvents.length > 0 ? (
-            <div>
-              {activeEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-            </div>
-          ) : (
-            <EmptySavedState tab={tab} mobile />
-          )}
-        </div>
+        <h1 className="mt-1 font-display text-4xl leading-none font-extrabold tracking-tight text-ink md:mt-0 md:text-5xl/display">
+          Saved.
+        </h1>
       </div>
 
-      {/* Desktop */}
-      <div className="hidden md:block">
-        <div className="px-8 pt-6 pb-4 border-b border-ink">
-          <div>
-            <div>
-              <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
-                Your shortlist & history
-              </div>
-              <h1 className="font-display font-extrabold text-5xl/display text-ink tracking-tight">
-                Saved.
-              </h1>
-            </div>
+      <SavedTabs
+        counts={{
+          upcoming: partitionedEvents.upcoming.length,
+          past: partitionedEvents.past.length,
+        }}
+        selected={tab}
+        onSelect={selectTab}
+      />
+
+      <div id="saved-events-panel" role="tabpanel" className="px-4.5 py-4 md:px-8 md:pt-6 md:pb-14">
+        {isLoading ? (
+          <div className="py-10 text-center font-mono text-xs tracking-wide text-muted uppercase md:py-16 md:text-left">
+            Loading saved events...
           </div>
-        </div>
-
-        <div className="px-8 border-b-2 border-ink flex items-stretch">
-          {(
-            [
-              { id: "upcoming" as const, label: "Coming up", count: tabCounts.upcoming },
-              { id: "past" as const, label: "Past events", count: tabCounts.past },
-            ] as const
-          ).map((t) => {
-            const on = t.id === tab;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`px-5 py-3.5 border-none bg-transparent cursor-pointer flex items-center gap-2.5 font-display font-extrabold text-lg tracking-tight -mb-0.5 ${
-                  on
-                    ? "text-ink border-b-2 border-b-accent"
-                    : "text-muted border-b-2 border-b-transparent"
-                }`}
-              >
-                {t.label}
-                <span
-                  className={`px-1.5 py-0.5 font-mono text-xs tracking-wide font-bold ${
-                    on ? "bg-ink text-bg" : "bg-rule-soft text-muted"
-                  }`}
-                >
-                  {t.count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="px-8 py-6 pb-14">
-          {loadingEvents ? (
-            <div className="py-16 font-mono text-xs text-muted tracking-wide uppercase">
-              Loading saved events...
-            </div>
-          ) : error ? (
-            <div className="py-16 text-base text-danger">
-              {error instanceof Error ? error.message : "Could not load saved events."}
-            </div>
-          ) : (
-            <SavedEventList events={activeEvents} tab={tab} />
-          )}
-        </div>
+        ) : error ? (
+          <div
+            role="alert"
+            className="py-10 text-center text-sm text-danger md:py-16 md:text-left md:text-base"
+          >
+            {error instanceof Error ? error.message : "Could not load saved events."}
+          </div>
+        ) : (
+          <SavedEventList events={activeEvents} tab={tab} />
+        )}
       </div>
-
-      {rateSheetOpen && <RateSheet onClose={() => setRateSheetOpen(false)} />}
     </div>
   );
 }
