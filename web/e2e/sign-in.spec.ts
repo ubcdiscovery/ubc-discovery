@@ -44,6 +44,33 @@ test("expires codes and keeps resend on cooldown", async ({ page }) => {
   await expect(page.locator("button:visible", { hasText: /^verify/i })).toBeDisabled();
 });
 
+test("resends a replacement code after the cooldown", async ({ page }) => {
+  let sendRequests = 0;
+  await page.clock.install();
+  await mockApi(page);
+  page.on("request", (request) => {
+    if (request.url().endsWith("/auth/otp/send")) {
+      sendRequests += 1;
+    }
+  });
+  await page.goto("/sign-in");
+
+  await page.locator("[data-auth-email]:visible").fill("person@example.com");
+  await page.locator("[data-auth-email]:visible").press("Enter");
+  await page.locator("[data-auth-code]:visible").fill("123");
+  await expect(page.locator("button:visible", { hasText: /resend.*30s/i })).toBeDisabled();
+
+  await page.clock.fastForward(30_000);
+  await page.locator("button:visible", { hasText: /^resend code$/i }).click();
+
+  await expect(page.locator("[data-auth-code]:visible")).toHaveValue("");
+  await expect(
+    page.getByText(/new code was sent.*earlier codes no longer work/i).filter({ visible: true })
+  ).toBeVisible();
+  await expect(page.getByText(/code expires in 10:00/i).filter({ visible: true })).toBeVisible();
+  expect(sendRequests).toBe(2);
+});
+
 test("normalizes email and submits both forms with Enter", async ({ page }) => {
   let sentEmail = "";
   let verifiedCode = "";
