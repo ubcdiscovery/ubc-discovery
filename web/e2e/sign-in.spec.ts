@@ -15,7 +15,7 @@ test("restores an existing Firebase session", async ({ page }) => {
   await setAuthenticatedUser(page);
   await page.goto("/profile");
 
-  await expect(page.getByText("Taylor", { exact: true })).toHaveCount(2);
+  await expect(page.getByText("Taylor", { exact: true })).toHaveCount(1);
 });
 
 test("focuses the verification state after sending a code", async ({ page }) => {

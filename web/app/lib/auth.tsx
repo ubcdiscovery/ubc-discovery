@@ -27,7 +27,14 @@ type OnboardingPayload = {
   bio?: string;
 };
 
-type UpdateProfilePayload = Partial<OnboardingPayload>;
+type UpdateProfilePayload = {
+  preferred_name?: string;
+  major?: string | null;
+  year_standing?: number | null;
+  faculty?: string | null;
+  interests?: string[];
+  bio?: string | null;
+};
 
 export type AuthState =
   | { status: "loading" }

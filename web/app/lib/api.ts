@@ -155,9 +155,9 @@ export const api = {
     update: (
       data: {
         preferred_name?: string;
-        major?: string;
-        year_standing?: number;
-        faculty?: string;
+        major?: string | null;
+        year_standing?: number | null;
+        faculty?: string | null;
         interests?: string[];
       }
     ) =>

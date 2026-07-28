@@ -54,6 +54,7 @@ export async function mockApi(
     verifyError?: { status: number; detail: string; code?: string };
     saveError?: { status: number; detail: string };
     onSave?: () => void;
+    onProfileUpdate?: (body: Record<string, unknown>) => void;
     otpUid?: string;
   } = {}
 ) {
@@ -61,7 +62,24 @@ export async function mockApi(
 
   await page.route("http://api.test/**", async (route) => {
     const url = new URL(route.request().url());
-    if (url.pathname === "/users/me") {
+    if (
+      url.pathname === "/users/me" &&
+      route.request().method() === "GET"
+    ) {
+      await route.fulfill({
+        status: profile ? 200 : 404,
+        contentType: "application/json",
+        body: JSON.stringify(profile ?? { detail: "User profile not found." }),
+      });
+      return;
+    }
+    if (
+      url.pathname === "/users/me" &&
+      route.request().method() === "PUT"
+    ) {
+      const body = route.request().postDataJSON();
+      options.onProfileUpdate?.(body);
+      profile = profile ? { ...profile, ...body } : profile;
       await route.fulfill({
         status: profile ? 200 : 404,
         contentType: "application/json",
