@@ -30,14 +30,14 @@ function SelectField({
 }) {
   return (
     <div>
-      <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5">
+      <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
         {label}
       </div>
       <div className="relative">
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3.5 py-3.5 border border-ink bg-surface font-display text-lg font-bold text-ink appearance-none cursor-pointer tracking-tight outline-none"
+          className="w-full p-3.5 border border-ink bg-surface font-display text-lg font-bold text-ink appearance-none cursor-pointer tracking-tight outline-none"
         >
           <option value="">Select...</option>
           {options.map((o) => (
@@ -104,7 +104,7 @@ export default function OnboardingAcademic() {
     void onboardingDraftStore.read(uid).then((draft) => {
       if (!active) return;
       if (!draft.preferred_name) {
-        navigate("/welcome/name", { replace: true });
+        void navigate("/welcome/name", { replace: true });
         return;
       }
 
@@ -125,11 +125,11 @@ export default function OnboardingAcademic() {
       major: major.trim() || undefined,
       year_standing: yearLabelToStanding(year),
     });
-    navigate("/welcome/interests");
+    void navigate("/welcome/interests");
   }
 
   function handleSkip() {
-    navigate("/welcome/interests");
+    void navigate("/welcome/interests");
   }
 
   return (
@@ -141,16 +141,16 @@ export default function OnboardingAcademic() {
           total={3}
           onBack={() => navigate("/welcome/name")}
         />
-        <div className="px-[22px] pt-6 pb-4">
-          <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
+        <div className="px-5.5 pt-6 pb-4">
+          <div className="font-mono text-xs text-accent font-bold tracking-wide uppercase">
             Optional · skippable
           </div>
-          <h1 className="mt-1.5 mb-2 font-display font-extrabold text-[34px] text-ink tracking-tight leading-none">
+          <h1 className="mt-1.5 mb-2 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
             Where are you
             <br />
             in your degree?
           </h1>
-          <p className="text-[13.5px] text-ink-soft leading-relaxed">
+          <p className="text-sm/relaxed text-ink-soft">
             This helps us rank first-year, upper-year, and faculty-specific
             events more appropriately.
           </p>
@@ -163,7 +163,7 @@ export default function OnboardingAcademic() {
               options={FACULTIES}
             />
             <div>
-              <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5 flex justify-between">
+              <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5 flex justify-between">
                 <span>Major or program</span>
                 <span>Free text</span>
               </div>
@@ -171,11 +171,11 @@ export default function OnboardingAcademic() {
                 value={major}
                 onChange={(e) => setMajor(e.target.value)}
                 placeholder="e.g. Cognitive Systems, Mechanical Engineering"
-                className="w-full px-3.5 py-3 border border-ink bg-surface font-body text-[14.5px] text-ink outline-none"
+                className="w-full px-3.5 py-3 border border-ink bg-surface font-body text-base text-ink outline-none"
               />
             </div>
             <div>
-              <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-2">
+              <div className="font-mono text-xs text-muted tracking-wider uppercase mb-2">
                 Year standing
               </div>
               <PillGrid options={YEARS} value={year} onChange={setYear} />
@@ -225,7 +225,7 @@ export default function OnboardingAcademic() {
             />
           </div>
           <div>
-            <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5">
+            <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
               Major or program
             </div>
             <input

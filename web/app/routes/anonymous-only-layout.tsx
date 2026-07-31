@@ -15,7 +15,7 @@ export default function AnonymousOnlyLayout() {
 
   useEffect(() => {
     if (state.status === "onboarding") {
-      navigate("/welcome/name", { replace: true });
+      void navigate("/welcome/name", { replace: true });
     }
   }, [navigate, state.status]);
 

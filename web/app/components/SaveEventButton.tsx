@@ -2,31 +2,23 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import type { ApiEvent } from "~/lib/api";
 import { useAuth } from "~/lib/auth";
-import {
-  useSavedEventIds,
-  useSavedEventMutations,
-} from "~/lib/saved-events-query";
+import { useSavedEventIds, useSavedEventMutations } from "~/lib/saved-events-query";
 import { startAuthFlow } from "~/lib/auth-flow";
 
 type SaveEventButtonProps = {
   eventId: string;
-  event?: ApiEvent;
-  variant?: "icon" | "bar" | "wide";
+  event: ApiEvent;
+  variant: "largeIcon" | "bar" | "wide";
   className?: string;
 };
 
 const variantClasses = {
-  icon: "w-8 h-8 p-0 text-[15px]",
-  bar: "px-3.5 py-3 text-[11px]",
-  wide: "w-full py-3.5 text-[11px]",
+  largeIcon: "size-11 p-0 text-base",
+  bar: "px-3.5 py-3 text-xs",
+  wide: "w-full py-3.5 text-xs",
 };
 
-export function SaveEventButton({
-  eventId,
-  event,
-  variant = "icon",
-  className = "",
-}: SaveEventButtonProps) {
+export function SaveEventButton({ eventId, event, variant, className = "" }: SaveEventButtonProps) {
   const navigate = useNavigate();
   const { state } = useAuth();
   const { data: savedEventIds } = useSavedEventIds();
@@ -44,7 +36,7 @@ export function SaveEventButton({
         returnTo,
         actions: [{ type: "save-event", payload: { eventId } }],
       });
-      navigate(`/sign-in?redirect=${encodeURIComponent(returnTo)}`);
+      void navigate(`/sign-in?redirect=${encodeURIComponent(returnTo)}`);
       return;
     }
 
@@ -61,7 +53,7 @@ export function SaveEventButton({
   }
 
   const text =
-    variant === "icon"
+    variant === "largeIcon"
       ? saved
         ? "♥"
         : "♡"
@@ -86,9 +78,7 @@ export function SaveEventButton({
       onClick={handleClick}
       disabled={pending}
       className={`inline-flex items-center justify-center border font-mono font-bold tracking-wider uppercase cursor-pointer disabled:opacity-60 ${
-        saved
-          ? "border-accent bg-accent text-white"
-          : "border-ink bg-bg text-ink"
+        saved ? "border-accent bg-accent text-on-color" : "border-ink bg-bg text-ink"
       } ${variantClasses[variant]} ${className}`}
     >
       {text}

@@ -1,4 +1,4 @@
-import { useLoaderData, useNavigate } from "react-router";
+import { useLoaderData } from "react-router";
 import type { Route } from "./+types/event-detail";
 import { ApiError, api, type ApiEvent } from "~/lib/api";
 import { fmtDay, fmtRange, fmtTime, fmtMonth, fmtDate02 } from "~/lib/date";
@@ -21,8 +21,7 @@ export async function clientLoader({ params }: Route.ClientLoaderArgs) {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  const eventIsGone =
-    error instanceof ApiError && (error.status === 404 || error.status === 410);
+  const eventIsGone = error instanceof ApiError && (error.status === 404 || error.status === 410);
 
   if (eventIsGone) {
     return (
@@ -56,10 +55,7 @@ export default function EventDetail() {
       {/* Mobile */}
       <div className="md:hidden">
         <div className="px-4.5 pt-4.5">
-          <SourceBadge
-            sourceLabel={event.source_label}
-            host={event.club_name}
-          />
+          <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
           <h1 className="mt-3 mb-1.5 font-display font-extrabold text-4xl text-ink tracking-tight leading-none text-balance">
             {event.title}
           </h1>
@@ -86,36 +82,22 @@ export default function EventDetail() {
             [
               "WHEN",
               d ? fmtDay(d) : "TBD",
-              d && endD
-                ? fmtRange(d, endD).toUpperCase()
-                : d
-                  ? fmtTime(d).toUpperCase()
-                  : "",
+              d && endD ? fmtRange(d, endD).toUpperCase() : d ? fmtTime(d).toUpperCase() : "",
             ],
             ["WHERE", event.location_name, "OPEN IN MAPS →"],
-            [
-              "HOST",
-              event.club_name ?? event.source_label.replace(/_/g, " "),
-              "",
-            ],
-            [
-              "SOURCE",
-              event.source_url ?? "—",
-              event.source_url ? "OPEN ↗" : "",
-            ],
+            ["HOST", event.club_name ?? event.source_label.replace(/_/g, " "), ""],
+            ["SOURCE", event.source_url ?? "—", event.source_url ? "OPEN ↗" : ""],
           ].map(([k, v, action], i, arr) => (
             <div
               key={k}
-              className={`grid grid-cols-[64px_1fr_auto] gap-2.5 px-3 py-2.5 items-center font-mono text-xs ${
+              className={`flex items-center gap-2.5 px-3 py-2.5 font-mono text-xs ${
                 i < arr.length - 1 ? "border-b border-rule-soft" : ""
               }`}
             >
-              <span className="text-muted tracking-wide">{k}</span>
-              <span className="text-ink font-semibold truncate">{v}</span>
+              <span className="w-16 shrink-0 text-muted tracking-wide">{k}</span>
+              <span className="min-w-0 flex-1 truncate font-semibold text-ink">{v}</span>
               {action && (
-                <span className="text-accent font-semibold tracking-wide">
-                  {action}
-                </span>
+                <span className="shrink-0 text-accent font-semibold tracking-wide">{action}</span>
               )}
             </div>
           ))}
@@ -125,9 +107,7 @@ export default function EventDetail() {
           <div className="font-mono text-xs text-muted tracking-wider uppercase mb-2">
             About this event
           </div>
-          <p className="text-sm text-ink-soft leading-relaxed">
-            {event.description}
-          </p>
+          <p className="text-sm/relaxed text-ink-soft">{event.description}</p>
         </div>
 
         <div className="px-4.5 pt-5 pb-3.5">
@@ -137,14 +117,14 @@ export default function EventDetail() {
         </div>
 
         {/* Bottom action bar */}
-        <div className="fixed bottom-0 left-0 right-0 bg-bg border-t-2 border-ink px-4.5 py-3 pb-7 flex gap-2 md:hidden z-50">
+        <div className="fixed bottom-0 inset-x-0 bg-bg border-t-2 border-ink px-4.5 py-3 pb-7 flex gap-2 md:hidden z-50">
           <SaveEventButton eventId={event.id} event={event} variant="bar" />
           {event.source_url && (
             <a
               href={event.source_url}
               target="_blank"
               rel="noreferrer"
-              className="flex-1 py-3 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase cursor-pointer text-center no-underline"
+              className="flex-1 py-3 border border-accent bg-accent text-on-color font-mono text-xs font-bold tracking-wider uppercase cursor-pointer text-center no-underline"
             >
               OPEN ORIGINAL →
             </a>
@@ -154,9 +134,9 @@ export default function EventDetail() {
 
       {/* Desktop */}
       <div className="hidden md:block">
-        <div className="grid grid-cols-[1fr_380px] border-b border-ink">
-          <div className="p-8 border-r border-ink">
-            <h1 className="font-display font-extrabold text-7xl text-ink tracking-[-3px] leading-[0.92]">
+        <div className="flex border-b border-ink">
+          <div className="min-w-0 flex-1 border-r border-ink p-8">
+            <h1 className="font-display font-extrabold text-7xl/display text-ink tracking-tighter">
               {event.title}
             </h1>
             <div className="flex gap-1.5 mt-3.5">
@@ -169,7 +149,7 @@ export default function EventDetail() {
               <img
                 src={event.event_picture_url}
                 alt={`${event.title} event poster`}
-                className="mx-auto mt-8 block h-auto max-h-[75vh] w-auto max-w-full"
+                className="mx-auto mt-8 block size-auto max-h-[75vh] max-w-full"
               />
             )}
 
@@ -177,9 +157,7 @@ export default function EventDetail() {
               <div className="font-mono text-xs text-muted tracking-wider uppercase mb-3 pb-1.5 border-b border-ink">
                 About this event
               </div>
-              <p className="text-base text-ink-soft leading-relaxed">
-                {event.description}
-              </p>
+              <p className="text-base/relaxed text-ink-soft">{event.description}</p>
             </div>
 
             <div className="mt-7">
@@ -189,36 +167,26 @@ export default function EventDetail() {
             </div>
           </div>
 
-          <aside className="sticky top-0 self-start">
+          <aside className="sticky top-0 w-95 shrink-0 self-start">
             {d && (
               <div className="p-6 border-b border-ink">
-                <div className="font-mono text-xs text-muted tracking-wider uppercase">
-                  WHEN
-                </div>
+                <div className="font-mono text-xs text-muted tracking-wider uppercase">WHEN</div>
                 <div className="font-display font-extrabold text-5xl tracking-tight leading-none text-ink mt-1">
-                  {
-                    ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][
-                      d.getDay()
-                    ]
-                  }
+                  {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][d.getDay()]}
                   <br />
                   <span className="text-accent tabular-nums">
                     {fmtMonth(d)} {fmtDate02(d)}
                   </span>
                 </div>
                 <div className="font-mono text-xs text-ink mt-2 tracking-wide">
-                  {endD
-                    ? fmtRange(d, endD).toUpperCase()
-                    : fmtTime(d).toUpperCase()}{" "}
-                  · {d.getFullYear()}
+                  {endD ? fmtRange(d, endD).toUpperCase() : fmtTime(d).toUpperCase()} ·{" "}
+                  {d.getFullYear()}
                 </div>
               </div>
             )}
             <div className="p-6 border-b border-ink">
-              <div className="font-mono text-xs text-muted tracking-wider uppercase">
-                WHERE
-              </div>
-              <div className="font-display font-bold text-xl mt-1.5 tracking-tight leading-tight">
+              <div className="font-mono text-xs text-muted tracking-wider uppercase">WHERE</div>
+              <div className="font-display font-bold text-xl/tight mt-1.5 tracking-tight">
                 {event.location_name}
               </div>
               <span className="mt-2 inline-block font-mono text-xs text-accent font-bold tracking-wide uppercase">
@@ -226,9 +194,7 @@ export default function EventDetail() {
               </span>
             </div>
             <div className="p-6 border-b border-ink">
-              <div className="font-mono text-xs text-muted tracking-wider uppercase">
-                HOST
-              </div>
+              <div className="font-mono text-xs text-muted tracking-wider uppercase">HOST</div>
               <div className="font-display font-bold text-lg mt-1.5 tracking-tight">
                 {event.club_name ?? event.source_label.replace(/_/g, " ")}
               </div>
@@ -239,16 +205,12 @@ export default function EventDetail() {
                   href={event.source_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full py-3.5 border border-accent bg-accent text-white font-mono text-xs font-bold tracking-wider uppercase text-center no-underline"
+                  className="w-full py-3.5 border border-accent bg-accent text-on-color font-mono text-xs font-bold tracking-wider uppercase text-center no-underline"
                 >
                   OPEN ORIGINAL ↗
                 </a>
               )}
-              <SaveEventButton
-                eventId={event.id}
-                event={event}
-                variant="wide"
-              />
+              <SaveEventButton eventId={event.id} event={event} variant="wide" />
             </div>
           </aside>
         </div>

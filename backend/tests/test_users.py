@@ -101,6 +101,17 @@ class TestUpdateProfile:
         assert data["interests"] == ["swimming", "reading"]
         assert data["year_standing"] == 4
 
+    async def test_clear_optional_academic_context(self, client: AsyncClient):
+        resp = await client.put(
+            "/users/me",
+            json={"faculty": None, "major": None, "year_standing": None},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["faculty"] is None
+        assert data["major"] is None
+        assert data["year_standing"] is None
+
 
 class TestPresignedUpload:
     async def test_get_presigned_upload_url(self, client: AsyncClient):

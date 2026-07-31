@@ -12,16 +12,16 @@ export function MobileHeader({
       className="h-14 border-b-2 border-ink lg:hidden"
       data-testid="compact-header"
     >
-      <div className="flex h-full items-center justify-between gap-1 px-3 sm:px-[18px]">
+      <div className="flex h-full items-center justify-between gap-1 px-3 sm:px-4.5">
         <Link
           to="/"
           className="flex min-h-11 min-w-0 items-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           aria-label="UBC Discovery home"
         >
-          <span className="px-1.5 py-0.5 bg-ink text-bg font-mono text-[11px] font-bold tracking-wider">
+          <span className="px-1.5 py-0.5 bg-ink text-bg font-mono text-xs font-bold tracking-wider">
             UBC
           </span>
-          <span className="truncate font-display text-[17px] font-bold text-ink tracking-tight">
+          <span className="truncate font-display text-lg font-bold text-ink tracking-tight">
             DISCOVERY
           </span>
         </Link>

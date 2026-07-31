@@ -5,7 +5,7 @@ export function BottomTabs({ isMember }: { isMember: boolean }) {
   const tabs = getMobileNavigation(isMember);
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-bg border-t-2 border-ink pb-[max(1.75rem,env(safe-area-inset-bottom))] flex lg:hidden z-50"
+      className="fixed bottom-0 inset-x-0 bg-bg border-t-2 border-ink pb-[max(1.75rem,env(safe-area-inset-bottom))] flex lg:hidden z-50"
       aria-label="Primary navigation"
       data-testid="bottom-tabs"
     >

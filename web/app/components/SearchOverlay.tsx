@@ -111,14 +111,10 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setActiveIndex((prev) => Math.max(prev - 1, -1));
-      } else if (
-        e.key === "Enter" &&
-        activeIndex >= 0 &&
-        results[activeIndex]
-      ) {
+      } else if (e.key === "Enter" && activeIndex >= 0 && results[activeIndex]) {
         e.preventDefault();
         onClose();
-        navigate(`/events/${results[activeIndex].id}`);
+        void navigate(`/events/${results[activeIndex].id}`);
       }
     },
     [onClose, results, activeIndex, navigate],
@@ -128,7 +124,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-ink/20 backdrop-blur-[2px]"
+      className="fixed inset-0 z-60 bg-ink/20 backdrop-blur-xs"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -139,7 +135,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="event-search-title"
-        className="w-full sm:max-w-[600px] sm:mx-auto sm:mt-16"
+        className="w-full sm:max-w-150 sm:mx-auto sm:mt-16"
         onKeyDown={handleDialogKeyDown}
       >
         <h2 id="event-search-title" className="sr-only">
@@ -156,26 +152,24 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleComboboxKeyDown}
               placeholder="Search events, clubs, locations…"
-              className="flex-1 bg-transparent font-mono text-[13px] text-ink placeholder:text-muted tracking-wide outline-none"
+              className="flex-1 bg-transparent font-mono text-base text-ink placeholder:text-muted tracking-wide outline-none"
               role="combobox"
               aria-autocomplete="list"
               aria-controls="event-search-results"
               aria-expanded={results.length > 0}
               aria-activedescendant={
-                activeIndex >= 0
-                  ? `event-search-result-${results[activeIndex]?.id}`
-                  : undefined
+                activeIndex >= 0 ? `event-search-result-${results[activeIndex]?.id}` : undefined
               }
             />
             {loading && (
-              <span className="font-mono text-[10px] text-muted tracking-wider uppercase animate-pulse">
+              <span className="font-mono text-xs text-muted tracking-wider uppercase animate-pulse">
                 …
               </span>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="flex min-h-11 min-w-11 items-center justify-center border border-rule-soft px-2 font-mono text-[10px] text-muted tracking-wider uppercase hover:border-ink hover:text-ink transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className="flex min-h-11 min-w-11 items-center justify-center border border-rule-soft px-2 font-mono text-xs text-muted tracking-wider uppercase hover:border-ink hover:text-ink transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               aria-label="Close search"
             >
               ESC
@@ -189,11 +183,11 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
             id="event-search-results"
             role="listbox"
             aria-label="Event search results"
-            className="bg-bg border-2 border-t-0 border-ink max-h-[400px] overflow-y-auto"
+            className="bg-bg border-2 border-t-0 border-ink max-h-100 overflow-y-auto"
           >
             {results.length === 0 ? (
               <div className="px-4 py-8 text-center">
-                <p className="font-mono text-[11px] text-muted tracking-wider uppercase">
+                <p className="font-mono text-xs text-muted tracking-wider uppercase">
                   No events found for "{query.trim()}"
                 </p>
               </div>
@@ -209,28 +203,26 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     aria-selected={i === activeIndex}
                     onClick={() => {
                       onClose();
-                      navigate(`/events/${event.id}`);
+                      void navigate(`/events/${event.id}`);
                     }}
                     onMouseEnter={() => setActiveIndex(i)}
                     className={`w-full text-left px-4 py-3 flex items-start gap-3 border-b border-rule-soft last:border-b-0 cursor-pointer transition-colors ${
-                      i === activeIndex
-                        ? "bg-accent-soft"
-                        : "hover:bg-accent-soft"
+                      i === activeIndex ? "bg-accent-soft" : "hover:bg-accent-soft"
                     }`}
                   >
                     {/* Date chip */}
                     <div className="w-10 shrink-0 pt-0.5 text-center">
                       {d ? (
                         <>
-                          <div className="font-mono text-[9px] text-muted tracking-wider uppercase leading-none">
+                          <div className="font-mono text-xs/none text-muted tracking-wider uppercase">
                             {fmtMonth(d)}
                           </div>
-                          <div className="font-display font-bold text-lg text-ink leading-tight tabular-nums">
+                          <div className="font-display font-bold text-lg/tight text-ink tabular-nums">
                             {fmtDate02(d)}
                           </div>
                         </>
                       ) : (
-                        <div className="font-mono text-[9px] text-muted tracking-wider uppercase">
+                        <div className="font-mono text-xs text-muted tracking-wider uppercase">
                           TBD
                         </div>
                       )}
@@ -238,28 +230,24 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
                     {/* Event info */}
                     <div className="min-w-0 flex-1">
-                      <div className="font-display font-bold text-[14px] text-ink tracking-tight leading-tight truncate">
+                      <div className="font-display font-bold text-sm/tight text-ink tracking-tight truncate">
                         {event.title}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         {event.club_name && (
-                          <span className="font-mono text-[10px] text-muted tracking-wide truncate">
+                          <span className="font-mono text-xs text-muted tracking-wide truncate">
                             {event.club_name}
                           </span>
                         )}
-                        {event.club_name && (
-                          <span className="text-rule-soft">·</span>
-                        )}
-                        <span className="font-mono text-[10px] text-muted tracking-wide truncate">
+                        {event.club_name && <span className="text-rule-soft">·</span>}
+                        <span className="font-mono text-xs text-muted tracking-wide truncate">
                           {event.location_name}
                         </span>
                       </div>
                     </div>
 
                     {/* Arrow */}
-                    <span className="font-mono text-accent text-sm shrink-0 pt-1">
-                      →
-                    </span>
+                    <span className="font-mono text-accent text-sm shrink-0 pt-1">→</span>
                   </button>
                 );
               })

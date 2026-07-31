@@ -23,7 +23,7 @@ export function TopNav({
     >
       <div className="flex items-center gap-6">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-[30px] h-[30px] bg-ink text-bg flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
+          <div className="size-7.5 bg-ink text-bg flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
             UBC
           </div>
           <span className="font-display font-extrabold text-xl tracking-tight">
@@ -37,7 +37,7 @@ export function TopNav({
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `font-mono text-[11px] font-semibold tracking-wide uppercase pb-1 border-b-2 ${
+                `font-mono text-xs font-semibold tracking-wide uppercase pb-1 border-b-2 ${
                   isActive
                     ? "text-ink border-accent"
                     : "text-muted border-transparent"
@@ -53,7 +53,7 @@ export function TopNav({
         <button
           type="button"
           onClick={onOpenSearch}
-          className="relative min-w-[260px] cursor-pointer border border-ink bg-surface px-3 py-1.5 pl-8 text-left font-mono text-[11.5px] tracking-wide text-muted uppercase transition-colors hover:bg-accent-soft hover:text-ink"
+          className="relative min-w-65 cursor-pointer border border-ink bg-surface px-3 py-1.5 pl-8 text-left font-mono text-xs tracking-wide text-muted uppercase transition-colors hover:bg-accent-soft hover:text-ink"
           aria-label="Search events"
           aria-haspopup="dialog"
         >
@@ -64,7 +64,7 @@ export function TopNav({
         </button>
         <Link
           to={ORGANIZER_NAVIGATION.to}
-          className="flex h-8 items-center px-2 font-mono text-[10.5px] font-semibold tracking-wide text-muted uppercase hover:text-ink"
+          className="flex h-8 items-center px-2 font-mono text-xs font-semibold tracking-wide text-muted uppercase hover:text-ink"
         >
           {ORGANIZER_NAVIGATION.label}
         </Link>
@@ -80,7 +80,7 @@ export function TopNav({
         ) : (
           <Link
             to="/sign-in"
-            className="px-4 py-2 border border-ink bg-ink text-bg font-mono text-[11px] font-bold tracking-wide uppercase"
+            className="px-4 py-2 border border-ink bg-ink text-bg font-mono text-xs font-bold tracking-wide uppercase"
           >
             Sign in →
           </Link>

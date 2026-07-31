@@ -35,7 +35,7 @@ export default function OnboardingName() {
   async function handleContinue() {
     if (!canContinue || !uid) return;
     await onboardingDraftStore.update(uid, { preferred_name: name.trim() });
-    navigate("/welcome/academic");
+    void navigate("/welcome/academic");
   }
 
   return (
@@ -43,23 +43,23 @@ export default function OnboardingName() {
       {/* Mobile */}
       <div className="md:hidden pb-28">
         <OnboardingTop step={1} total={3} />
-        <div className="px-[22px] pt-8">
-          <div className="font-mono text-[10px] text-accent font-bold tracking-wide uppercase">
+        <div className="px-5.5 pt-8">
+          <div className="font-mono text-xs text-accent font-bold tracking-wide uppercase">
             A few quick things
           </div>
-          <h1 className="mt-2 mb-2 font-display font-extrabold text-[38px] text-ink tracking-tight leading-none">
+          <h1 className="my-2 font-display font-extrabold text-4xl text-ink tracking-tight leading-none">
             What should we call you?
           </h1>
 
           <div className="mt-6">
-            <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-2">
+            <div className="font-mono text-xs text-muted tracking-wider uppercase mb-2">
               Preferred name
             </div>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="What your friends call you"
-              className="w-full px-3.5 py-4 border border-ink bg-surface font-display text-[22px] font-bold text-ink tracking-tight outline-none"
+              className="w-full px-3.5 py-4 border border-ink bg-surface font-display text-2xl font-bold text-ink tracking-tight outline-none"
             />
           </div>
         </div>
@@ -77,14 +77,14 @@ export default function OnboardingName() {
         onContinue={handleContinue}
       >
         <div>
-          <div className="font-mono text-[10px] text-muted tracking-wider uppercase mb-1.5">
+          <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
             Preferred name
           </div>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="What your friends call you"
-            className="w-full px-3.5 py-3 border border-ink bg-surface font-display text-[22px] font-bold text-ink tracking-tight outline-none"
+            className="w-full px-3.5 py-3 border border-ink bg-surface font-display text-2xl font-bold text-ink tracking-tight outline-none"
           />
         </div>
       </OnboardingDesktopShell>

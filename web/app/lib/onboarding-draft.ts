@@ -1,6 +1,6 @@
 const STORAGE_KEY_PREFIX = "ubc-discovery:onboarding-draft:";
 
-export type OnboardingDraft = {
+type OnboardingDraft = {
   preferred_name?: string;
   major?: string;
   year_standing?: number;
@@ -8,7 +8,7 @@ export type OnboardingDraft = {
   interests?: string[];
 };
 
-export interface OnboardingDraftStore {
+interface OnboardingDraftStore {
   read(accountId: string): Promise<OnboardingDraft>;
   update(
     accountId: string,
@@ -63,7 +63,7 @@ function parseDraft(value: string | null): OnboardingDraft | null {
   }
 }
 
-export function createLocalOnboardingDraftStore(
+function createLocalOnboardingDraftStore(
   getStorage: StorageProvider
 ): OnboardingDraftStore {
   async function read(accountId: string) {

@@ -17,12 +17,12 @@ function EventDate({ event }: { event: ApiEvent }) {
 
 function Poster({
   event,
-  priority = false,
-  className = "",
+  priority,
+  className,
 }: {
   event: ApiEvent;
-  priority?: boolean;
-  className?: string;
+  priority: boolean;
+  className: string;
 }) {
   return (
     <div
@@ -34,33 +34,33 @@ function Poster({
             src={event.event_picture_url}
             alt=""
             aria-hidden="true"
-            className="absolute inset-0 h-full w-full scale-110 object-cover opacity-15 blur-xl"
+            className="absolute inset-0 size-full scale-110 object-cover opacity-15 blur-xl"
           />
           <img
             src={event.event_picture_url}
             alt=""
             loading={priority ? "eager" : "lazy"}
             decoding="async"
-            className="relative z-10 h-full w-full object-contain"
+            className="relative z-10 size-full object-contain"
           />
         </>
       ) : (
         <div
           aria-hidden="true"
-          className="flex h-full w-full flex-col justify-between bg-accent p-[9%] text-white"
+          className="flex size-full flex-col justify-between bg-accent p-[9%] text-on-color"
         >
-          <span className="font-mono text-[10px] font-bold tracking-[0.2em] uppercase">
+          <span className="font-mono text-xs font-bold tracking-brand uppercase">
             UBC Discovery
           </span>
-          <strong className="max-w-[13ch] font-display text-[clamp(1.6rem,5vw,3.5rem)] leading-[0.94] tracking-tight">
+          <strong className="max-w-[13ch] font-display text-3xl leading-none tracking-tight">
             {event.title}
           </strong>
-          <span className="font-mono text-[11px] font-bold tracking-wider uppercase">
+          <span className="font-mono text-xs font-bold tracking-wider uppercase">
             <EventDate event={event} />
           </span>
         </div>
       )}
-      <div className="absolute bottom-0 left-0 z-20 bg-hi px-3 py-2 font-mono text-[10px] font-extrabold tracking-wider text-black uppercase">
+      <div className="absolute bottom-0 left-0 z-20 bg-hi px-3 py-2 font-mono text-xs font-extrabold tracking-wider text-on-hi uppercase">
         <EventDate event={event} />
       </div>
     </div>
@@ -71,10 +71,10 @@ function CardDetails({ event }: { event: ApiEvent }) {
   return (
     <div className="min-w-0">
       <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
-      <h2 className="mt-2 max-w-[25ch] font-display text-[25px] font-extrabold leading-[1.02] tracking-tight text-balance lg:text-[30px]">
+      <h2 className="mt-2 max-w-[25ch] font-display text-2xl font-extrabold leading-none tracking-tight text-balance lg:text-3xl">
         {event.title}
       </h2>
-      <p className="mt-3 font-mono text-[10.5px] tracking-wide text-muted uppercase">
+      <p className="mt-3 font-mono text-xs tracking-wide text-muted uppercase">
         ↳ {event.location_name}
       </p>
       <div className="mt-3 flex flex-wrap gap-1.5">
@@ -90,7 +90,7 @@ export function EventPosterFeed({ events }: { events: ApiEvent[] }) {
   return (
     <section
       aria-label="Upcoming events"
-      className="mx-auto grid w-full max-w-[61.25rem] grid-cols-1 gap-x-4 gap-y-10 sm:grid-cols-[minmax(0,25rem)] sm:justify-center md:grid-cols-[repeat(auto-fit,minmax(18rem,19.75rem))]"
+      className="mx-auto grid w-full max-w-245 grid-cols-1 gap-x-4 gap-y-10 sm:grid-cols-[minmax(0,25rem)] sm:justify-center md:grid-cols-[repeat(auto-fit,minmax(18rem,19.75rem))]"
     >
       {events.map((event, index) => (
         <article
@@ -113,7 +113,8 @@ export function EventPosterFeed({ events }: { events: ApiEvent[] }) {
           <SaveEventButton
             eventId={event.id}
             event={event}
-            className="absolute right-3 top-3 z-30 h-11 w-11 bg-bg shadow-[3px_3px_0_var(--color-ink)]"
+            variant="largeIcon"
+            className="absolute right-3 top-3 z-30 bg-bg shadow-hard-sm"
           />
         </article>
       ))}
