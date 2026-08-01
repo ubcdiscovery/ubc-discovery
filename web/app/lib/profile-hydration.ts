@@ -45,6 +45,15 @@ export function createProfileHydrationCoordinator() {
         waiters.add({ afterRequestId, uid, resolve, reject });
       });
     },
+    needsRetry(uid: string, requestId: number) {
+      return (
+        currentRequestId === requestId &&
+        currentUid === uid &&
+        outcome?.status === "error" &&
+        outcome.requestId === requestId &&
+        outcome.uid === uid
+      );
+    },
     resolve(uid: string, requestId: number, profile: UserResponse | null) {
       outcome = { status: "success", requestId, uid, profile };
       for (const waiter of waiters) {

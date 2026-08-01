@@ -94,51 +94,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return nextProfile;
   }, [state]);
 
+  const hydrateFirebaseIdentity = useCallback(async (uid: string | null) => {
+    const requestId = authRequestRef.current + 1;
+    authRequestRef.current = requestId;
+    profileHydrationRef.current.identityChanged(uid, requestId);
+
+    if (!uid) {
+      setState({ status: "anonymous" });
+      return;
+    }
+
+    try {
+      const nextProfile = await loadProfile();
+      if (authRequestRef.current !== requestId) return;
+      setState(authenticatedState(uid, nextProfile));
+      profileHydrationRef.current.resolve(uid, requestId, nextProfile);
+    } catch (error) {
+      if (authRequestRef.current === requestId) {
+        setState({ status: "anonymous" });
+        if (!profileHydrationRef.current.reject(uid, requestId, error)) {
+          console.error("Failed to load authenticated profile.", error);
+        }
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (!firebaseReady) {
       setState({ status: "anonymous" });
       return;
     }
 
-    const unsubscribe = watchFirebaseAuth(async (firebaseUser) => {
-      const requestId = authRequestRef.current + 1;
-      authRequestRef.current = requestId;
-      profileHydrationRef.current.identityChanged(firebaseUser?.uid ?? null, requestId);
-
-      if (!firebaseUser) {
-        setState({ status: "anonymous" });
-        return;
-      }
-
-      try {
-        const nextProfile = await loadProfile();
-        if (authRequestRef.current !== requestId) return;
-        setState(authenticatedState(firebaseUser.uid, nextProfile));
-        profileHydrationRef.current.resolve(firebaseUser.uid, requestId, nextProfile);
-      } catch (error) {
-        if (authRequestRef.current === requestId) {
-          setState({ status: "anonymous" });
-          if (!profileHydrationRef.current.reject(firebaseUser.uid, requestId, error)) {
-            console.error("Failed to load authenticated profile.", error);
-          }
-        }
-      }
+    const unsubscribe = watchFirebaseAuth((firebaseUser) => {
+      void hydrateFirebaseIdentity(firebaseUser?.uid ?? null);
     });
 
     return unsubscribe;
-  }, [firebaseReady]);
+  }, [firebaseReady, hydrateFirebaseIdentity]);
+
+  const waitForProfileHydration = useCallback(
+    (uid: string, requestId: number) => {
+      if (profileHydrationRef.current.needsRetry(uid, requestId)) {
+        void hydrateFirebaseIdentity(uid);
+      }
+      return profileHydrationRef.current.wait(uid, requestId);
+    },
+    [hydrateFirebaseIdentity]
+  );
 
   const signInWithOtpToken = useCallback(async (customToken: string) => {
     const requestId = authRequestRef.current;
     const user = await firebaseSignInWithCustomToken(customToken);
-    return profileHydrationRef.current.wait(user.uid, requestId);
-  }, []);
+    return waitForProfileHydration(user.uid, requestId);
+  }, [waitForProfileHydration]);
 
   const signInWithGoogle = useCallback(async () => {
     const requestId = authRequestRef.current;
     const user = await firebaseSignInWithGoogle();
-    return profileHydrationRef.current.wait(user.uid, requestId);
-  }, []);
+    return waitForProfileHydration(user.uid, requestId);
+  }, [waitForProfileHydration]);
 
   const signOut = useCallback(async () => {
     const requestId = authRequestRef.current + 1;

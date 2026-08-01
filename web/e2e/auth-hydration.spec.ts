@@ -22,6 +22,22 @@ async function changeTestIdentity(page: Page, user: { uid: string; email: string
   }, user);
 }
 
+async function failFirstProfileRequest(page: Page) {
+  let shouldFail = true;
+  await page.route("http://api.test/users/me", async (route) => {
+    if (route.request().method() !== "GET" || !shouldFail) {
+      await route.fallback();
+      return;
+    }
+    shouldFail = false;
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "Profile service unavailable." }),
+    });
+  });
+}
+
 test("hydrates the member profile once after Google sign-in", async ({ page }) => {
   const requests = profileRequests(page);
   await mockApi(page, { profile: existingProfile });
@@ -45,6 +61,38 @@ test("hydrates the member profile once after OTP sign-in", async ({ page }) => {
 
   await expect(page).toHaveURL("/");
   expect(requests).toHaveLength(1);
+});
+
+test("retries Google profile hydration when Firebase keeps the same uid", async ({ page }) => {
+  await mockApi(page, { profile: existingProfile });
+  await failFirstProfileRequest(page);
+  await page.goto("/sign-in");
+
+  const googleButton = page.getByRole("button", { name: /continue with google/i });
+  await googleButton.click();
+  await expect(googleButton).toBeEnabled();
+
+  await googleButton.click();
+
+  await expect(page).toHaveURL("/", { timeout: 2_000 });
+});
+
+test("retries OTP profile hydration when Firebase keeps the same uid", async ({ page }) => {
+  await mockApi(page, { profile: existingProfile });
+  await failFirstProfileRequest(page);
+  await page.goto("/sign-in");
+
+  await page.locator("[data-auth-email]:visible").fill(existingProfile.email);
+  await page.locator("[data-auth-email]:visible").press("Enter");
+  const codeInput = page.locator("[data-auth-code]:visible");
+  await codeInput.fill("123456");
+  await codeInput.press("Enter");
+  const verifyButton = page.getByRole("button", { name: /^verify/i });
+  await expect(verifyButton).toBeEnabled();
+
+  await verifyButton.click();
+
+  await expect(page).toHaveURL("/", { timeout: 2_000 });
 });
 
 test("ignores a stale profile response after the Firebase identity changes", async ({ page }) => {

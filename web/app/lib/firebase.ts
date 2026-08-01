@@ -73,12 +73,15 @@ function asFirebaseUser(user: TestFirebaseUser): User {
 }
 
 function writeTestUser(user: TestFirebaseUser | null) {
+  const previousUid = readTestUser()?.uid ?? null;
   if (user) {
     window.sessionStorage.setItem(TEST_USER_KEY, JSON.stringify(user));
   } else {
     window.sessionStorage.removeItem(TEST_USER_KEY);
   }
-  window.dispatchEvent(new CustomEvent("ubc-test-auth-changed"));
+  if (previousUid !== (user?.uid ?? null)) {
+    window.dispatchEvent(new CustomEvent("ubc-test-auth-changed"));
+  }
 }
 
 function getFirebaseAuth(): Auth {
