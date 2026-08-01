@@ -10,7 +10,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base
 from app import models  # noqa: F401 - register all model metadata before create_all
-from app.routers import auth, users, events, ratings, saved_events, recommendations
+from app.routers import (
+    admin_events,
+    auth,
+    events,
+    ratings,
+    recommendations,
+    saved_events,
+    users,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +74,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(events.router)
+app.include_router(admin_events.router)
 app.include_router(ratings.router)
 app.include_router(saved_events.router)
 app.include_router(recommendations.router)

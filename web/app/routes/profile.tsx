@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { MemberBoundary } from "~/components/MemberBoundary";
+import { AdminAccessLink } from "~/components/profile/AdminAccessLink";
 import { MemberProfile } from "~/components/profile/MemberProfile";
 
 export function meta() {
@@ -45,7 +46,12 @@ function VisitorProfile() {
 export default function Profile() {
   return (
     <MemberBoundary fallback={<VisitorProfile />}>
-      {(profile) => <MemberProfile user={profile} />}
+      {(profile) => (
+        <>
+          <MemberProfile user={profile} />
+          {profile.is_admin && <AdminAccessLink />}
+        </>
+      )}
     </MemberBoundary>
   );
 }

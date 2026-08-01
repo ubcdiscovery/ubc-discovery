@@ -34,6 +34,38 @@ export interface EventListResponse {
   events: ApiEvent[];
 }
 
+export interface AdminEventListResponse extends EventListResponse {
+  total: number;
+}
+
+export interface CreateEventInput {
+  title: string;
+  description?: string;
+  source?: string;
+  source_label?: string;
+  source_url?: string | null;
+  external_cta_label?: string | null;
+  club_name?: string | null;
+  vibes?: string[];
+  location_name: string;
+  event_date: string;
+  event_end_date?: string | null;
+}
+
+export interface UpdateEventInput {
+  title?: string;
+  description?: string;
+  source?: string;
+  source_label?: string;
+  source_url?: string | null;
+  external_cta_label?: string | null;
+  club_name?: string | null;
+  vibes?: string[];
+  location_name?: string;
+  event_date?: string;
+  event_end_date?: string | null;
+}
+
 export interface UserResponse {
   id: string;
   email: string;
@@ -44,6 +76,7 @@ export interface UserResponse {
   interests: string[] | null;
   bio: string | null;
   profile_picture_url: string | null;
+  is_admin: boolean;
   ubc_verified: boolean;
   created_at: string;
 }
@@ -91,10 +124,17 @@ async function apiFetch<T>(
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const detail = body.detail;
-    const message =
-      typeof detail === "object" && detail
+    const validationMessage = Array.isArray(detail)
+      ? detail.find((item) => typeof item?.msg === "string")?.msg
+      : undefined;
+    const objectMessage =
+      detail && !Array.isArray(detail) && typeof detail === "object"
         ? detail.message
-        : detail ?? `API error ${res.status}`;
+        : undefined;
+    const message =
+      validationMessage ??
+      objectMessage ??
+      (typeof detail === "string" ? detail : `API error ${res.status}`);
     const code =
       typeof detail === "object" && detail ? detail.code : body.code;
     throw new ApiError(res.status, message, code);
@@ -170,6 +210,38 @@ export const api = {
         "/users/me/presigned-upload",
         {}
       ),
+  },
+  admin: {
+    events: {
+      list: (q = "", skip = 0, limit = 25) =>
+        authenticatedApiFetch<AdminEventListResponse>(
+          `/admin/events?q=${encodeURIComponent(q)}&skip=${skip}&limit=${limit}`
+        ),
+      get: (id: string) =>
+        authenticatedApiFetch<ApiEvent>(
+          `/admin/events/${encodeURIComponent(id)}`
+        ),
+      create: (data: CreateEventInput) =>
+        authenticatedApiFetch<ApiEvent>("/admin/events", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+      update: (id: string, data: UpdateEventInput) =>
+        authenticatedApiFetch<ApiEvent>(
+          `/admin/events/${encodeURIComponent(id)}`,
+          { method: "PUT", body: JSON.stringify(data) }
+        ),
+      remove: (id: string) =>
+        authenticatedApiFetch<void>(
+          `/admin/events/${encodeURIComponent(id)}`,
+          { method: "DELETE" }
+        ),
+      presignedUpload: (id: string) =>
+        authenticatedApiFetch<PresignedUploadResponse>(
+          `/admin/events/${encodeURIComponent(id)}/presigned-upload`,
+          { method: "POST" }
+        ),
+    },
   },
   saved: {
     list: (skip = 0, limit = 100) =>

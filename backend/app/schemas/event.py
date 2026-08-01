@@ -46,7 +46,7 @@ class CreateEventRequest(BaseModel):
     source_url: str | None = None
     external_cta_label: str | None = None
     vibes: list[str] = Field(default_factory=list)
-    location_name: str
+    location_name: str = Field(min_length=1)
     event_date: datetime
     event_end_date: datetime | None = None
 
@@ -73,6 +73,13 @@ class CreateEventRequest(BaseModel):
             raise ValueError("vibes must use the fixed event vibe taxonomy")
         return value
 
+    @field_validator("location_name")
+    @classmethod
+    def validate_location_name(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("location_name must contain location text")
+        return value.strip()
+
 
 class UpdateEventRequest(BaseModel):
     title: str | None = None
@@ -83,7 +90,7 @@ class UpdateEventRequest(BaseModel):
     source_url: str | None = None
     external_cta_label: str | None = None
     vibes: list[str] | None = None
-    location_name: str | None = None
+    location_name: str | None = Field(default=None, min_length=1)
     event_date: datetime | None = None
     event_end_date: datetime | None = None
 
@@ -131,6 +138,18 @@ class UpdateEventRequest(BaseModel):
             raise ValueError("vibes must use the fixed event vibe taxonomy")
         return value
 
+    @field_validator("location_name")
+    @classmethod
+    def validate_location_name(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("location_name must contain location text")
+        return value.strip() if value is not None else None
+
 
 class EventListResponse(BaseModel):
     events: list[EventResponse]
+
+
+class AdminEventListResponse(BaseModel):
+    events: list[EventResponse]
+    total: int
