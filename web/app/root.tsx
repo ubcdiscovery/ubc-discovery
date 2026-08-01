@@ -10,6 +10,7 @@ import {
 import type { Route } from "./+types/root";
 import { AuthProvider } from "~/lib/auth";
 import { AppQueryProvider } from "~/lib/query";
+import { ThemeProvider } from "~/lib/theme";
 import { AuthFlowCoordinator } from "~/components/AuthFlowCoordinator";
 import { OnboardingCompleteModal } from "~/components/OnboardingCompleteModal";
 import "./app.css";
@@ -28,6 +29,7 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  // The bootstrap script intentionally changes data-theme before hydration.
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -38,7 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Prevent flash of wrong theme before React hydrates */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var t=localStorage.getItem('theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`,
           }}
         />
       </head>
@@ -53,13 +55,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppQueryProvider>
-        <AuthFlowCoordinator />
-        <OnboardingCompleteModal />
-        <Outlet />
-      </AppQueryProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppQueryProvider>
+          <AuthFlowCoordinator />
+          <OnboardingCompleteModal />
+          <Outlet />
+        </AppQueryProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
