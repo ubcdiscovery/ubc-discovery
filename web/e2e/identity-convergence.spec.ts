@@ -45,7 +45,7 @@ test("Google first then OTP resolves to the same identity and member", async ({ 
     profileTokens.filter((token) =>
       token.includes(`mock-token:google-user:${existingProfile.email}`)
     ).length
-  ).toBeGreaterThanOrEqual(2);
+  ).toBe(2);
 });
 
 test("OTP first links a colliding Google credential to the same email identity", async ({
@@ -93,6 +93,8 @@ test("OTP first links a colliding Google credential to the same email identity",
       )
     )
     .toBe("otp-first-uid");
+  await page.goto("/profile");
+  await expect(page.getByText("Taylor", { exact: true })).toHaveCount(1);
 
   await signOutInTest(page);
   await page.evaluate(() => {

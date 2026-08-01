@@ -17,6 +17,7 @@ import {
   signOut as firebaseSignOut,
   watchFirebaseAuth,
 } from "~/lib/firebase";
+import { createProfileHydrationCoordinator } from "~/lib/profile-hydration";
 
 type OnboardingPayload = {
   preferred_name: string;
@@ -78,6 +79,7 @@ function authenticatedState(
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: "loading" });
   const authRequestRef = useRef(0);
+  const profileHydrationRef = useRef(createProfileHydrationCoordinator());
   const firebaseConfigError = getFirebaseConfigError();
   const firebaseReady = !firebaseConfigError;
 
@@ -101,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = watchFirebaseAuth(async (firebaseUser) => {
       const requestId = authRequestRef.current + 1;
       authRequestRef.current = requestId;
+      profileHydrationRef.current.identityChanged(firebaseUser?.uid ?? null, requestId);
 
       if (!firebaseUser) {
         setState({ status: "anonymous" });
@@ -111,11 +114,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const nextProfile = await loadProfile();
         if (authRequestRef.current !== requestId) return;
         setState(authenticatedState(firebaseUser.uid, nextProfile));
+        profileHydrationRef.current.resolve(firebaseUser.uid, requestId, nextProfile);
       } catch (error) {
         if (authRequestRef.current === requestId) {
           setState({ status: "anonymous" });
+          if (!profileHydrationRef.current.reject(firebaseUser.uid, requestId, error)) {
+            console.error("Failed to load authenticated profile.", error);
+          }
         }
-        throw error;
       }
     });
 
@@ -123,25 +129,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [firebaseReady]);
 
   const signInWithOtpToken = useCallback(async (customToken: string) => {
-    const requestId = authRequestRef.current + 1;
-    authRequestRef.current = requestId;
+    const requestId = authRequestRef.current;
     const user = await firebaseSignInWithCustomToken(customToken);
-    const nextProfile = await loadProfile();
-    if (authRequestRef.current === requestId) {
-      setState(authenticatedState(user.uid, nextProfile));
-    }
-    return nextProfile;
+    return profileHydrationRef.current.wait(user.uid, requestId);
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    const requestId = authRequestRef.current + 1;
-    authRequestRef.current = requestId;
+    const requestId = authRequestRef.current;
     const user = await firebaseSignInWithGoogle();
-    const nextProfile = await loadProfile();
-    if (authRequestRef.current === requestId) {
-      setState(authenticatedState(user.uid, nextProfile));
-    }
-    return nextProfile;
+    return profileHydrationRef.current.wait(user.uid, requestId);
   }, []);
 
   const signOut = useCallback(async () => {
