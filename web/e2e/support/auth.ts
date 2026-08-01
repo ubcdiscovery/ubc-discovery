@@ -55,7 +55,9 @@ export async function mockApi(
     saveError?: { status: number; detail: string };
     onSave?: () => void;
     onProfileUpdate?: (body: Record<string, unknown>) => void;
+    onProfileRequest?: (uid: string | null) => Promise<void> | void;
     otpUid?: string;
+    profilesByUid?: Record<string, MockProfile | null>;
   } = {}
 ) {
   let profile = options.profile === undefined ? null : options.profile;
@@ -66,10 +68,21 @@ export async function mockApi(
       url.pathname === "/users/me" &&
       route.request().method() === "GET"
     ) {
+      const authorization = route.request().headers().authorization ?? "";
+      const uid = authorization.match(/^Bearer mock-token:([^:]+):/)?.[1] ?? null;
+      await options.onProfileRequest?.(uid);
+      const requestedProfile =
+        uid &&
+        options.profilesByUid &&
+        Object.prototype.hasOwnProperty.call(options.profilesByUid, uid)
+          ? (options.profilesByUid?.[uid] ?? null)
+          : profile;
       await route.fulfill({
-        status: profile ? 200 : 404,
+        status: requestedProfile ? 200 : 404,
         contentType: "application/json",
-        body: JSON.stringify(profile ?? { detail: "User profile not found." }),
+        body: JSON.stringify(
+          requestedProfile ?? { detail: "User profile not found." }
+        ),
       });
       return;
     }
