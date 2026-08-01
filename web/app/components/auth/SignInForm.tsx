@@ -122,15 +122,18 @@ export function SignInForm() {
               className="border border-ink bg-surface px-3.5 py-3 text-center font-mono text-base tracking-otp text-ink outline-none md:w-full md:px-3 md:py-2.5 md:text-lg"
             />
           </div>
-          <p className="font-mono text-xs text-muted">
-            {flow.codeExpired
-              ? "This code has expired. Request a new one."
-              : `Code expires in ${Math.floor(flow.secondsRemaining / 60)}:${String(
-                  flow.secondsRemaining % 60,
-                ).padStart(2, "0")}.`}
-          </p>
+          {flow.codeExpired ? (
+            <p role="alert" className="font-mono text-xs text-muted">
+              This code has expired. Request a new one.
+            </p>
+          ) : (
+            <p className="font-mono text-xs text-muted">
+              Code expires in {Math.floor(flow.secondsRemaining / 60)}:
+              {String(flow.secondsRemaining % 60).padStart(2, "0")}.
+            </p>
+          )}
           {flow.replacementNotice && (
-            <p className="text-xs text-ink-soft">
+            <p role="status" className="text-xs text-ink-soft">
               A new code was sent. Earlier codes no longer work.
             </p>
           )}
@@ -170,9 +173,15 @@ export function SignInForm() {
         </form>
       )}
 
-      {flow.error && <p className="font-mono text-xs text-danger">{flow.error}</p>}
+      {flow.error && (
+        <p role="alert" className="font-mono text-xs text-danger">
+          {flow.error}
+        </p>
+      )}
       {flow.firebaseConfigError && !flow.error && (
-        <p className="font-mono text-xs text-danger">{flow.firebaseConfigError}</p>
+        <p role="alert" className="font-mono text-xs text-danger">
+          {flow.firebaseConfigError}
+        </p>
       )}
     </div>
   );
