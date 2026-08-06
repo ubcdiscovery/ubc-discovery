@@ -13,6 +13,7 @@ export function createAdminApiMock(options: {
   events: AdminMockEvent[];
   onList?: (q: string) => void;
   onUpdate?: (body: Record<string, unknown>) => void;
+  onImageUpload?: () => void;
   updateError?: { status: number; detail: string };
 }) {
   let events = options.events;
@@ -34,6 +35,43 @@ export function createAdminApiMock(options: {
         contentType: "application/json",
         body: JSON.stringify({ events: matches, total: matches.length }),
       });
+      return true;
+    }
+
+    const presignedPath = url.pathname.match(/^\/admin\/events\/([^/]+)\/presigned-upload$/);
+    if (presignedPath && route.request().method() === "POST") {
+      const eventId = decodeURIComponent(presignedPath[1]);
+      const event = events.find((candidate) => candidate.id === eventId);
+      await route.fulfill({
+        status: event ? 200 : 404,
+        contentType: "application/json",
+        body: JSON.stringify(
+          event
+            ? {
+                upload_url: `http://api.test/admin/event-image-upload/${encodeURIComponent(eventId)}`,
+                fields: {
+                  key: `event-pictures/${eventId}.webp`,
+                  "Content-Type": "image/webp",
+                },
+                file_key: `event-pictures/${eventId}.webp`,
+                max_file_size_bytes: 3 * 1024 * 1024,
+              }
+            : { detail: "Event not found" }
+        ),
+      });
+      return true;
+    }
+
+    const imageUploadPath = url.pathname.match(/^\/admin\/event-image-upload\/([^/]+)$/);
+    if (imageUploadPath && route.request().method() === "POST") {
+      const eventId = decodeURIComponent(imageUploadPath[1]);
+      options.onImageUpload?.();
+      events = events.map((candidate) =>
+        candidate.id === eventId
+          ? { ...candidate, event_picture_url: `http://images.test/${eventId}.webp` }
+          : candidate
+      );
+      await route.fulfill({ status: 204 });
       return true;
     }
 

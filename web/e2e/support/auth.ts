@@ -70,6 +70,7 @@ export async function mockApi(
     adminEvents?: AdminMockEvent[];
     onAdminList?: (q: string) => void;
     onAdminUpdate?: (body: Record<string, unknown>) => void;
+    onAdminImageUpload?: () => void;
     adminUpdateError?: { status: number; detail: string };
     otpUid?: string;
     profilesByUid?: Record<string, MockProfile | null>;
@@ -80,6 +81,7 @@ export async function mockApi(
     events: options.adminEvents ?? [],
     onList: options.onAdminList,
     onUpdate: options.onAdminUpdate,
+    onImageUpload: options.onAdminImageUpload,
     updateError: options.adminUpdateError,
   });
 

@@ -7,6 +7,11 @@ import {
   setAuthenticatedUser,
 } from "./support/auth";
 
+const onePixelPng = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+  "base64"
+);
+
 test("administrator enters the admin catalogue from the account menu", async ({
   page,
   isMobile,
@@ -102,4 +107,26 @@ test("administrator edits a canonical Event Listing", async ({ page }) => {
     club_name: null,
     vibes: ["social", "academic"],
   });
+});
+
+test("administrator uploads an Event Listing image", async ({ page }) => {
+  let uploads = 0;
+  await mockApi(page, {
+    profile: adminProfile,
+    adminEvents: [mockEvent],
+    onAdminImageUpload: () => uploads++,
+  });
+  await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
+  await page.goto(`/admin/events/${mockEvent.id}`);
+
+  await page.getByLabel("Choose image").setInputFiles({
+    name: "poster.png",
+    mimeType: "image/png",
+    buffer: onePixelPng,
+  });
+  await expect(page.getByText("Selected: poster.png")).toBeVisible();
+  await page.getByRole("button", { name: "Upload image" }).click();
+
+  await expect(page.getByRole("status")).toHaveText("Image uploaded.");
+  expect(uploads).toBe(1);
 });

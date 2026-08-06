@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
+import { Alert } from "~/components/ui/Alert";
+import { Button } from "~/components/ui/Button";
+import { Card } from "~/components/ui/Card";
+import { Input } from "~/components/ui/Input";
 import { api, type ApiEvent } from "~/lib/api";
 import { SOURCES } from "~/lib/constants";
 
@@ -122,20 +126,17 @@ export default function AdminEvents() {
         <label htmlFor="admin-event-search" className="sr-only">
           Search Event Listings
         </label>
-        <input
+        <Input
           id="admin-event-search"
           type="search"
           value={searchDraft}
           onChange={(event) => setSearchDraft(event.target.value)}
           placeholder="Search title, organizer, location…"
-          className="min-w-0 flex-1 border border-ink bg-surface px-4 py-3 font-body text-sm text-ink outline-none placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="min-w-0 flex-1 px-4 py-3 font-body"
         />
-        <button
-          type="submit"
-          className="cursor-pointer border border-accent bg-accent px-5 py-3 font-mono text-xs font-bold uppercase tracking-wide text-on-color"
-        >
+        <Button type="submit" variant="primary" size="lg">
           Search catalogue
-        </button>
+        </Button>
       </form>
 
       <div className="mt-5 flex items-center justify-between border-b border-ink pb-2 font-mono text-xs uppercase tracking-wide text-muted">
@@ -144,22 +145,18 @@ export default function AdminEvents() {
       </div>
 
       {eventsQuery.isError ? (
-        <div role="alert" className="mt-5 border border-danger bg-surface p-5">
+        <Alert variant="error" className="mt-5 bg-surface p-5">
           <h2 className="font-display text-xl font-extrabold">Could not load Event Listings.</h2>
           <p className="mt-1 text-sm text-ink-soft">Check your connection or administrator access, then try again.</p>
-          <button
-            type="button"
-            onClick={() => void eventsQuery.refetch()}
-            className="mt-4 cursor-pointer border border-ink bg-ink px-3 py-2 font-mono text-xs font-bold uppercase tracking-wide text-bg"
-          >
+          <Button type="button" className="mt-4" onClick={() => void eventsQuery.refetch()}>
             Try again
-          </button>
-        </div>
+          </Button>
+        </Alert>
       ) : eventsQuery.data?.events.length === 0 ? (
-        <div className="mt-5 border border-ink bg-surface p-6 text-center md:p-10">
+        <Card className="mt-5 p-6 text-center md:p-10">
           <h2 className="font-display text-2xl font-extrabold">No matching Event Listings.</h2>
           <p className="mt-2 text-sm text-ink-soft">Try a title, organizer, or location with fewer words.</p>
-        </div>
+        </Card>
       ) : (
         <ol className="mt-4 grid gap-2" aria-label="Canonical Event Listings">
           {eventsQuery.data?.events.map((event) => (
@@ -170,22 +167,12 @@ export default function AdminEvents() {
 
       {total > PAGE_SIZE && (
         <nav aria-label="Event Listing pages" className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            disabled={page === 0}
-            onClick={() => goToPage(page - 1)}
-            className="cursor-pointer border border-ink bg-surface px-3 py-2 font-mono text-xs font-bold uppercase tracking-wide disabled:cursor-not-allowed disabled:opacity-40"
-          >
+          <Button type="button" size="sm" disabled={page === 0} onClick={() => goToPage(page - 1)}>
             ← Previous
-          </button>
-          <button
-            type="button"
-            disabled={lastRecord >= total}
-            onClick={() => goToPage(page + 1)}
-            className="cursor-pointer border border-ink bg-surface px-3 py-2 font-mono text-xs font-bold uppercase tracking-wide disabled:cursor-not-allowed disabled:opacity-40"
-          >
+          </Button>
+          <Button type="button" size="sm" disabled={lastRecord >= total} onClick={() => goToPage(page + 1)}>
             Next →
-          </button>
+          </Button>
         </nav>
       )}
     </div>

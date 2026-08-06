@@ -1,4 +1,13 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent } from "react";
+import { AdminEventImage } from "~/components/admin/AdminEventImage";
+import { Alert } from "~/components/ui/Alert";
+import { Button } from "~/components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/Card";
+import { Checkbox } from "~/components/ui/Checkbox";
+import { Field } from "~/components/ui/Field";
+import { Input } from "~/components/ui/Input";
+import { Select } from "~/components/ui/Select";
+import { Textarea } from "~/components/ui/Textarea";
 import {
   draftFromEvent,
   updateInputFromDraft,
@@ -11,34 +20,10 @@ import { SOURCES, VIBES } from "~/lib/constants";
 type AdminEventFormProps = {
   event: ApiEvent;
   onSave: (input: UpdateEventInput) => Promise<ApiEvent>;
+  onUploadImage: (file: File) => Promise<ApiEvent>;
 };
 
-function Field({
-  label,
-  htmlFor,
-  hint,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div>
-      <label htmlFor={htmlFor} className="block font-mono text-xs font-bold uppercase tracking-wide text-muted">
-        {label}
-      </label>
-      {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
-      <div className="mt-1.5">{children}</div>
-    </div>
-  );
-}
-
-const INPUT_CLASS =
-  "w-full border border-ink bg-surface px-3 py-2.5 text-sm text-ink outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-
-export function AdminEventForm({ event, onSave }: AdminEventFormProps) {
+export function AdminEventForm({ event, onSave, onUploadImage }: AdminEventFormProps) {
   const [draft, setDraft] = useState(() => draftFromEvent(event));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -89,181 +74,166 @@ export function AdminEventForm({ event, onSave }: AdminEventFormProps) {
   return (
     <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
       <div className="grid gap-6">
-        <section className="border border-ink bg-surface p-4.5 md:p-6">
-          <h2 className="border-b border-ink pb-2 font-mono text-xs font-bold uppercase tracking-wider text-accent">
-            Public details
-          </h2>
-          <div className="mt-5 grid gap-5">
+        <Card>
+          <CardHeader>
+            <CardTitle>Public details</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-5">
             <Field label="Title" htmlFor="admin-title">
-              <input
+              <Input
                 id="admin-title"
                 required
                 value={draft.title}
                 onChange={(change) => updateDraft({ title: change.target.value })}
-                className={INPUT_CLASS}
               />
             </Field>
             <Field label="Description" htmlFor="admin-description">
-              <textarea
+              <Textarea
                 id="admin-description"
                 rows={7}
                 value={draft.description}
                 onChange={(change) => updateDraft({ description: change.target.value })}
-                className={INPUT_CLASS}
               />
             </Field>
             <div className="grid gap-5 md:grid-cols-2">
               <Field label="Organizer" htmlFor="admin-organizer">
-                <input
+                <Input
                   id="admin-organizer"
                   value={draft.clubName}
                   onChange={(change) => updateDraft({ clubName: change.target.value })}
-                  className={INPUT_CLASS}
                 />
               </Field>
-              <Field label="Location text" htmlFor="admin-location" hint="The public source of truth for where the event happens.">
-                <input
+              <Field
+                label="Location text"
+                htmlFor="admin-location"
+                description="The public source of truth for where the event happens."
+              >
+                <Input
                   id="admin-location"
                   required
                   value={draft.locationName}
                   onChange={(change) => updateDraft({ locationName: change.target.value })}
-                  className={INPUT_CLASS}
                 />
               </Field>
             </div>
-          </div>
-        </section>
+          </CardContent>
+        </Card>
 
-        <section className="border border-ink bg-surface p-4.5 md:p-6">
-          <h2 className="border-b border-ink pb-2 font-mono text-xs font-bold uppercase tracking-wider text-accent">
-            Schedule and source
-          </h2>
-          <div className="mt-5 grid gap-5 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Schedule and source</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-5 md:grid-cols-2">
             <Field label="Starts" htmlFor="admin-start">
-              <input
+              <Input
                 id="admin-start"
                 type="datetime-local"
                 required
                 value={draft.eventDate}
                 onChange={(change) => updateDraft({ eventDate: change.target.value })}
-                className={INPUT_CLASS}
               />
             </Field>
             <Field label="Ends" htmlFor="admin-end">
-              <input
+              <Input
                 id="admin-end"
                 type="datetime-local"
                 min={draft.eventDate}
                 value={draft.eventEndDate}
                 onChange={(change) => updateDraft({ eventEndDate: change.target.value })}
-                className={INPUT_CLASS}
               />
             </Field>
             <Field label="Event Source label" htmlFor="admin-source-label">
-              <select
+              <Select
                 id="admin-source-label"
                 value={draft.sourceLabel}
                 onChange={(change) => updateDraft({ sourceLabel: change.target.value })}
-                className={INPUT_CLASS}
               >
                 {SOURCES.filter((source) => source.id !== "all").map((source) => (
-                  <option key={source.id} value={source.id}>{source.label}</option>
+                  <option key={source.id} value={source.id}>
+                    {source.label}
+                  </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Field label="Original source URL" htmlFor="admin-source-url">
-              <input
+              <Input
                 id="admin-source-url"
                 type="url"
                 value={draft.sourceUrl}
                 onChange={(change) => updateDraft({ sourceUrl: change.target.value })}
-                className={INPUT_CLASS}
               />
             </Field>
             <Field label="External action label" htmlFor="admin-cta-label">
-              <input
+              <Input
                 id="admin-cta-label"
                 value={draft.externalCtaLabel}
                 onChange={(change) => updateDraft({ externalCtaLabel: change.target.value })}
-                className={INPUT_CLASS}
               />
             </Field>
-          </div>
-        </section>
+          </CardContent>
+        </Card>
 
-        <section className="border border-ink bg-surface p-4.5 md:p-6">
-          <h2 className="border-b border-ink pb-2 font-mono text-xs font-bold uppercase tracking-wider text-accent">
-            Vibes
-          </h2>
-          <fieldset className="mt-4 flex flex-wrap gap-2">
-            <legend className="sr-only">Event Listing Vibes</legend>
-            {VIBES.map((vibe) => {
-              const selected = draft.vibes.includes(vibe.id);
-              return (
-                <label
-                  key={vibe.id}
-                  className={`cursor-pointer border px-3 py-2 font-mono text-xs font-bold uppercase tracking-wide ${
-                    selected ? "border-accent bg-accent text-on-color" : "border-ink bg-surface text-ink"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    onChange={() => toggleVibe(vibe.id)}
-                    className="sr-only"
-                  />
-                  {vibe.label}
-                </label>
-              );
-            })}
-          </fieldset>
-        </section>
+        <Card>
+          <CardHeader>
+            <CardTitle>Vibes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <fieldset className="grid gap-3 sm:grid-cols-2">
+              <legend className="sr-only">Event Listing Vibes</legend>
+              {VIBES.map((vibe) => {
+                const selected = draft.vibes.includes(vibe.id);
+                return (
+                  <label key={vibe.id} className="flex items-center gap-2 text-sm text-ink">
+                    <Checkbox checked={selected} onChange={() => toggleVibe(vibe.id)} />
+                    {vibe.label}
+                  </label>
+                );
+              })}
+            </fieldset>
+          </CardContent>
+        </Card>
       </div>
 
-      <aside className="self-start border-2 border-ink bg-surface p-4.5 lg:sticky lg:top-5">
-        <p className="font-mono text-xs font-bold uppercase tracking-wider text-accent">Canonical record</p>
-        <dl className="mt-4 grid gap-3 font-mono text-xs">
-          <div className="border-b border-rule-soft pb-2">
-            <dt className="uppercase tracking-wide text-muted">Listing ID</dt>
-            <dd className="mt-1 font-bold text-ink">{event.id}</dd>
-          </div>
-          <div className="border-b border-rule-soft pb-2">
-            <dt className="uppercase tracking-wide text-muted">Ingestion source</dt>
-            <dd className="mt-1 font-bold text-ink">{event.source}</dd>
-          </div>
-          <div>
-            <dt className="uppercase tracking-wide text-muted">Created</dt>
-            <dd className="mt-1 font-bold text-ink">{new Date(event.created_at).toLocaleString()}</dd>
-          </div>
-        </dl>
+      <div className="grid gap-4 self-start lg:sticky lg:top-5">
+        <Card className="border-2">
+          <CardHeader>
+            <CardTitle>Canonical record</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-3 font-mono text-xs">
+              <div className="border-b border-rule-soft pb-2">
+                <dt className="uppercase tracking-wide text-muted">Listing ID</dt>
+                <dd className="mt-1 font-bold text-ink">{event.id}</dd>
+              </div>
+              <div className="border-b border-rule-soft pb-2">
+                <dt className="uppercase tracking-wide text-muted">Ingestion source</dt>
+                <dd className="mt-1 font-bold text-ink">{event.source}</dd>
+              </div>
+              <div>
+                <dt className="uppercase tracking-wide text-muted">Created</dt>
+                <dd className="mt-1 font-bold text-ink">{new Date(event.created_at).toLocaleString()}</dd>
+              </div>
+            </dl>
 
-        {(error || saved) && (
-          <p
-            role={error ? "alert" : "status"}
-            className={`mt-4 border p-3 text-sm ${error ? "border-danger text-danger" : "border-accent text-ink"}`}
-          >
-            {error || "Changes saved."}
-          </p>
-        )}
+            {(error || saved) && (
+              <Alert variant={error ? "error" : "success"} className="mt-4">
+                {error || "Changes saved."}
+              </Alert>
+            )}
 
-        <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-1">
-          <button
-            type="submit"
-            disabled={saving}
-            className="cursor-pointer border border-accent bg-accent px-4 py-3 font-mono text-xs font-bold uppercase tracking-wide text-on-color disabled:cursor-wait disabled:opacity-60"
-          >
-            {saving ? "Saving…" : "Save changes"}
-          </button>
-          <button
-            type="button"
-            onClick={resetDraft}
-            disabled={saving}
-            className="cursor-pointer border border-ink bg-surface px-4 py-3 font-mono text-xs font-bold uppercase tracking-wide text-ink disabled:opacity-60"
-          >
-            Reset
-          </button>
-        </div>
-      </aside>
+            <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-1">
+              <Button type="submit" variant="primary" disabled={saving}>
+                {saving ? "Saving…" : "Save changes"}
+              </Button>
+              <Button type="button" onClick={resetDraft} disabled={saving}>
+                Reset
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <AdminEventImage event={event} onUpload={onUploadImage} />
+      </div>
     </form>
   );
 }

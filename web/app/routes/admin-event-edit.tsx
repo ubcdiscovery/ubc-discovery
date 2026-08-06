@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { AdminEventForm } from "~/components/admin/AdminEventForm";
 import { api, type UpdateEventInput } from "~/lib/api";
+import { uploadAdminEventImage } from "~/lib/admin-event-image";
 
 export function meta() {
   return [{ title: "Edit Event Listing — UBC Discovery Admin" }];
@@ -19,6 +20,13 @@ export default function AdminEventEdit() {
 
   async function saveEvent(input: UpdateEventInput) {
     const updated = await api.admin.events.update(id, input);
+    queryClient.setQueryData(["admin-event", id], updated);
+    await queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+    return updated;
+  }
+
+  async function uploadEventImage(file: File) {
+    const updated = await uploadAdminEventImage(id, file);
     queryClient.setQueryData(["admin-event", id], updated);
     await queryClient.invalidateQueries({ queryKey: ["admin-events"] });
     return updated;
@@ -52,7 +60,12 @@ export default function AdminEventEdit() {
             </h1>
           </div>
           <div className="mt-6">
-            <AdminEventForm key={eventQuery.data.id} event={eventQuery.data} onSave={saveEvent} />
+            <AdminEventForm
+              key={eventQuery.data.id}
+              event={eventQuery.data}
+              onSave={saveEvent}
+              onUploadImage={uploadEventImage}
+            />
           </div>
         </>
       )}
