@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { FiChevronDown, FiLogOut, FiUser } from "react-icons/fi";
+import { FiChevronDown, FiLogOut, FiShield, FiUser } from "react-icons/fi";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "~/lib/auth";
 
@@ -75,6 +75,17 @@ export function AccountMenu({ memberName }: { memberName: string }) {
             <FiUser aria-hidden="true" className="size-3.5" />
             Profile
           </Link>
+          {state.status === "member" && state.profile.is_admin && (
+            <Link
+              to="/admin/events"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 border-b border-rule-soft px-3 py-2.5 font-mono text-xs font-bold uppercase tracking-wide text-ink hover:bg-accent-soft"
+            >
+              <FiShield aria-hidden="true" className="size-3.5" />
+              Administration
+            </Link>
+          )}
           <button
             type="button"
             role="menuitem"

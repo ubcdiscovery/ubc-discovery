@@ -7,12 +7,17 @@ import {
   setAuthenticatedUser,
 } from "./support/auth";
 
-test("administrator enters a separate responsive admin catalogue from Profile", async ({ page }) => {
+test("administrator enters the admin catalogue from the account menu", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, "The account dropdown is part of the desktop navigation shell.");
   await mockApi(page, { profile: adminProfile, adminEvents: [mockEvent] });
   await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
 
-  await page.goto("/profile");
-  await page.getByRole("link", { name: "Open admin" }).click();
+  await page.goto("/");
+  await page.getByRole("button", { name: adminProfile.preferred_name }).click();
+  await page.getByRole("menuitem", { name: "Administration" }).click();
 
   await expect(page).toHaveURL("/admin/events");
   await expect(page.getByRole("heading", { name: "Event Listings" })).toBeVisible();
