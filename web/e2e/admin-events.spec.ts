@@ -26,7 +26,8 @@ test("administrator enters the admin catalogue from the account menu", async ({
 
   await expect(page).toHaveURL("/admin/events");
   await expect(page.getByRole("heading", { name: "Event Listings" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: mockEvent.title })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Canonical Event Listings" })).toBeVisible();
+  await expect(page.getByRole("link", { name: mockEvent.title })).toBeVisible();
   await expect(page.getByTestId("desktop-header")).toHaveCount(0);
   await expect(page.getByTestId("bottom-tabs")).toHaveCount(0);
 
@@ -76,8 +77,8 @@ test("administrator searches the canonical catalogue", async ({ page }) => {
   await page.getByRole("button", { name: "Search catalogue" }).click();
 
   await expect(page).toHaveURL(/q=Research/);
-  await expect(page.getByRole("heading", { name: "Faculty Research Forum" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: mockEvent.title })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Faculty Research Forum" })).toBeVisible();
+  await expect(page.getByRole("link", { name: mockEvent.title })).toHaveCount(0);
   expect(queries).toContain("Research");
 });
 

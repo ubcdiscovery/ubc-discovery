@@ -5,6 +5,15 @@ import { Alert } from "~/components/ui/Alert";
 import { Button } from "~/components/ui/Button";
 import { Card } from "~/components/ui/Card";
 import { Input } from "~/components/ui/Input";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/Table";
 import { api, type ApiEvent } from "~/lib/api";
 import { SOURCES } from "~/lib/constants";
 
@@ -18,60 +27,55 @@ function sourceLabel(value: string) {
   return SOURCES.find((source) => source.id === value)?.label ?? value.replaceAll("_", " ");
 }
 
-function EventDateRail({ value }: { value: string | null }) {
-  if (!value) {
-    return (
-      <div className="flex w-16 shrink-0 flex-col border-r border-ink bg-accent-soft p-2 text-center md:w-21 md:p-3">
-        <span className="font-mono text-2xs font-bold uppercase tracking-wider text-muted">Date</span>
-        <span className="mt-1 font-display text-xl font-extrabold text-ink">TBD</span>
-      </div>
-    );
-  }
-  const date = new Date(value);
-  return (
-    <time
-      dateTime={value}
-      className="flex w-16 shrink-0 flex-col border-r border-ink bg-accent-soft p-2 text-center md:w-21 md:p-3"
-    >
-      <span className="font-mono text-2xs font-bold uppercase tracking-wider text-accent">
-        {date.toLocaleDateString("en", { month: "short" })}
-      </span>
-      <span className="font-display text-3xl leading-none font-extrabold tabular-nums text-ink">
-        {String(date.getDate()).padStart(2, "0")}
-      </span>
-      <span className="mt-1 font-mono text-2xs text-muted">{date.getFullYear()}</span>
-    </time>
-  );
+function formatEventDate(value: string | null) {
+  if (!value) return "TBD";
+  return new Date(value).toLocaleString("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }
 
-function EventLedgerRow({ event }: { event: ApiEvent }) {
+function EventTable({ events }: { events: ApiEvent[] }) {
   return (
-    <li className="border border-ink bg-surface">
-      <Link
-        to={`/admin/events/${encodeURIComponent(event.id)}`}
-        className="group flex min-h-27 text-ink no-underline"
-      >
-        <EventDateRail value={event.event_date} />
-        <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 p-3 md:flex-row md:items-center md:p-4">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-2xs font-bold uppercase tracking-wide text-muted">
-              <span className="text-accent">{sourceLabel(event.source_label)}</span>
-              <span aria-hidden="true">·</span>
-              <span>{event.id}</span>
-            </div>
-            <h2 className="mt-1 truncate font-display text-xl font-extrabold tracking-tight md:text-2xl">
-              {event.title}
-            </h2>
-            <p className="mt-1 truncate text-xs text-ink-soft md:text-sm">
-              {[event.club_name, event.location_name].filter(Boolean).join(" · ")}
-            </p>
-          </div>
-          <span className="self-end font-mono text-xs font-bold uppercase tracking-wide text-accent md:self-auto">
-            Edit <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
-          </span>
-        </div>
-      </Link>
-    </li>
+    <Table className="mt-4 border border-ink bg-surface text-left">
+      <TableCaption className="sr-only">Canonical Event Listings</TableCaption>
+      <TableHeader className="bg-accent-soft">
+        <TableRow className="hover:bg-accent-soft">
+          <TableHead scope="col">Event</TableHead>
+          <TableHead scope="col" className="whitespace-nowrap">
+            Date
+          </TableHead>
+          <TableHead scope="col">Location</TableHead>
+          <TableHead scope="col" className="whitespace-nowrap">
+            Source
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {events.map((event) => (
+          <TableRow key={event.id} className="border-ink">
+            <TableCell>
+              <Link
+                to={`/admin/events/${encodeURIComponent(event.id)}`}
+                className="block text-ink no-underline hover:text-accent"
+              >
+                <span className="font-display text-xl font-extrabold tracking-tight">{event.title}</span>
+                <span className="mt-1 block font-mono text-2xs uppercase tracking-wide text-muted">
+                  {[event.club_name, event.id].filter(Boolean).join(" · ")}
+                </span>
+              </Link>
+            </TableCell>
+            <TableCell className="font-mono text-xs text-ink-soft whitespace-nowrap">
+              <time dateTime={event.event_date ?? undefined}>{formatEventDate(event.event_date)}</time>
+            </TableCell>
+            <TableCell className="text-sm text-ink-soft">{event.location_name}</TableCell>
+            <TableCell className="font-mono text-xs font-bold uppercase tracking-wide text-accent whitespace-nowrap">
+              {sourceLabel(event.source_label)}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -158,11 +162,7 @@ export default function AdminEvents() {
           <p className="mt-2 text-sm text-ink-soft">Try a title, organizer, or location with fewer words.</p>
         </Card>
       ) : (
-        <ol className="mt-4 grid gap-2" aria-label="Canonical Event Listings">
-          {eventsQuery.data?.events.map((event) => (
-            <EventLedgerRow key={event.id} event={event} />
-          ))}
-        </ol>
+        <EventTable events={eventsQuery.data?.events ?? []} />
       )}
 
       {total > PAGE_SIZE && (

@@ -6,7 +6,7 @@ These instructions apply to all files under `web/` and supplement the repository
 
 - The admin dashboard should be easy to use, easy to read, and easy to maintain. Prefer simplicity and minimal implementation code over visual polish.
 - The admin UI does not need to match the public Discovery design language exactly; use a plain, conventional dashboard style when that reduces complexity.
-- Use shadcn/ui source-owned primitives for common admin controls where useful. Keep admin route composition, auth gating, API adapters, query behavior, and Event Listing domain logic explicit in the web app.
+- When introducing a new component, try to base it on the closest shadcn/ui component and adapt it to this app's semantic tokens and conventions. Prefer source-owned shared primitives under `app/components/ui/` over hand-rolled route markup, while keeping admin route composition, auth gating, API adapters, query behavior, and Event Listing domain logic explicit in the web app.
 - Avoid introducing a full CRUD/admin framework until repeated admin resources and workflows justify its complexity.
 - Event Listing editing must support replacing the event image through the protected presigned-upload flow. Keep image upload independent from metadata Save and show clear upload, success, and failure states.
 
