@@ -7,11 +7,11 @@ from firebase_admin import credentials
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings
-from app.database import engine, Base
 from app import models  # noqa: F401 - register all model metadata before create_all
+from app.config import settings
+from app.database import Base, engine
 from app.routers import (
-    admin_events,
+    admin,
     auth,
     events,
     ratings,
@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
         if val.startswith("{"):
             cred = credentials.Certificate(json.loads(val))
         else:
-            cred = credentials.Certificate(val) 
+            cred = credentials.Certificate(val)
         firebase_admin.initialize_app(cred)
         logger.info("Firebase Admin SDK initialized")
     else:
@@ -41,16 +41,21 @@ async def lifespan(app: FastAPI):
         # GIN trigram index for fast ILIKE search — requires pg_trgm extension
         try:
             from sqlalchemy import text
+
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
-            await conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_events_search_trgm "
-                "ON events USING gin ("
-                "(coalesce(title,'') || ' ' || coalesce(club_name,'') || ' ' || coalesce(location_name,'')) "
-                "gin_trgm_ops)"
-            ))
+            await conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_events_search_trgm "
+                    "ON events USING gin ("
+                    "(coalesce(title,'') || ' ' || coalesce(club_name,'') || ' ' || coalesce(location_name,'')) "
+                    "gin_trgm_ops)"
+                )
+            )
             logger.info("Search trigram index ready")
         except Exception as e:
-            logger.warning("Could not create trigram index (search will use seq scan): %s", e)
+            logger.warning(
+                "Could not create trigram index (search will use seq scan): %s", e
+            )
     yield
     await engine.dispose()
 
@@ -74,7 +79,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(events.router)
-app.include_router(admin_events.router)
+app.include_router(admin.router)
 app.include_router(ratings.router)
 app.include_router(saved_events.router)
 app.include_router(recommendations.router)

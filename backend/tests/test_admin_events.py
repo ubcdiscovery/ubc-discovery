@@ -4,12 +4,11 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
+from app.models.event import Event
+from app.models.user import User
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.models.event import Event
-from app.models.user import User
 
 ADMIN_HEADERS = {"Authorization": "Bearer test-token"}
 
@@ -21,9 +20,7 @@ class TestAdminAuthorization:
         resp = await unauthed_client.get("/admin/events")
         assert resp.status_code == 401
 
-    async def test_non_admin_cannot_read_admin_catalogue(
-        self, client: AsyncClient
-    ):
+    async def test_non_admin_cannot_read_admin_catalogue(self, client: AsyncClient):
         resp = await client.get("/admin/events", headers=ADMIN_HEADERS)
         assert resp.status_code == 403
 
@@ -214,9 +211,7 @@ class TestCreateAdminEvent:
             )
             assert resp.status_code == 422
 
-    async def test_create_rejects_end_before_start(
-        self, admin_client: AsyncClient
-    ):
+    async def test_create_rejects_end_before_start(self, admin_client: AsyncClient):
         resp = await admin_client.post(
             "/admin/events",
             json={
@@ -235,7 +230,7 @@ class TestUpdateAdminEvent:
     ):
         event = sample_events[0]
         with patch(
-            "app.routers.admin_events.recommender.generate_event_embedding"
+            "app.routers.admin.events.recommender.generate_event_embedding"
         ) as mock_embedding:
             mock_embedding.return_value = [0.1, 0.2]
             resp = await admin_client.put(
@@ -252,7 +247,7 @@ class TestUpdateAdminEvent:
         self, admin_client: AsyncClient, sample_events: list[Event]
     ):
         with patch(
-            "app.routers.admin_events.recommender.generate_event_embedding"
+            "app.routers.admin.events.recommender.generate_event_embedding"
         ) as mock_embedding:
             resp = await admin_client.put(
                 f"/admin/events/{sample_events[0].id}",
@@ -273,15 +268,11 @@ class TestUpdateAdminEvent:
             {"event_end_date": "2026-08-01T10:00:00Z"},
             {"event_date": "2026-10-01T10:00:00Z"},
         ):
-            resp = await admin_client.put(
-                f"/admin/events/{event_id}", json=payload
-            )
+            resp = await admin_client.put(f"/admin/events/{event_id}", json=payload)
             assert resp.status_code == 422
 
     async def test_update_not_found(self, admin_client: AsyncClient):
-        resp = await admin_client.put(
-            "/admin/events/notfound", json={"title": "Nope"}
-        )
+        resp = await admin_client.put("/admin/events/notfound", json={"title": "Nope"})
         assert resp.status_code == 404
 
 
@@ -301,7 +292,7 @@ class TestDeleteAdminEvent:
         await db_session.flush()
         event_id = event.id
 
-        with patch("app.routers.admin_events.s3.delete_object") as mock_delete:
+        with patch("app.routers.admin.events.s3.delete_object") as mock_delete:
             resp = await admin_client.delete(f"/admin/events/{event_id}")
 
         assert resp.status_code == 204
@@ -315,19 +306,13 @@ class TestAdminEventPresignedUpload:
         self, admin_client: AsyncClient, sample_events: list[Event]
     ):
         event = sample_events[0]
-        resp = await admin_client.post(
-            f"/admin/events/{event.id}/presigned-upload"
-        )
+        resp = await admin_client.post(f"/admin/events/{event.id}/presigned-upload")
         assert resp.status_code == 200
         data = resp.json()
         assert data["upload_url"] == "https://s3.example.com/presigned"
         assert data["file_key"] == f"event-pictures/{event.id}.webp"
         assert data["max_file_size_bytes"] == 3 * 1024 * 1024
 
-    async def test_event_presigned_upload_not_found(
-        self, admin_client: AsyncClient
-    ):
-        resp = await admin_client.post(
-            "/admin/events/notfound/presigned-upload"
-        )
+    async def test_event_presigned_upload_not_found(self, admin_client: AsyncClient):
+        resp = await admin_client.post("/admin/events/notfound/presigned-upload")
         assert resp.status_code == 404
