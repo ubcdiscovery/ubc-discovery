@@ -10,6 +10,10 @@ These instructions apply to all files under `web/` and supplement the repository
 - Avoid introducing a full CRUD/admin framework until repeated admin resources and workflows justify its complexity.
 - Event Listing editing must support replacing the event image through the protected presigned-upload flow. Keep image upload independent from metadata Save and show clear upload, success, and failure states.
 
+## Navigation
+
+- Rely on browser Back and Forward navigation for history-aware movement wherever possible. Do not add custom back buttons or back links when the browser can provide that navigation; keep links for intentional destination navigation or required workflow actions.
+
 ## Theme colors
 
 - Treat the semantic color tokens in `app/app.css` as the frontend color source of truth.

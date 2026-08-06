@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 import { AdminEventForm } from "~/components/admin/AdminEventForm";
 import { api, type UpdateEventInput } from "~/lib/api";
 import { uploadAdminEventImage } from "~/lib/admin-event-image";
@@ -34,13 +34,6 @@ export default function AdminEventEdit() {
 
   return (
     <div className="px-4.5 py-6 md:px-8 md:py-10">
-      <Link
-        to="/admin/events"
-        className="font-mono text-xs font-bold uppercase tracking-wide text-accent no-underline"
-      >
-        ← Event Listings
-      </Link>
-
       {eventQuery.isPending ? (
         <p className="mt-8 font-mono text-xs uppercase tracking-wide text-muted">Loading canonical record…</p>
       ) : eventQuery.isError || !eventQuery.data ? (

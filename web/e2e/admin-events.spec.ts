@@ -93,6 +93,7 @@ test("administrator edits a canonical Event Listing", async ({ page }) => {
   await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
   await page.goto(`/admin/events/${mockEvent.id}`);
 
+  await expect(page.getByRole("link", { name: "← Event Listings" })).toHaveCount(0);
   await page.getByLabel("Title").fill("Updated Campus Welcome");
   await page.getByLabel("Location text").fill("AMS Nest Great Hall");
   await page.getByLabel("Event Source label").selectOption("ams_club");
