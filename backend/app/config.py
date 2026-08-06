@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     database_url: str = ""
+    database_ssl: bool = True
 
     aws_region: str = "us-west-2"
     s3_bucket_name: str = ""

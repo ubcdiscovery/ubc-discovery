@@ -8,10 +8,15 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.constants import EVENT_EMBEDDING_DIMENSIONS
 from app.models.event import Event
 from app.models.user import User
 
 ADMIN_HEADERS = {"Authorization": "Bearer test-token"}
+
+
+def _test_embedding(first_value: float = 0.0) -> list[float]:
+    return [first_value] + [0.0] * (EVENT_EMBEDDING_DIMENSIONS - 1)
 
 
 class TestAdminAuthorization:
@@ -213,6 +218,29 @@ class TestCreateAdminEvent:
         assert data["source_label"] == "ams_club"
         assert data["vibes"] == ["career", "social"]
 
+    async def test_create_event_writes_json_and_vector_embeddings(
+        self, admin_client: AsyncClient, db_session: AsyncSession
+    ):
+        embedding = _test_embedding(0.1)
+        with patch(
+            "app.routers.admin.events.recommender.generate_event_embedding",
+            return_value=embedding,
+        ):
+            resp = await admin_client.post(
+                "/admin/events",
+                json={
+                    "title": "Vector-backed Event",
+                    "location_name": "The Nest",
+                    "event_date": "2026-09-01T10:00:00Z",
+                },
+            )
+
+        assert resp.status_code == 200
+        event = await db_session.get(Event, resp.json()["id"])
+        assert event is not None
+        assert event.embedding == embedding
+        assert event.embedding_vector == embedding
+
     async def test_create_preserves_free_form_ingestion_source(
         self, admin_client: AsyncClient
     ):
@@ -268,7 +296,7 @@ class TestUpdateAdminEvent:
         with patch(
             "app.routers.admin.events.recommender.generate_event_embedding"
         ) as mock_embedding:
-            mock_embedding.return_value = [0.1, 0.2]
+            mock_embedding.return_value = _test_embedding(0.1)
             resp = await admin_client.put(
                 f"/admin/events/{event.id}",
                 json={"title": "Updated Event Title"},

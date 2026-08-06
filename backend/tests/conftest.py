@@ -2,7 +2,7 @@
 Shared fixtures for the UBC Discovery test suite.
 
 Strategy:
-- Tables are created once (idempotent create_all) at session start.
+- Alembic migrations are applied once at session start.
 - Each test gets an isolated DB session using the nested-transaction
   (SAVEPOINT) pattern: the outer transaction is never committed, so
   every test's writes are fully rolled back -- including writes made
@@ -17,10 +17,12 @@ from __future__ import annotations
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 import pytest_asyncio
+from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import (
@@ -29,8 +31,9 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import SessionTransaction
 
+from alembic import command
 from app.config import settings
-from app.database import Base, get_db
+from app.database import get_db
 from app.dependencies import (
     FirebaseIdentity,
     get_current_user,
@@ -54,13 +57,18 @@ def _get_engine():
 
 
 # ---------------------------------------------------------------------------
-# Session-scoped: ensure tables exist
+# Session-scoped: apply the authoritative schema
 # ---------------------------------------------------------------------------
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def _setup_tables():
     engine = _get_engine()
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        def _upgrade(sync_connection):
+            config = Config(str(Path(__file__).parents[1] / "alembic.ini"))
+            config.attributes["connection"] = sync_connection
+            command.upgrade(config, "head")
+
+        await conn.run_sync(_upgrade)
     yield
     await engine.dispose()
     global _engine

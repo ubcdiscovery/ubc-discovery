@@ -26,12 +26,20 @@ async def get_similar_events(
     if not source_event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    result = await db.execute(
-        select(Event)
-        .where(Event.id != event_id)
-        .order_by(Event.event_date.desc().nullslast())
-    )
-    candidates = list(result.scalars().all())
+    if source_event.embedding_vector is not None:
+        candidates = await recommender.fetch_nearest_events(
+            db,
+            source_event.embedding_vector,
+            exclude_event_id=event_id,
+            limit=max(100, n * 20),
+        )
+    else:
+        result = await db.execute(
+            select(Event)
+            .where(Event.id != event_id)
+            .order_by(Event.event_date.desc().nullslast())
+        )
+        candidates = list(result.scalars().all())
 
     similar = recommender.get_similar_events(
         source_event, candidates, top_n=n, vibe_weight=vibe_weight

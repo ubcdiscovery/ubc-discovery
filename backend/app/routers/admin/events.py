@@ -23,9 +23,11 @@ router = APIRouter(
 
 async def _update_embedding(event: Event, db: AsyncSession) -> None:
     embedding = await recommender.generate_event_embedding(event)
-    if embedding is not None:
-        event.embedding = embedding
-        await db.commit()
+    if not recommender.is_valid_embedding(embedding):
+        return
+    event.embedding = embedding
+    event.embedding_vector = embedding
+    await db.commit()
 
 
 @router.get("", response_model=AdminEventListResponse)

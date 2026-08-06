@@ -1,9 +1,11 @@
 from datetime import datetime
 
 from nanoid import generate
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import JSON, DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.constants import EVENT_EMBEDDING_DIMENSIONS
 from app.database import Base
 
 
@@ -33,4 +35,7 @@ class Event(Base):
     )
     embedding: Mapped[list[float] | None] = mapped_column(
         JSON, nullable=True, default=None
+    )
+    embedding_vector: Mapped[list[float] | None] = mapped_column(
+        Vector(EVENT_EMBEDDING_DIMENSIONS), nullable=True, default=None
     )
