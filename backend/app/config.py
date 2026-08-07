@@ -1,8 +1,13 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     database_url: str = ""
+    database_ssl: Literal[
+        "disable", "allow", "prefer", "require", "verify-ca", "verify-full"
+    ] = "require"
 
     aws_region: str = "us-west-2"
     s3_bucket_name: str = ""

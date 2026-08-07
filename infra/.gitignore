@@ -1,0 +1,6 @@
+compose/.env
+compose/runtime/*.env
+!compose/.env.example
+!compose/runtime/*.env.example
+releases/
+backups/
