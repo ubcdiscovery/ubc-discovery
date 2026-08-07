@@ -30,10 +30,14 @@ export function createAdminApiMock(options: {
               .some((value) => String(value).toLowerCase().includes(normalized))
           )
         : events;
+      const requestedSkip = Number.parseInt(url.searchParams.get("skip") ?? "0", 10);
+      const requestedLimit = Number.parseInt(url.searchParams.get("limit") ?? "25", 10);
+      const skip = Number.isFinite(requestedSkip) && requestedSkip >= 0 ? requestedSkip : 0;
+      const limit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? requestedLimit : matches.length;
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ events: matches, total: matches.length }),
+        body: JSON.stringify({ events: matches.slice(skip, skip + limit), total: matches.length }),
       });
       return true;
     }

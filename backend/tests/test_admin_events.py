@@ -86,6 +86,41 @@ class TestAdminAuthorization:
 
 
 class TestAdminEventList:
+    async def test_paginates_admin_event_list(
+        self,
+        admin_client: AsyncClient,
+        db_session: AsyncSession,
+    ):
+        marker = "Admin pagination event"
+        page_one_events = [
+            Event(
+                title=f"{marker} {index}",
+                source="manual",
+                location_name="Known location",
+                event_date=datetime(2026, 9, 1, tzinfo=ZoneInfo("UTC")),
+            )
+            for index in range(25)
+        ]
+        page_two_event = Event(
+            title=f"{marker} page two record",
+            source="manual",
+            location_name="TBA",
+            event_date=datetime(2026, 8, 1, tzinfo=ZoneInfo("UTC")),
+        )
+        db_session.add_all([*page_one_events, page_two_event])
+        await db_session.flush()
+
+        resp = await admin_client.get(
+            "/admin/events",
+            params={"q": marker, "skip": 25, "limit": 25},
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] == 26
+        assert [event["id"] for event in data["events"]] == [page_two_event.id]
+        assert data["events"][0]["location_name"] == "TBA"
+
     async def test_list_includes_past_and_upcoming_events(
         self,
         admin_client: AsyncClient,
