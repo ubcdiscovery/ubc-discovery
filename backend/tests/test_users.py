@@ -36,9 +36,23 @@ class TestGetMe:
             "faculty",
             "bio",
             "profile_picture_url",
+            "is_admin",
             "created_at",
         }
         assert expected_fields.issubset(data.keys())
+
+    async def test_get_me_exposes_database_admin_capability(
+        self, client: AsyncClient, test_user: User
+    ):
+        assert (await client.get("/users/me")).json()["is_admin"] is False
+
+        test_user.is_admin = True
+        try:
+            resp = await client.get("/users/me")
+            assert resp.status_code == 200
+            assert resp.json()["is_admin"] is True
+        finally:
+            test_user.is_admin = False
 
 
 class TestOnboarding:

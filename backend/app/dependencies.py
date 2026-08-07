@@ -48,9 +48,14 @@ async def get_current_user(
 
 
 async def require_admin(
-    authorization: str = Header(..., description="Bearer <id_token> or Api-Key <key>"),
+    authorization: str | None = Header(
+        None, description="Bearer <id_token> or Api-Key <key>"
+    ),
     db: AsyncSession = Depends(get_db),
 ) -> None:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
     if authorization.startswith("Api-Key "):
         key = authorization[8:]
         if not settings.admin_api_key or key != settings.admin_api_key:

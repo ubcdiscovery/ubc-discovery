@@ -21,4 +21,9 @@ export default [
     route("welcome/academic", "routes/welcome/academic.tsx"),
     route("welcome/interests", "routes/welcome/interests.tsx"),
   ]),
+  route("admin", "routes/admin-layout.tsx", [
+    index("routes/admin-index.tsx"),
+    route("events", "routes/admin-events.tsx"),
+    route("events/:id", "routes/admin-event-edit.tsx"),
+  ]),
 ] satisfies RouteConfig;

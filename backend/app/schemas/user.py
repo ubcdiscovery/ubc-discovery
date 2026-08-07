@@ -32,6 +32,7 @@ class UserResponse(BaseModel):
     interests: list[str] | None
     bio: str | None
     profile_picture_url: str | None = None
+    is_admin: bool
     ubc_verified: bool
     created_at: datetime
 

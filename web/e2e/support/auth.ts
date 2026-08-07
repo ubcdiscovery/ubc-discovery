@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import { createAdminApiMock, type AdminMockEvent } from "./admin";
 
 export type MockProfile = {
   id: string;
@@ -10,6 +11,7 @@ export type MockProfile = {
   interests: string[];
   bio: string | null;
   profile_picture_url: string | null;
+  is_admin: boolean;
   ubc_verified: boolean;
   created_at: string;
 };
@@ -24,6 +26,7 @@ export const existingProfile: MockProfile = {
   interests: ["music", "outdoors", "food"],
   bio: null,
   profile_picture_url: null,
+  is_admin: false,
   ubc_verified: false,
   created_at: "2026-01-01T00:00:00Z",
 };
@@ -33,7 +36,7 @@ export const mockEvent = {
   title: "Campus Welcome",
   description: "Meet the UBC community.",
   source: "ubc",
-  source_label: "ubc_events",
+  source_label: "ubc_official",
   source_url: null,
   external_cta_label: null,
   club_name: null,
@@ -43,6 +46,14 @@ export const mockEvent = {
   event_date: "2026-09-01T18:00:00Z",
   event_end_date: "2026-09-01T20:00:00Z",
   created_at: "2026-01-01T00:00:00Z",
+};
+
+export const adminProfile: MockProfile = {
+  ...existingProfile,
+  id: "admin-1",
+  email: "admin@example.com",
+  preferred_name: "Morgan",
+  is_admin: true,
 };
 
 export async function mockApi(
@@ -56,11 +67,23 @@ export async function mockApi(
     onSave?: () => void;
     onProfileUpdate?: (body: Record<string, unknown>) => void;
     onProfileRequest?: (uid: string | null) => Promise<void> | void;
+    adminEvents?: AdminMockEvent[];
+    onAdminList?: (q: string) => void;
+    onAdminUpdate?: (body: Record<string, unknown>) => void;
+    onAdminImageUpload?: () => void;
+    adminUpdateError?: { status: number; detail: string };
     otpUid?: string;
     profilesByUid?: Record<string, MockProfile | null>;
   } = {}
 ) {
   let profile = options.profile === undefined ? null : options.profile;
+  const handleAdminApi = createAdminApiMock({
+    events: options.adminEvents ?? [],
+    onList: options.onAdminList,
+    onUpdate: options.onAdminUpdate,
+    onImageUpload: options.onAdminImageUpload,
+    updateError: options.adminUpdateError,
+  });
 
   await page.route("http://api.test/**", async (route) => {
     const url = new URL(route.request().url());
@@ -122,6 +145,7 @@ export async function mockApi(
       });
       return;
     }
+    if (await handleAdminApi(route, url)) return;
     if (url.pathname === "/events/event-1") {
       await route.fulfill({
         status: 200,

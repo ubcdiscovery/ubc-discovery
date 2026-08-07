@@ -149,7 +149,7 @@ def main():
         sys.exit(1)
 
     headers = {"Authorization": f"Api-Key {api_key}"}
-    url = f"{args.api_url.rstrip('/')}/events"
+    url = f"{args.api_url.rstrip('/')}/admin/events"
 
     created = 0
     failed = 0

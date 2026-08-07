@@ -1,0 +1,318 @@
+"""Integration tests for protected Event Listing administration."""
+
+from datetime import datetime, timedelta
+from unittest.mock import patch
+from zoneinfo import ZoneInfo
+
+from app.models.event import Event
+from app.models.user import User
+from httpx import AsyncClient
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+ADMIN_HEADERS = {"Authorization": "Bearer test-token"}
+
+
+class TestAdminAuthorization:
+    async def test_admin_events_require_authentication(
+        self, unauthed_client: AsyncClient
+    ):
+        resp = await unauthed_client.get("/admin/events")
+        assert resp.status_code == 401
+
+    async def test_non_admin_cannot_read_admin_catalogue(self, client: AsyncClient):
+        resp = await client.get("/admin/events", headers=ADMIN_HEADERS)
+        assert resp.status_code == 403
+
+    async def test_non_admin_cannot_invoke_event_mutations(
+        self, client: AsyncClient, sample_events: list[Event]
+    ):
+        event_id = sample_events[0].id
+        requests = (
+            ("POST", "/admin/events", {"title": "Nope"}),
+            ("PUT", f"/admin/events/{event_id}", {"title": "Nope"}),
+            ("DELETE", f"/admin/events/{event_id}", None),
+            ("POST", f"/admin/events/{event_id}/presigned-upload", None),
+        )
+
+        for method, path, body in requests:
+            resp = await client.request(
+                method,
+                path,
+                headers=ADMIN_HEADERS,
+                json=body,
+            )
+            assert resp.status_code == 403
+
+    async def test_database_admin_can_access_admin_events(
+        self,
+        client: AsyncClient,
+        test_user: User,
+        db_session: AsyncSession,
+    ):
+        test_user.is_admin = True
+        await db_session.flush()
+        try:
+            resp = await client.get("/admin/events", headers=ADMIN_HEADERS)
+            assert resp.status_code == 200
+        finally:
+            test_user.is_admin = False
+            await db_session.flush()
+
+    async def test_admin_api_key_can_access_admin_events(
+        self, unauthed_client: AsyncClient
+    ):
+        with patch("app.dependencies.settings.admin_api_key", "test-admin-key"):
+            resp = await unauthed_client.get(
+                "/admin/events",
+                headers={"Authorization": "Api-Key test-admin-key"},
+                params={"q": "no matching records"},
+            )
+        assert resp.status_code == 200
+
+    async def test_old_event_mutation_routes_are_removed(
+        self, unauthed_client: AsyncClient, sample_events: list[Event]
+    ):
+        event_id = sample_events[0].id
+        requests = (
+            ("POST", "/events", 405),
+            ("PUT", f"/events/{event_id}", 405),
+            ("DELETE", f"/events/{event_id}", 405),
+            ("POST", f"/events/{event_id}/presigned-upload", 404),
+        )
+        for method, path, expected_status in requests:
+            resp = await unauthed_client.request(method, path, json={})
+            assert resp.status_code == expected_status
+
+
+class TestAdminEventList:
+    async def test_list_includes_past_and_upcoming_events(
+        self,
+        admin_client: AsyncClient,
+        db_session: AsyncSession,
+    ):
+        now = datetime.now(ZoneInfo("UTC"))
+        past_event = Event(
+            title="Admin timeline marker past",
+            source="manual",
+            location_name="Old Auditorium",
+            event_date=now - timedelta(days=30),
+        )
+        upcoming_event = Event(
+            title="Admin timeline marker upcoming",
+            source="manual",
+            location_name="New Auditorium",
+            event_date=now + timedelta(days=30),
+        )
+        db_session.add_all([past_event, upcoming_event])
+        await db_session.flush()
+
+        resp = await admin_client.get(
+            "/admin/events", params={"q": "Admin timeline marker", "limit": 100}
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        ids = [event["id"] for event in data["events"]]
+        assert past_event.id in ids
+        assert upcoming_event.id in ids
+        assert data["total"] == 2
+
+    async def test_searches_canonical_events_and_reports_total(
+        self,
+        admin_client: AsyncClient,
+        db_session: AsyncSession,
+    ):
+        event = Event(
+            title="Distinctive Admin Search Result",
+            description="Only the protected catalogue should find this.",
+            source="manual",
+            location_name="Search Hall",
+            event_date=datetime.now(ZoneInfo("UTC")) - timedelta(days=1),
+        )
+        db_session.add(event)
+        await db_session.flush()
+
+        resp = await admin_client.get(
+            "/admin/events", params={"q": "Distinctive Admin", "limit": 25}
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["total"] == 1
+        assert resp.json()["events"][0]["id"] == event.id
+
+    async def test_get_admin_event(
+        self, admin_client: AsyncClient, sample_events: list[Event]
+    ):
+        resp = await admin_client.get(f"/admin/events/{sample_events[0].id}")
+        assert resp.status_code == 200
+        assert resp.json()["id"] == sample_events[0].id
+
+    async def test_get_admin_event_not_found(self, admin_client: AsyncClient):
+        resp = await admin_client.get("/admin/events/notfound")
+        assert resp.status_code == 404
+
+
+class TestCreateAdminEvent:
+    async def test_create_event_success(self, admin_client: AsyncClient):
+        resp = await admin_client.post(
+            "/admin/events",
+            json={
+                "title": "My New Event",
+                "description": "A cool gathering",
+                "club_name": "Coding Club",
+                "source_label": "ams_club",
+                "source_url": "https://example.com/event",
+                "external_cta_label": "View registration",
+                "vibes": ["career", "social"],
+                "location_name": "The Nest",
+                "event_date": "2026-09-01T10:00:00Z",
+                "event_end_date": "2026-09-01T13:00:00Z",
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["title"] == "My New Event"
+        assert data["source"] == "manual"
+        assert data["source_label"] == "ams_club"
+        assert data["vibes"] == ["career", "social"]
+
+    async def test_create_preserves_free_form_ingestion_source(
+        self, admin_client: AsyncClient
+    ):
+        resp = await admin_client.post(
+            "/admin/events",
+            json={
+                "title": "Imported Event",
+                "source": "ubc_calendar",
+                "location_name": "To be announced",
+                "event_date": "2026-09-01T10:00:00Z",
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json()["source"] == "ubc_calendar"
+
+    async def test_create_rejects_invalid_taxonomy_and_location(
+        self, admin_client: AsyncClient
+    ):
+        invalid_payloads = (
+            {"vibes": ["invented"], "location_name": "The Nest"},
+            {"source_label": "other", "location_name": "The Nest"},
+            {"location_name": "   "},
+        )
+        for fields in invalid_payloads:
+            resp = await admin_client.post(
+                "/admin/events",
+                json={
+                    "title": "Invalid Event",
+                    "event_date": "2026-09-01T10:00:00Z",
+                    **fields,
+                },
+            )
+            assert resp.status_code == 422
+
+    async def test_create_rejects_end_before_start(self, admin_client: AsyncClient):
+        resp = await admin_client.post(
+            "/admin/events",
+            json={
+                "title": "Bad Dates",
+                "location_name": "The Nest",
+                "event_date": "2026-09-01T14:00:00Z",
+                "event_end_date": "2026-09-01T10:00:00Z",
+            },
+        )
+        assert resp.status_code == 422
+
+
+class TestUpdateAdminEvent:
+    async def test_partial_update_preserves_omitted_fields(
+        self, admin_client: AsyncClient, sample_events: list[Event]
+    ):
+        event = sample_events[0]
+        with patch(
+            "app.routers.admin.events.recommender.generate_event_embedding"
+        ) as mock_embedding:
+            mock_embedding.return_value = [0.1, 0.2]
+            resp = await admin_client.put(
+                f"/admin/events/{event.id}",
+                json={"title": "Updated Event Title"},
+            )
+
+        assert resp.status_code == 200
+        assert resp.json()["title"] == "Updated Event Title"
+        assert resp.json()["description"] == event.description
+        mock_embedding.assert_called_once()
+
+    async def test_non_embedding_change_skips_embedding_regeneration(
+        self, admin_client: AsyncClient, sample_events: list[Event]
+    ):
+        with patch(
+            "app.routers.admin.events.recommender.generate_event_embedding"
+        ) as mock_embedding:
+            resp = await admin_client.put(
+                f"/admin/events/{sample_events[0].id}",
+                json={"source_url": "https://example.com/updated"},
+            )
+        assert resp.status_code == 200
+        mock_embedding.assert_not_called()
+
+    async def test_update_rejects_invalid_values(
+        self, admin_client: AsyncClient, sample_events: list[Event]
+    ):
+        event_id = sample_events[0].id
+        for payload in (
+            {"vibes": ["invented"]},
+            {"source_label": "other"},
+            {"location_name": None},
+            {"location_name": "  "},
+            {"event_end_date": "2026-08-01T10:00:00Z"},
+            {"event_date": "2026-10-01T10:00:00Z"},
+        ):
+            resp = await admin_client.put(f"/admin/events/{event_id}", json=payload)
+            assert resp.status_code == 422
+
+    async def test_update_not_found(self, admin_client: AsyncClient):
+        resp = await admin_client.put("/admin/events/notfound", json={"title": "Nope"})
+        assert resp.status_code == 404
+
+
+class TestDeleteAdminEvent:
+    async def test_delete_event_success(
+        self,
+        admin_client: AsyncClient,
+        db_session: AsyncSession,
+    ):
+        event = Event(
+            title="Delete Me",
+            source="manual",
+            location_name="The Nest",
+            event_date=datetime(2026, 9, 1, 10, 0, tzinfo=ZoneInfo("UTC")),
+        )
+        db_session.add(event)
+        await db_session.flush()
+        event_id = event.id
+
+        with patch("app.routers.admin.events.s3.delete_object") as mock_delete:
+            resp = await admin_client.delete(f"/admin/events/{event_id}")
+
+        assert resp.status_code == 204
+        mock_delete.assert_called_once_with(f"event-pictures/{event_id}.webp")
+        result = await db_session.execute(select(Event).where(Event.id == event_id))
+        assert result.scalar_one_or_none() is None
+
+
+class TestAdminEventPresignedUpload:
+    async def test_get_event_presigned_upload_url(
+        self, admin_client: AsyncClient, sample_events: list[Event]
+    ):
+        event = sample_events[0]
+        resp = await admin_client.post(f"/admin/events/{event.id}/presigned-upload")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["upload_url"] == "https://s3.example.com/presigned"
+        assert data["file_key"] == f"event-pictures/{event.id}.webp"
+        assert data["max_file_size_bytes"] == 3 * 1024 * 1024
+
+    async def test_event_presigned_upload_not_found(self, admin_client: AsyncClient):
+        resp = await admin_client.post("/admin/events/notfound/presigned-upload")
+        assert resp.status_code == 404
