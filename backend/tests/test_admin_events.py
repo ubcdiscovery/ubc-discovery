@@ -291,6 +291,33 @@ class TestUpdateAdminEvent:
         assert resp.status_code == 200
         mock_embedding.assert_not_called()
 
+    async def test_full_form_update_skips_unchanged_embedding_inputs(
+        self, admin_client: AsyncClient, sample_events: list[Event]
+    ):
+        event = sample_events[0]
+        payload = {
+            "title": event.title,
+            "description": event.description,
+            "club_name": event.club_name,
+            "location_name": event.location_name,
+            "event_date": event.event_date.isoformat(),
+            "event_end_date": event.event_end_date.isoformat(),
+            "source_label": event.source_label,
+            "source_url": "https://example.com/updated",
+            "vibes": event.vibes,
+        }
+        with patch(
+            "app.routers.admin.events.recommender.generate_event_embedding"
+        ) as mock_embedding:
+            resp = await admin_client.put(
+                f"/admin/events/{event.id}",
+                json=payload,
+            )
+
+        assert resp.status_code == 200
+        assert resp.json()["source_url"] == payload["source_url"]
+        mock_embedding.assert_not_called()
+
     async def test_update_rejects_invalid_values(
         self, admin_client: AsyncClient, sample_events: list[Event]
     ):

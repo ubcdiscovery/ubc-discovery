@@ -116,7 +116,10 @@ async def update_event(
         "event_date",
         "event_end_date",
     }
-    should_update_embedding = any(field in changes for field in embedding_fields)
+    should_update_embedding = any(
+        field in embedding_fields and getattr(event, field) != value
+        for field, value in changes.items()
+    )
 
     for field, value in changes.items():
         setattr(event, field, value)
