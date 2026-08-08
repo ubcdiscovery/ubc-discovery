@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -55,7 +55,7 @@ class TestEmbeddingMigration:
             title="Backfill me",
             source="manual",
             location_name="The Nest",
-            event_date=datetime(2026, 9, 1, 10, tzinfo=timezone.utc),
+            event_date=datetime(2026, 9, 1, 10, tzinfo=UTC),
             embedding=_embedding(),
         )
         db_session.add(event)
@@ -73,7 +73,7 @@ class TestEmbeddingMigration:
             title="Malformed embedding",
             source="manual",
             location_name="The Nest",
-            event_date=datetime(2026, 9, 1, 10, tzinfo=timezone.utc),
+            event_date=datetime(2026, 9, 1, 10, tzinfo=UTC),
             embedding=[0.1, 0.2],
         )
         db_session.add(event)
@@ -89,7 +89,7 @@ class TestEmbeddingMigration:
             title="Nearest",
             source="manual",
             location_name="The Nest",
-            event_date=datetime(2026, 9, 1, 10, tzinfo=timezone.utc),
+            event_date=datetime(2026, 9, 1, 10, tzinfo=UTC),
             embedding=_embedding(),
             embedding_vector=_embedding(),
         )
@@ -97,7 +97,7 @@ class TestEmbeddingMigration:
             title="Orthogonal",
             source="manual",
             location_name="The Nest",
-            event_date=datetime(2026, 9, 2, 10, tzinfo=timezone.utc),
+            event_date=datetime(2026, 9, 2, 10, tzinfo=UTC),
             embedding=_embedding(0.0, 1.0),
             embedding_vector=_embedding(0.0, 1.0),
         )

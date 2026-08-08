@@ -93,7 +93,8 @@ def embed_text(text: str) -> list[float] | None:
         embedding = result["embedding"]
         if not is_valid_embedding(embedding):
             logger.warning(
-                "Titan returned an invalid %d-dimensional embedding for text: %.100s...",
+                "Titan returned an invalid %d-dimensional embedding "
+                "for text: %.100s...",
                 EVENT_EMBEDDING_DIMENSIONS,
                 text,
             )

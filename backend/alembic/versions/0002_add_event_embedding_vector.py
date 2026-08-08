@@ -26,7 +26,8 @@ def _validated_embedding(value: object, event_id: str) -> list[float]:
         raise TypeError(f"{event_id}: embedding is not a JSON array")
     if len(value) != EVENT_EMBEDDING_DIMENSIONS:
         raise ValueError(
-            f"{event_id}: expected {EVENT_EMBEDDING_DIMENSIONS} dimensions, got {len(value)}"
+            f"{event_id}: expected {EVENT_EMBEDDING_DIMENSIONS} dimensions, "
+            f"got {len(value)}"
         )
 
     result: list[float] = []
@@ -44,8 +45,7 @@ def backfill_event_embeddings(connection: sa.Connection) -> int:
     """Validate and copy every legacy JSON embedding into the vector column."""
     rows = connection.execute(
         sa.text(
-            "SELECT id, embedding FROM events "
-            "WHERE embedding IS NOT NULL ORDER BY id"
+            "SELECT id, embedding FROM events WHERE embedding IS NOT NULL ORDER BY id"
         )
     ).mappings()
 

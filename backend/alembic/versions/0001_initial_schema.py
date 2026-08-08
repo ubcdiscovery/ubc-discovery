@@ -48,7 +48,9 @@ def _existing_schema_is_complete() -> bool:
         )
 
     missing_columns = {
-        table: sorted(columns - {column["name"] for column in inspector.get_columns(table)})
+        table: sorted(
+            columns - {column["name"] for column in inspector.get_columns(table)}
+        )
         for table, columns in REQUIRED_COLUMNS.items()
     }
     missing_columns = {
@@ -188,7 +190,8 @@ def _ensure_search_index() -> None:
         """
         CREATE INDEX IF NOT EXISTS ix_events_search_trgm
         ON events USING gin (
-            (coalesce(title, '') || ' ' || coalesce(club_name, '') || ' ' || coalesce(location_name, ''))
+            (coalesce(title, '') || ' ' || coalesce(club_name, '') ||
+             ' ' || coalesce(location_name, ''))
             gin_trgm_ops
         )
         """

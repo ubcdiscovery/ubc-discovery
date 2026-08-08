@@ -63,6 +63,7 @@ def _get_engine():
 async def _setup_tables():
     engine = _get_engine()
     async with engine.begin() as conn:
+
         def _upgrade(sync_connection):
             config = Config(str(Path(__file__).parents[1] / "alembic.ini"))
             config.attributes["connection"] = sync_connection
