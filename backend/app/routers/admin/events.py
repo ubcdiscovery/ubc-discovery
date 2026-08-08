@@ -53,8 +53,7 @@ async def list_admin_events(
         count_query = count_query.where(condition)
 
     result = await db.execute(
-        events_query
-        .order_by(Event.event_date.desc(), Event.created_at.desc())
+        events_query.order_by(Event.event_date.desc(), Event.created_at.desc())
         .offset(skip)
         .limit(limit)
     )

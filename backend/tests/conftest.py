@@ -15,8 +15,8 @@ Strategy:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -33,8 +33,8 @@ from app.config import settings
 from app.database import Base, get_db
 from app.dependencies import (
     FirebaseIdentity,
-    get_firebase_identity,
     get_current_user,
+    get_firebase_identity,
     require_admin,
 )
 from app.models.event import Event
@@ -71,7 +71,7 @@ async def _setup_tables():
 # Function-scoped DB session using the SAVEPOINT pattern
 # ---------------------------------------------------------------------------
 @pytest_asyncio.fixture(loop_scope="session")
-async def db_session(_setup_tables) -> AsyncGenerator[AsyncSession, None]:
+async def db_session(_setup_tables) -> AsyncGenerator[AsyncSession]:
     engine = _get_engine()
     conn = await engine.connect()
     txn = await conn.begin()
@@ -181,7 +181,7 @@ def _mock_external_services():
 async def client(
     db_session: AsyncSession,
     test_user: User,
-) -> AsyncGenerator[AsyncClient, None]:
+) -> AsyncGenerator[AsyncClient]:
     """Authenticated async HTTP client bound to the test DB session."""
     from main import app
 
@@ -204,7 +204,7 @@ async def client(
 @pytest_asyncio.fixture(loop_scope="session")
 async def onboarding_client(
     db_session: AsyncSession,
-) -> AsyncGenerator[AsyncClient, None]:
+) -> AsyncGenerator[AsyncClient]:
     """Client authenticated via Firebase token but with no DB user yet."""
     from main import app
 
@@ -231,7 +231,7 @@ async def onboarding_client(
 @pytest_asyncio.fixture(loop_scope="session")
 async def admin_client(
     db_session: AsyncSession,
-) -> AsyncGenerator[AsyncClient, None]:
+) -> AsyncGenerator[AsyncClient]:
     """Admin-authenticated HTTP client for endpoints guarded by require_admin."""
     from main import app
 
@@ -254,7 +254,7 @@ async def admin_client(
 @pytest_asyncio.fixture(loop_scope="session")
 async def unauthed_client(
     db_session: AsyncSession,
-) -> AsyncGenerator[AsyncClient, None]:
+) -> AsyncGenerator[AsyncClient]:
     """Unauthenticated HTTP client bound to the test DB session."""
     from main import app
 
@@ -284,8 +284,8 @@ async def sample_events(db_session: AsyncSession) -> list[Event]:
             club_name=f"Club {i}",
             vibes=["social", "academic"] if i == 0 else ["social"],
             location_name=f"Location {i}",
-            event_date=datetime(2026, 9, 1 + i, 10, 0, tzinfo=timezone.utc),
-            event_end_date=datetime(2026, 9, 1 + i, 13, 0, tzinfo=timezone.utc),
+            event_date=datetime(2026, 9, 1 + i, 10, 0, tzinfo=UTC),
+            event_end_date=datetime(2026, 9, 1 + i, 13, 0, tzinfo=UTC),
         )
         db_session.add(e)
         events.append(e)

@@ -1,8 +1,9 @@
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func as sa_func, select, update
+from sqlalchemy import func as sa_func
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -42,7 +43,7 @@ def _generate_otp() -> str:
 
 
 async def _check_rate_limit(email: str, db: AsyncSession) -> None:
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=15)
+    cutoff = datetime.now(UTC) - timedelta(minutes=15)
     result = await db.execute(
         select(sa_func.count())
         .select_from(OTPCode)
@@ -62,7 +63,7 @@ async def _create_and_send_otp(email: str, db: AsyncSession) -> int:
 
     await db.execute(
         update(OTPCode)
-        .where(OTPCode.email == email.lower(), OTPCode.used == False)
+        .where(OTPCode.email == email.lower(), OTPCode.used.is_(False))
         .values(used=True)
     )
 
@@ -70,30 +71,30 @@ async def _create_and_send_otp(email: str, db: AsyncSession) -> int:
     otp = OTPCode(
         email=email.lower(),
         code=code,
-        expires_at=datetime.now(timezone.utc) + timedelta(minutes=settings.otp_expiry_minutes),
+        expires_at=datetime.now(UTC) + timedelta(minutes=settings.otp_expiry_minutes),
     )
     db.add(otp)
     await db.commit()
 
     try:
         await email_service.send_otp_email(email, code)
-    except email_service.EmailDeliveryError:
+    except email_service.EmailDeliveryError as exc:
         raise _auth_error(
             500,
             "OTP_DELIVERY_FAILED",
             "Failed to send verification email.",
-        )
+        ) from exc
 
     return settings.otp_expiry_minutes * 60
 
 
 async def _verify_otp_code(email: str, code: str, db: AsyncSession) -> OTPCode:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     result = await db.execute(
         select(OTPCode)
         .where(
             OTPCode.email == email.lower(),
-            OTPCode.used == False,
+            OTPCode.used.is_(False),
             OTPCode.expires_at > now,
         )
         .order_by(OTPCode.created_at.desc())
@@ -160,7 +161,9 @@ async def send_ubc_verify(
     db: AsyncSession = Depends(get_db),
 ):
     if not _is_ubc_email(body.email):
-        raise HTTPException(status_code=400, detail="Must be a UBC email address (*.ubc.ca).")
+        raise HTTPException(
+            status_code=400, detail="Must be a UBC email address (*.ubc.ca)."
+        )
 
     if current_user.ubc_verified:
         raise HTTPException(status_code=400, detail="Already verified.")
@@ -179,7 +182,9 @@ async def confirm_ubc_verify(
     db: AsyncSession = Depends(get_db),
 ):
     if not _is_ubc_email(body.email):
-        raise HTTPException(status_code=400, detail="Must be a UBC email address (*.ubc.ca).")
+        raise HTTPException(
+            status_code=400, detail="Must be a UBC email address (*.ubc.ca)."
+        )
 
     await _verify_otp_code(body.email, body.code, db)
 

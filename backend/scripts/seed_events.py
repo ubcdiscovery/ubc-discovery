@@ -10,16 +10,14 @@ Usage:
 import argparse
 import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 
 
 def _dt(day_offset: int, hour: int, minute: int = 0) -> str:
-    """Return an ISO-8601 UTC timestamp *day_offset* days from today at the given hour."""
-    t = datetime.now(timezone.utc).replace(
-        hour=hour, minute=minute, second=0, microsecond=0
-    )
+    """Return an ISO-8601 UTC timestamp for a day and hour offset from today."""
+    t = datetime.now(UTC).replace(hour=hour, minute=minute, second=0, microsecond=0)
     t += timedelta(days=day_offset)
     return t.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -27,7 +25,11 @@ def _dt(day_offset: int, hour: int, minute: int = 0) -> str:
 UBC_EVENTS = [
     {
         "title": "SEEDS Sustainability Symposium",
-        "description": "A showcase of student-led research that uses the UBC campus as a 'living lab.' Innovative projects on urban biodiversity, waste reduction, and climate resilience.",
+        "description": (
+            "A showcase of student-led research that uses the UBC campus as a "
+            "'living lab.' Innovative projects on urban biodiversity, waste "
+            "reduction, and climate resilience."
+        ),
         "source_label": "ubc_official",
         "source_url": "https://sustain.ubc.ca/",
         "external_cta_label": "View organizer page",
@@ -39,7 +41,10 @@ UBC_EVENTS = [
     },
     {
         "title": "Science Rendezvous",
-        "description": "Part of a national science festival, legendary for hands-on experiments like 'Liquid Nitrogen Ice Cream' and 'Mysterious Minerals'.",
+        "description": (
+            "Part of a national science festival, legendary for hands-on "
+            "experiments like 'Liquid Nitrogen Ice Cream' and 'Mysterious Minerals'."
+        ),
         "source_label": "ubc_official",
         "source_url": "https://science.ubc.ca/",
         "external_cta_label": "View organizer page",
@@ -51,7 +56,10 @@ UBC_EVENTS = [
     },
     {
         "title": "Morning Bird Walk",
-        "description": "Led by expert birders, focusing on identifying spring migrating species. Explore diverse habitats from forest floor to canopy.",
+        "description": (
+            "Led by expert birders, focusing on identifying spring migrating "
+            "species. Explore diverse habitats from forest floor to canopy."
+        ),
         "source_label": "ubc_official",
         "source_url": "https://botanicalgarden.ubc.ca/",
         "external_cta_label": "View organizer page",
@@ -63,7 +71,10 @@ UBC_EVENTS = [
     },
     {
         "title": "Summer Session Residence Move-In",
-        "description": "Primary move-in day for students enrolled in the Summer Term. The campus will be busy with new arrivals.",
+        "description": (
+            "Primary move-in day for students enrolled in the Summer Term. "
+            "The campus will be busy with new arrivals."
+        ),
         "source_label": "ubc_official",
         "source_url": "https://vancouver.housing.ubc.ca/",
         "external_cta_label": "View details",
@@ -75,7 +86,10 @@ UBC_EVENTS = [
     },
     {
         "title": "Summer Session Term 1 Official Start",
-        "description": "The first day of the 2026 Summer Session. Fast-paced accelerated courses begin campus-wide.",
+        "description": (
+            "The first day of the 2026 Summer Session. Fast-paced accelerated "
+            "courses begin campus-wide."
+        ),
         "source_label": "ubc_official",
         "source_url": "https://students.ubc.ca/enrolment/courses/summer-session",
         "external_cta_label": "View academic dates",
@@ -87,7 +101,11 @@ UBC_EVENTS = [
     },
     {
         "title": "Chung | Lind Gallery Drop-In Tour",
-        "description": "Archivists lead this tour through rare maps, photographs, and artifacts focused on the history of the Gold Rush and Chinese immigration.",
+        "description": (
+            "Archivists lead this tour through rare maps, photographs, and "
+            "artifacts focused on the history of the Gold Rush and Chinese "
+            "immigration."
+        ),
         "source_label": "ubc_official",
         "source_url": "https://about.library.ubc.ca/",
         "external_cta_label": "View organizer page",
@@ -99,7 +117,10 @@ UBC_EVENTS = [
     },
     {
         "title": "T-Birds in Tech & Sauder Rooftop BBQ",
-        "description": "High-profile networking event with tech leaders, local alumni, and students for informal networking and BBQ.",
+        "description": (
+            "High-profile networking event with tech leaders, local alumni, "
+            "and students for informal networking and BBQ."
+        ),
         "source_label": "ubc_official",
         "source_url": "https://www.sauder.ubc.ca/",
         "external_cta_label": "View organizer page",
@@ -111,7 +132,10 @@ UBC_EVENTS = [
     },
     {
         "title": "Biodiversity Farm Tour",
-        "description": "A guided walk through the 24-hectare working farm. Highlights agroecology and organic crop production.",
+        "description": (
+            "A guided walk through the 24-hectare working farm. Highlights "
+            "agroecology and organic crop production."
+        ),
         "source_label": "ubc_official",
         "source_url": "https://ubcfarm.ubc.ca/",
         "external_cta_label": "View organizer page",
@@ -123,7 +147,10 @@ UBC_EVENTS = [
     },
     {
         "title": "MOA Exhibition: 'I Use My Haida Eyes'",
-        "description": "World premiere of history robes by Haida artist Jut-ke-Nay Hazel Wilson. Opening night documents Haida perspectives.",
+        "description": (
+            "World premiere of history robes by Haida artist Jut-ke-Nay Hazel "
+            "Wilson. Opening night documents Haida perspectives."
+        ),
         "source_label": "ubc_official",
         "source_url": "https://moa.ubc.ca/",
         "external_cta_label": "View exhibition",

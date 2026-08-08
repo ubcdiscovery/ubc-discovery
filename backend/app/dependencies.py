@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, Header
+from fastapi import Depends, Header, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +27,10 @@ async def get_firebase_identity(
     decoded = firebase_auth.verify_id_token(token)
 
     if not decoded.get("email_verified"):
-        raise HTTPException(status_code=403, detail="Email not verified. Please check your inbox and verify your email.")
+        raise HTTPException(
+            status_code=403,
+            detail="Email not verified. Please check your inbox and verify your email.",
+        )
 
     return FirebaseIdentity(
         uid=decoded["uid"],
@@ -43,7 +46,9 @@ async def get_current_user(
     result = await db.execute(select(User).where(User.firebase_uid == identity.uid))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="User profile not found. Complete onboarding first.")
+        raise HTTPException(
+            status_code=404, detail="User profile not found. Complete onboarding first."
+        )
     return user
 
 
@@ -65,7 +70,9 @@ async def require_admin(
     if authorization.startswith("Bearer "):
         token = authorization[7:]
         decoded = firebase_auth.verify_id_token(token)
-        result = await db.execute(select(User).where(User.firebase_uid == decoded["uid"]))
+        result = await db.execute(
+            select(User).where(User.firebase_uid == decoded["uid"])
+        )
         user = result.scalar_one_or_none()
         if user and user.is_admin:
             return

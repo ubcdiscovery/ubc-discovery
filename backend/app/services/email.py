@@ -87,16 +87,32 @@ async def send_otp_email(
         f"Your verification code is: {otp_code}\n\n"
         f"This code expires in {settings.otp_expiry_minutes} minutes."
     )
+    body_style = (
+        "font-family: system-ui, sans-serif; max-width: 480px; "
+        "margin: 0 auto; padding: 32px;"
+    )
+    heading_style = "color: #007AFF; margin-bottom: 8px;"
+    code_container_style = (
+        "background: #f5f5f5; border-radius: 8px; padding: 24px; "
+        "text-align: center; margin: 24px 0;"
+    )
+    code_style = (
+        "font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #007AFF;"
+    )
+    expiry_message = f"This code expires in {settings.otp_expiry_minutes} minutes."
+    ignore_message = (
+        "If you didn't request this code, you can safely ignore this email."
+    )
     html = f"""\
 <html>
-<body style="font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-  <h2 style="color: #007AFF; margin-bottom: 8px;">UBC Discovery</h2>
+<body style="{body_style}">
+  <h2 style="{heading_style}">UBC Discovery</h2>
   <p style="color: #333; font-size: 16px;">Your verification code is:</p>
-  <div style="background: #f5f5f5; border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0;">
-    <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #007AFF;">{otp_code}</span>
+  <div style="{code_container_style}">
+    <span style="{code_style}">{otp_code}</span>
   </div>
-  <p style="color: #666; font-size: 14px;">This code expires in {settings.otp_expiry_minutes} minutes.</p>
-  <p style="color: #999; font-size: 12px;">If you didn't request this code, you can safely ignore this email.</p>
+  <p style="color: #666; font-size: 14px;">{expiry_message}</p>
+  <p style="color: #999; font-size: 12px;">{ignore_message}</p>
 </body>
 </html>"""
     message = OutboundEmail(

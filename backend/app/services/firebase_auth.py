@@ -1,7 +1,7 @@
 import logging
 
-from firebase_admin import auth
 from fastapi import HTTPException
+from firebase_admin import auth
 
 logger = logging.getLogger(__name__)
 
@@ -17,13 +17,13 @@ def verify_id_token(id_token: str) -> dict:
         }
     except auth.ExpiredIdTokenError as e:
         logger.warning("Expired ID token: %s", e)
-        raise HTTPException(status_code=401, detail="Token expired")
+        raise HTTPException(status_code=401, detail="Token expired") from e
     except auth.InvalidIdTokenError as e:
         logger.warning("Invalid ID token: %s", e)
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise HTTPException(status_code=401, detail="Invalid or expired token") from e
     except Exception as e:
         logger.error("Token verification failed: %s", e)
-        raise HTTPException(status_code=401, detail="Token verification failed")
+        raise HTTPException(status_code=401, detail="Token verification failed") from e
 
 
 def get_or_create_firebase_user(email: str) -> str:

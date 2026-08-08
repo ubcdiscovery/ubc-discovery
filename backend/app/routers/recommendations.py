@@ -7,8 +7,8 @@ from app.dependencies import get_current_user
 from app.models.event import Event
 from app.models.saved_event import SavedEvent
 from app.models.user import User
-from app.schemas.recommendation import ForYouResponse, SimilarEventsResponse
 from app.presenters.event import event_to_response
+from app.schemas.recommendation import ForYouResponse, SimilarEventsResponse
 from app.services import recommender
 
 router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
@@ -33,7 +33,9 @@ async def get_similar_events(
     )
     candidates = list(result.scalars().all())
 
-    similar = recommender.get_similar_events(source_event, candidates, top_n=n, vibe_weight=vibe_weight)
+    similar = recommender.get_similar_events(
+        source_event, candidates, top_n=n, vibe_weight=vibe_weight
+    )
 
     return SimilarEventsResponse(
         event_id=event_id,
@@ -73,9 +75,13 @@ async def get_for_you(
         vibe_counts: dict[str, int] = {}
         for v in saved_vibes:
             vibe_counts[v] = vibe_counts.get(v, 0) + 1
-        top_saved_vibes = sorted(vibe_counts, key=vibe_counts.get, reverse=True)[:3]
+        top_saved_vibes = sorted(
+            vibe_counts, key=lambda vibe: vibe_counts[vibe], reverse=True
+        )[:3]
 
-        user_interests: list[str] = list(current_user.interests) if current_user.interests else []
+        user_interests: list[str] = (
+            list(current_user.interests) if current_user.interests else []
+        )
         combined_vibes = list(set(user_interests) | set(top_saved_vibes))
 
         if taste:
