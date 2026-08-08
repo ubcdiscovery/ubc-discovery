@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: ubc_discovery
       POSTGRES_PASSWORD: ubc_discovery
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - ubc_discovery_postgres_data:/var/lib/postgresql
     healthcheck:

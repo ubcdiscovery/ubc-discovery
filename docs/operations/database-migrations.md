@@ -12,7 +12,7 @@ pgvector PostgreSQL 18 image:
 ```bash
 docker compose up -d postgres
 cd backend
-export DATABASE_URL=postgresql+asyncpg://ubc_discovery:ubc_discovery@localhost:5433/ubc_discovery
+export DATABASE_URL=postgresql+asyncpg://ubc_discovery:ubc_discovery@localhost:5432/ubc_discovery
 export DATABASE_SSL=false
 uv run alembic upgrade head
 uv run alembic current
