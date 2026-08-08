@@ -42,8 +42,8 @@ jobs:
             echo "backend=true" >> "$GITHUB_OUTPUT"
           fi
 
-  format:
-    name: Ruff format check
+  quality:
+    name: Ruff and ty quality
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
@@ -70,58 +70,8 @@ jobs:
       - name: Check formatting
         run: uv run ruff format --check .
 
-  lint:
-    name: Ruff lint
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: backend
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-        with:
-          version: "0.11.16"
-          enable-cache: true
-
-      - name: Install Python
-        run: uv python install
-
-      - name: Install dependencies
-        run: uv sync --locked --dev
-
       - name: Run lint
         run: uv run ruff check .
-
-  typecheck:
-    name: ty typecheck
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: backend
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-        with:
-          version: "0.11.16"
-          enable-cache: true
-
-      - name: Install Python
-        run: uv python install
-
-      - name: Install dependencies
-        run: uv sync --locked --dev
 
       - name: Run typecheck
         run: uv run ty check .
@@ -175,9 +125,7 @@ jobs:
     name: Backend PR gate
     needs:
       - changes
-      - format
-      - lint
-      - typecheck
+      - quality
       - tests
     if: always()
     runs-on: ubuntu-24.04
@@ -187,9 +135,7 @@ jobs:
         env:
           DETECTION_RESULT: ${{ needs.changes.result }}
           BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
-          FORMAT_RESULT: ${{ needs.format.result }}
-          LINT_RESULT: ${{ needs.lint.result }}
-          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
           TEST_RESULT: ${{ needs.tests.result }}
         run: |
           if [[ "$DETECTION_RESULT" != "success" ]]; then
@@ -203,9 +149,7 @@ jobs:
           fi
 
           if [[ "$BACKEND_CHANGED" == "true" &&
-                ( "$FORMAT_RESULT" != "success" ||
-                  "$LINT_RESULT" != "success" ||
-                  "$TYPECHECK_RESULT" != "success" ||
+                ( "$QUALITY_RESULT" != "success" ||
                   "$TEST_RESULT" != "success" ) ]]; then
             echo "Backend checks did not succeed."
             exit 1
