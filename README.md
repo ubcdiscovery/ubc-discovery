@@ -35,8 +35,8 @@ Interests describe what a Member wants to explore. Vibes describe the feel or in
 
 - **Backend**: FastAPI, async SQLAlchemy, asyncpg, PostgreSQL
 - **Web frontend**: React Router 7, React 19, Tailwind CSS, Vite
-- **AI**: AWS Bedrock with Claude Sonnet 4.6 for matching and ranking support
-- **AWS**: S3, ECS/Fargate, RDS
+- **AI**: AWS titan embedding
+- **AWS**: S3, RDS, LightSail container
 
 ## Development
 
