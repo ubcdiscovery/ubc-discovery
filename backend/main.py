@@ -13,6 +13,7 @@ from app.routers import (
     admin,
     auth,
     events,
+    ingestion,
     ratings,
     recommendations,
     saved_events,
@@ -61,6 +62,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(events.router)
 app.include_router(admin.router)
+app.include_router(ingestion.router)
 app.include_router(ratings.router)
 app.include_router(saved_events.router)
 app.include_router(recommendations.router)

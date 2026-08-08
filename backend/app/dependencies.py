@@ -15,6 +15,32 @@ class FirebaseIdentity:
         self.name = name
 
 
+class CandidateIngestionCredential:
+    name = "candidate-ingestion"
+
+
+async def require_candidate_ingester(
+    authorization: str | None = Header(
+        None, description="Candidate-Key <candidate_ingestion_api_key>"
+    ),
+) -> CandidateIngestionCredential:
+    if not authorization or not authorization.startswith("Candidate-Key "):
+        raise HTTPException(
+            status_code=401, detail="Candidate ingestion credential required"
+        )
+
+    key = authorization[len("Candidate-Key ") :]
+    if (
+        not settings.candidate_ingestion_api_key
+        or key != settings.candidate_ingestion_api_key
+    ):
+        raise HTTPException(
+            status_code=403, detail="Invalid candidate ingestion credential"
+        )
+
+    return CandidateIngestionCredential()
+
+
 async def get_firebase_identity(
     authorization: str | None = Header(None, description="Bearer <id_token>"),
 ) -> FirebaseIdentity:

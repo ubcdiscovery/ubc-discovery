@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { createAdminApiMock, type AdminMockEvent } from "./admin";
+import { createAdminApiMock, type AdminMockCandidate, type AdminMockEvent } from "./admin";
 
 export type MockProfile = {
   id: string;
@@ -68,7 +68,9 @@ export async function mockApi(
     onProfileUpdate?: (body: Record<string, unknown>) => void;
     onProfileRequest?: (uid: string | null) => Promise<void> | void;
     adminEvents?: AdminMockEvent[];
+    adminCandidates?: AdminMockCandidate[];
     onAdminList?: (q: string) => void;
+    onCandidateList?: (filters: { q: string; status: string; sourceType: string }) => void;
     onAdminUpdate?: (body: Record<string, unknown>) => void;
     onAdminImageUpload?: () => void;
     adminUpdateError?: { status: number; detail: string };
@@ -79,7 +81,9 @@ export async function mockApi(
   let profile = options.profile === undefined ? null : options.profile;
   const handleAdminApi = createAdminApiMock({
     events: options.adminEvents ?? [],
+    candidates: options.adminCandidates,
     onList: options.onAdminList,
+    onCandidateList: options.onCandidateList,
     onUpdate: options.onAdminUpdate,
     onImageUpload: options.onAdminImageUpload,
     updateError: options.adminUpdateError,

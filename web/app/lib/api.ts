@@ -1,4 +1,5 @@
 import { getFirebaseIdToken } from "~/lib/firebase";
+import { adminCandidatesApi } from "~/lib/admin-candidates";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
@@ -143,7 +144,7 @@ async function apiFetch<T>(
   return res.json();
 }
 
-async function authenticatedApiFetch<T>(
+export async function authenticatedApiFetch<T>(
   path: string,
   options: RequestInit = {}
 ) {
@@ -242,6 +243,7 @@ export const api = {
           { method: "POST" }
         ),
     },
+    candidates: adminCandidatesApi,
   },
   saved: {
     list: (skip = 0, limit = 100) =>
