@@ -1,6 +1,10 @@
 import type { Page } from "@playwright/test";
 import { createAdminApiMock, type AdminMockEvent } from "./admin";
 import { createApiKeysMock, type AdminMockApiCredential } from "./api-keys";
+import {
+  createCandidatesMock,
+  type AdminMockCandidate,
+} from "./candidates";
 
 export type MockProfile = {
   id: string;
@@ -71,7 +75,9 @@ export async function mockApi(
     onProfileUpdate?: (body: Record<string, unknown>) => void;
     onProfileRequest?: (uid: string | null) => Promise<void> | void;
     adminEvents?: AdminMockEvent[];
+    adminCandidates?: AdminMockCandidate[];
     onAdminList?: (q: string) => void;
+    onCandidateList?: (filters: { q: string; status: string; sourceType: string }) => void;
     onAdminCreate?: (body: Record<string, unknown>) => void;
     onAdminArchive?: (archived: boolean) => void;
     onAdminUpdate?: (body: Record<string, unknown>) => void;
@@ -95,6 +101,10 @@ export async function mockApi(
     onImageUpload: options.onAdminImageUpload,
     updateError: options.adminUpdateError,
     imageUploadError: options.adminImageUploadError,
+  });
+  const handleCandidates = createCandidatesMock({
+    candidates: options.adminCandidates,
+    onList: options.onCandidateList,
   });
   const handleApiKeys = createApiKeysMock({
     apiKeys: options.adminApiKeys,
@@ -163,6 +173,7 @@ export async function mockApi(
       return;
     }
     if (await handleAdminApi(route, url)) return;
+    if (await handleCandidates(route, url)) return;
     if (await handleApiKeys(route, url)) return;
     if (url.pathname === "/events/event-1") {
       await route.fulfill({
