@@ -40,16 +40,7 @@ Interests describe what a Member wants to explore. Vibes describe the feel or in
 
 ## Development
 
-### Backend
-
-```bash
-cd backend
-uv sync
-cp .env.example .env
-uv run fastapi dev main.py
-```
-
-Swagger docs run at `http://localhost:8000/docs`.
+See [`backend/README.md`](backend/README.md) for backend setup, AWS credentials, Git hooks, and development commands.
 
 ### Web
 

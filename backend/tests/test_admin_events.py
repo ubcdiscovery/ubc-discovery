@@ -4,11 +4,12 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-from app.models.event import Event
-from app.models.user import User
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.event import Event
+from app.models.user import User
 
 ADMIN_HEADERS = {"Authorization": "Bearer test-token"}
 
@@ -295,6 +296,7 @@ class TestUpdateAdminEvent:
         self, admin_client: AsyncClient, sample_events: list[Event]
     ):
         event = sample_events[0]
+        assert event.event_end_date is not None
         payload = {
             "title": event.title,
             "description": event.description,

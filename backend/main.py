@@ -3,9 +3,9 @@ import logging
 from contextlib import asynccontextmanager
 
 import firebase_admin
-from firebase_admin import credentials
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from firebase_admin import credentials
 
 from app import models  # noqa: F401 - register all model metadata before create_all
 from app.config import settings
@@ -47,7 +47,8 @@ async def lifespan(app: FastAPI):
                 text(
                     "CREATE INDEX IF NOT EXISTS ix_events_search_trgm "
                     "ON events USING gin ("
-                    "(coalesce(title,'') || ' ' || coalesce(club_name,'') || ' ' || coalesce(location_name,'')) "
+                    "(coalesce(title,'') || ' ' || coalesce(club_name,'') || ' ' "
+                    "|| coalesce(location_name,'')) "
                     "gin_trgm_ops)"
                 )
             )
@@ -62,7 +63,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="UBC Discovery API",
-    description="Backend API for public campus event discovery and member personalization",
+    description=(
+        "Backend API for public campus event discovery and member personalization"
+    ),
     version="0.1.0",
     lifespan=lifespan,
 )

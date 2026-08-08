@@ -24,9 +24,9 @@ async def test_save_event_is_idempotent(
     assert repeated.json() == created.json()
 
     result = await db_session.execute(
-        select(func.count()).select_from(SavedEvent).where(
-            SavedEvent.event_id == event.id
-        )
+        select(func.count())
+        .select_from(SavedEvent)
+        .where(SavedEvent.event_id == event.id)
     )
     assert result.scalar_one() == 1
 

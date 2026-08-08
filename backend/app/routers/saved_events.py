@@ -8,12 +8,12 @@ from app.dependencies import get_current_user
 from app.models.event import Event
 from app.models.saved_event import SavedEvent
 from app.models.user import User
+from app.presenters.event import event_to_response
 from app.schemas.saved_event import (
-    SavedEventListResponse,
     SavedEventListItem,
+    SavedEventListResponse,
     SavedEventResponse,
 )
-from app.presenters.event import event_to_response
 
 router = APIRouter(prefix="/saved-events", tags=["Saved Events"])
 

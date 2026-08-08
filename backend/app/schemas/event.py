@@ -51,7 +51,7 @@ class CreateEventRequest(BaseModel):
     event_end_date: datetime | None = None
 
     @model_validator(mode="after")
-    def validate_end_after_start(self) -> "CreateEventRequest":
+    def validate_end_after_start(self) -> CreateEventRequest:
         if self.event_end_date and self.event_end_date < self.event_date:
             raise ValueError("event_end_date must not be before event_date")
         return self

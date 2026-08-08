@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, func, and_
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -7,7 +7,11 @@ from app.dependencies import get_current_user
 from app.models.event import Event
 from app.models.event_rating import EventRating
 from app.models.user import User
-from app.schemas.event_rating import CreateRatingRequest, EventRatingResponse, RatingListResponse
+from app.schemas.event_rating import (
+    CreateRatingRequest,
+    EventRatingResponse,
+    RatingListResponse,
+)
 
 router = APIRouter(prefix="/ratings", tags=["Ratings"])
 
@@ -20,9 +24,11 @@ async def list_ratings(
     db: AsyncSession = Depends(get_db),
 ):
     count_result = await db.execute(
-        select(func.count()).select_from(EventRating).where(EventRating.user_id == user.id)
+        select(func.count())
+        .select_from(EventRating)
+        .where(EventRating.user_id == user.id)
     )
-    total = count_result.scalar()
+    total = count_result.scalar_one()
 
     result = await db.execute(
         select(EventRating)
@@ -52,7 +58,9 @@ async def rate_event(
 
     # Upsert: update if already rated
     existing_result = await db.execute(
-        select(EventRating).where(and_(EventRating.user_id == user.id, EventRating.event_id == event_id))
+        select(EventRating).where(
+            and_(EventRating.user_id == user.id, EventRating.event_id == event_id)
+        )
     )
     existing = existing_result.scalar_one_or_none()
 
@@ -84,7 +92,9 @@ async def get_rating(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EventRating).where(and_(EventRating.user_id == user.id, EventRating.event_id == event_id))
+        select(EventRating).where(
+            and_(EventRating.user_id == user.id, EventRating.event_id == event_id)
+        )
     )
     rating = result.scalar_one_or_none()
     if not rating:

@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+set -eu
+
+exec uv run --directory backend --locked pre-commit run --hook-stage pre-commit "$@"

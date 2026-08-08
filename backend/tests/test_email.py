@@ -59,6 +59,9 @@ async def test_ses_sender_translates_client_errors(message: OutboundEmail):
             "ResponseMetadata": {
                 "RequestId": "request-123",
                 "HTTPStatusCode": 400,
+                "HostId": "host-123",
+                "HTTPHeaders": {},
+                "RetryAttempts": 0,
             },
         },
         "SendEmail",

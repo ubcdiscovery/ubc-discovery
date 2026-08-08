@@ -1,13 +1,9 @@
-import json
-from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.event import Event
-from app.models.user import User
 from app.services import recommender
 
 
@@ -38,26 +34,27 @@ class TestCosineSimilarity:
         assert recommender.cosine_similarity(a, b) == pytest.approx(-1.0)
 
     def test_length_mismatch(self):
-        try:
+        with pytest.raises(ValueError, match="Vector length mismatch"):
             recommender.cosine_similarity([1.0], [1.0, 2.0])
-            assert False, "expected ValueError"
-        except ValueError:
-            pass
 
 
 class TestVibeJaccard:
     def test_identical(self):
-        assert recommender.vibe_jaccard(
-            ["social", "academic"], ["academic", "social"]
-        ) == 1.0
+        assert (
+            recommender.vibe_jaccard(["social", "academic"], ["academic", "social"])
+            == 1.0
+        )
 
     def test_disjoint(self):
         assert recommender.vibe_jaccard(["social"], ["career"]) == 0.0
 
     def test_partial(self):
-        assert recommender.vibe_jaccard(
-            ["social", "academic", "career"], ["social", "academic"]
-        ) == 2.0 / 3.0
+        assert (
+            recommender.vibe_jaccard(
+                ["social", "academic", "career"], ["social", "academic"]
+            )
+            == 2.0 / 3.0
+        )
 
     def test_both_empty(self):
         assert recommender.vibe_jaccard([], []) == 0.0
@@ -93,7 +90,9 @@ class TestHybridScore:
     def test_pure_vibe(self):
         a = [1.0, 0.0, 0.0]
         b = [0.0, 1.0, 0.0]
-        score = recommender.hybrid_score(a, b, ["social", "academic"], ["academic"], vibe_weight=1.0)
+        score = recommender.hybrid_score(
+            a, b, ["social", "academic"], ["academic"], vibe_weight=1.0
+        )
         assert score == 0.5
 
     def test_balanced_blend(self):
@@ -112,11 +111,13 @@ class TestMeanEmbedding:
         assert result == [1.0, 2.0, 3.0]
 
     def test_multiple(self):
-        result = recommender.mean_embedding([
-            [1.0, 2.0],
-            [3.0, 4.0],
-            [5.0, 6.0],
-        ])
+        result = recommender.mean_embedding(
+            [
+                [1.0, 2.0],
+                [3.0, 4.0],
+                [5.0, 6.0],
+            ]
+        )
         assert result == [3.0, 4.0]
 
     def test_empty(self):
@@ -126,6 +127,7 @@ class TestMeanEmbedding:
 class TestRankEvents:
     def _make_event_stub(self, eid: str, embedding, vibes: list[str]):
         from types import SimpleNamespace
+
         return SimpleNamespace(id=eid, embedding=embedding, vibes=vibes)
 
     def test_with_vibe_profile(self):
@@ -138,8 +140,11 @@ class TestRankEvents:
         vibe_profile = ["social"]
 
         result = recommender.rank_events(
-            taste, candidates, top_n=3,
-            vibe_profile=vibe_profile, vibe_weight=0.5,
+            taste,
+            candidates,
+            top_n=3,
+            vibe_profile=vibe_profile,
+            vibe_weight=0.5,
         )
         assert len(result) == 3
         assert result[0][0].id == "e1"
@@ -254,7 +259,8 @@ class TestForYou:
 
     # TODO: Investigate this test
     # async def test_personalized_from_saved(
-    #     self, client: AsyncClient, db_session: AsyncSession, sample_events: list[Event], test_user: User
+    #     self, client: AsyncClient, db_session: AsyncSession,
+    #     sample_events: list[Event], test_user: User
     # ):
     #     event = sample_events[0]
     #     for ev in sample_events:
@@ -265,7 +271,9 @@ class TestForYou:
 
     #     with patch.object(recommender, "embed_text") as mock_embed:
     #         mock_embed.return_value = _make_embedding_from_title(event.title)
-    #         resp = await client.get("/recommendations/events/for-you", params={"n": 5})
+    #         resp = await client.get(
+    #             "/recommendations/events/for-you", params={"n": 5}
+    #         )
 
     #     assert resp.status_code == 200
     #     data = resp.json()

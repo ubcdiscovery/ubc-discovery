@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, or_
-from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 from zoneinfo import ZoneInfo
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.event import Event
