@@ -25,5 +25,7 @@ export default [
     index("routes/admin-index.tsx"),
     route("events", "routes/admin-events.tsx"),
     route("events/:id", "routes/admin-event-edit.tsx"),
+    route("candidates", "routes/admin-candidates.tsx"),
+    route("candidates/:id", "routes/admin-candidate-detail.tsx"),
   ]),
 ] satisfies RouteConfig;

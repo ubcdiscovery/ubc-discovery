@@ -64,6 +64,16 @@ export default function AdminLayout() {
               >
                 Event Listings
               </NavLink>
+              <NavLink
+                to="/admin/candidates"
+                className={({ isActive }) =>
+                  `ml-4 border-b-2 pb-1 font-mono text-xs font-bold uppercase tracking-wide ${
+                    isActive ? "border-accent text-ink" : "border-transparent text-muted"
+                  }`
+                }
+              >
+                Candidates
+              </NavLink>
             </nav>
           </div>
           <div className="flex shrink-0 items-center gap-1 md:gap-3">
