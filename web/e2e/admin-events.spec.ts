@@ -82,6 +82,31 @@ test("administrator searches the canonical catalogue", async ({ page }) => {
   expect(queries).toContain("Research");
 });
 
+test("administrator paginates the canonical catalogue", async ({ page }) => {
+  const events = Array.from({ length: 26 }, (_, index) => ({
+    ...mockEvent,
+    id: `event-${index + 1}`,
+    title: `Admin Pagination Event ${index + 1}`,
+  }));
+  await mockApi(page, { profile: adminProfile, adminEvents: events });
+  await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
+
+  await page.goto("/admin/events");
+
+  const firstEventLink = page.locator(`a[href="/admin/events/${events[0].id}"]`);
+  const lastEventLink = page.locator(`a[href="/admin/events/${events[25].id}"]`);
+  await expect(firstEventLink).toBeVisible();
+  await expect(lastEventLink).toHaveCount(0);
+  await expect(page.getByText("1–25", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Next →" }).click();
+
+  await expect(page).toHaveURL("/admin/events?page=1");
+  await expect(firstEventLink).toHaveCount(0);
+  await expect(lastEventLink).toBeVisible();
+  await expect(page.getByText("26–26", { exact: true })).toBeVisible();
+});
+
 test("administrator edits a canonical Event Listing", async ({ page }) => {
   let update: Record<string, unknown> | undefined;
   await mockApi(page, {
