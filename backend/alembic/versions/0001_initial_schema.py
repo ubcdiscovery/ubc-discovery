@@ -1,10 +1,4 @@
-"""Create the deployed application schema and search index.
-
-This migration doubles as the adoption baseline. If the application tables already
-exist, it validates that the current schema is present and records the baseline
-without recreating any table. This lets an existing deployment move from the old
-startup ``create_all`` path to Alembic without a destructive reset.
-"""
+"""Create the deployed application schema and search index."""
 
 from __future__ import annotations
 
@@ -17,55 +11,6 @@ revision = "0001_initial_schema"
 down_revision = None
 branch_labels = None
 depends_on = None
-
-APPLICATION_TABLES = {
-    "users",
-    "events",
-    "event_ratings",
-    "saved_events",
-    "otp_codes",
-}
-
-REQUIRED_COLUMNS = {
-    "users": {"id", "firebase_uid", "email", "preferred_name"},
-    "events": {"id", "title", "description", "source", "embedding"},
-    "event_ratings": {"id", "user_id", "event_id"},
-    "saved_events": {"user_id", "event_id"},
-    "otp_codes": {"id", "email", "code"},
-}
-
-
-def _existing_schema_is_complete() -> bool:
-    inspector = sa.inspect(op.get_bind())
-    existing_tables = set(inspector.get_table_names()) & APPLICATION_TABLES
-    if not existing_tables:
-        return False
-    if existing_tables != APPLICATION_TABLES:
-        missing = sorted(APPLICATION_TABLES - existing_tables)
-        raise RuntimeError(
-            "Cannot adopt the existing database as the Alembic baseline: "
-            f"missing application tables: {', '.join(missing)}"
-        )
-
-    missing_columns = {
-        table: sorted(
-            columns - {column["name"] for column in inspector.get_columns(table)}
-        )
-        for table, columns in REQUIRED_COLUMNS.items()
-    }
-    missing_columns = {
-        table: columns for table, columns in missing_columns.items() if columns
-    }
-    if missing_columns:
-        details = "; ".join(
-            f"{table}: {', '.join(columns)}"
-            for table, columns in missing_columns.items()
-        )
-        raise RuntimeError(
-            "Cannot adopt the existing database as the Alembic baseline: "
-            f"required columns are missing ({details})"
-        )
-    return True
 
 
 def _create_schema() -> None:
@@ -199,8 +144,7 @@ def _ensure_search_index() -> None:
 
 
 def upgrade() -> None:
-    if not _existing_schema_is_complete():
-        _create_schema()
+    _create_schema()
     _ensure_search_index()
 
 

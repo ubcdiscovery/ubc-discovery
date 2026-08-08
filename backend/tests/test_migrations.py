@@ -30,6 +30,9 @@ def _embedding(first_value: float = 1.0, second_value: float = 0.0) -> list[floa
 
 
 class TestEmbeddingMigration:
+    def test_vector_dimension_is_pinned_in_the_migration(self):
+        assert _EMBEDDING_MIGRATION.VECTOR_DIMENSIONS == 1024
+
     async def test_vector_extension_and_dimension(self, db_session: AsyncSession):
         extension = await db_session.scalar(
             text("SELECT 1 FROM pg_extension WHERE extname = 'vector'")

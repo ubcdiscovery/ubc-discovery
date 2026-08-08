@@ -4,6 +4,11 @@ Alembic is the authoritative schema change tool for the backend. The FastAPI
 lifespan does not create or alter tables. The backend container runs
 `alembic upgrade head` before starting the API process.
 
+`0001_initial_schema` creates a new database; it does not inspect or adopt an
+existing one. Adoption of the existing RDS is a one-time operator action:
+verify the schema, stamp `0001_initial_schema`, then let Alembic apply later
+migrations.
+
 ## Local PostgreSQL
 
 The repository root has a small, database-only Compose stack using the official
@@ -27,12 +32,20 @@ database, use `docker compose down -v` from the repository root.
 Before the first production migration:
 
 1. Take an RDS snapshot and confirm the application tables are present.
-2. Confirm the database user can create extensions, or have an operator create
+2. Confirm the existing tables and columns match the current ORM, and confirm
+   the database does not already contain an `alembic_version` table.
+3. Confirm the database user can create extensions, or have an operator create
    `pg_trgm` and `vector` before deployment.
-3. Deploy the backend image. Its explicit Alembic command validates the existing
-   schema as `0001_initial_schema`, adds `embedding_vector vector(1024)`, and
-   performs the JSON backfill before FastAPI starts.
-4. If the backfill reports malformed or incorrectly dimensioned JSON, stop the
+4. From `backend/`, stamp the verified existing schema:
+
+   ```bash
+   uv run alembic stamp 0001_initial_schema
+   ```
+
+5. Deploy the backend image. Its explicit Alembic command adds
+   `embedding_vector vector(1024)` and performs the JSON backfill before FastAPI
+   starts.
+6. If the backfill reports malformed or incorrectly dimensioned JSON, stop the
    deployment, repair the affected rows, and rerun the same migration. The
    migration transaction rolls back the column and index changes on failure.
 
@@ -40,6 +53,10 @@ For a new database, run `uv run alembic upgrade head`; the initial migration
 creates the application tables and search index before applying the vector
 migration. Re-running `upgrade head` is safe because Alembic records the
 migration state and the migration's extension/index creation is idempotent.
+
+The vector migration performs validated data backfill, so it requires an online
+database connection; `alembic upgrade head --sql` is not supported for the full
+migration chain.
 
 ## Verification
 

@@ -9,8 +9,7 @@ import math
 import sqlalchemy as sa
 from pgvector.sqlalchemy import Vector
 
-from alembic import op
-from app.constants import EVENT_EMBEDDING_DIMENSIONS
+from alembic import context, op
 
 revision = "0002_add_event_embedding_vector"
 down_revision = "0001_initial_schema"
@@ -19,15 +18,15 @@ depends_on = None
 
 logger = logging.getLogger(__name__)
 VECTOR_INDEX_NAME = "ix_events_embedding_vector_hnsw"
+VECTOR_DIMENSIONS = 1024
 
 
 def _validated_embedding(value: object, event_id: str) -> list[float]:
     if not isinstance(value, list):
         raise TypeError(f"{event_id}: embedding is not a JSON array")
-    if len(value) != EVENT_EMBEDDING_DIMENSIONS:
+    if len(value) != VECTOR_DIMENSIONS:
         raise ValueError(
-            f"{event_id}: expected {EVENT_EMBEDDING_DIMENSIONS} dimensions, "
-            f"got {len(value)}"
+            f"{event_id}: expected {VECTOR_DIMENSIONS} dimensions, got {len(value)}"
         )
 
     result: list[float] = []
@@ -84,12 +83,17 @@ def backfill_event_embeddings(connection: sa.Connection) -> int:
 
 
 def upgrade() -> None:
+    if context.is_offline_mode():
+        raise RuntimeError(
+            "The vector migration requires an online database connection to "
+            "validate and backfill JSON embeddings."
+        )
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     op.add_column(
         "events",
         sa.Column(
             "embedding_vector",
-            Vector(EVENT_EMBEDDING_DIMENSIONS),
+            Vector(VECTOR_DIMENSIONS),
             nullable=True,
         ),
     )
