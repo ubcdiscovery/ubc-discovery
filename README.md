@@ -1,6 +1,6 @@
 # UBC Discovery
 
-UBC Discovery is a student-built campus discovery product for the UBC community. It helps people find events, explore places, and connect around campus life without making sign-up the first step.
+UBC Discovery is a student-built event discovery product for the UBC community. It helps people find what is happening around campus without making sign-up the first step.
 
 This project is a continuation of **UBC-Newcomers**. The original idea focused on helping transfer, international, and first-year students feel less lost when arriving at UBC. That newcomer problem is still the starting wedge, but the product has expanded into a broader public discovery experience for Campus Explorers across the UBC community.
 
@@ -10,7 +10,7 @@ UBC Discovery is independent and is not an official UBC app.
 
 ### Event Listings
 
-Event Listings are public, shareable pointers to campus or club events. They usually include an organizer, source link, location text, date, vibe, and optional map coordinate. Location text is the source of truth when precise coordinates are unavailable.
+Event Listings are public, shareable pointers to campus or club events. They usually include an organizer, source link, human-readable location text, date, and vibe. Location text is the source of truth for where an event occurs.
 
 Sources use clear labels:
 
@@ -35,8 +35,8 @@ Interests describe what a Member wants to explore. Vibes describe the feel or in
 
 - **Backend**: FastAPI, async SQLAlchemy, asyncpg, PostgreSQL
 - **Web frontend**: React Router 7, React 19, Tailwind CSS, Vite
-- **AI**: AWS Bedrock with Claude Sonnet 4.6 for matching and ranking support
-- **AWS**: S3, ECS/Fargate, RDS
+- **AI**: AWS titan embedding
+- **AWS**: S3, RDS, LightSail container
 
 ## Development
 

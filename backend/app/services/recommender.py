@@ -2,16 +2,32 @@ import json
 import logging
 import math
 from functools import lru_cache
+from typing import TypeGuard
 
 import boto3
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.constants import EVENT_EMBEDDING_DIMENSIONS
 from app.models.event import Event
 
 logger = logging.getLogger(__name__)
 
 TITAN_EMBED_MODEL_ID = "amazon.titan-embed-text-v2:0"
 VIBE_WEIGHT_DEFAULT = 0.5
+
+
+def is_valid_embedding(value: object) -> TypeGuard[list[float]]:
+    """Return whether a value can be stored in the fixed-size vector column."""
+    if not isinstance(value, list) or len(value) != EVENT_EMBEDDING_DIMENSIONS:
+        return False
+    return all(
+        isinstance(component, (int, float))
+        and not isinstance(component, bool)
+        and math.isfinite(float(component))
+        for component in value
+    )
 
 
 @lru_cache
@@ -69,13 +85,18 @@ def embed_text(text: str) -> list[float] | None:
             modelId=TITAN_EMBED_MODEL_ID,
             contentType="application/json",
             accept="application/json",
-            body=json.dumps({"inputText": text}),
+            body=json.dumps(
+                {"inputText": text, "dimensions": EVENT_EMBEDDING_DIMENSIONS}
+            ),
         )
         result = json.loads(response["body"].read())
         embedding = result["embedding"]
-        if not embedding or not isinstance(embedding, list):
+        if not is_valid_embedding(embedding):
             logger.warning(
-                "Titan returned empty/invalid embedding for text: %.100s...", text
+                "Titan returned an invalid %d-dimensional embedding "
+                "for text: %.100s...",
+                EVENT_EMBEDDING_DIMENSIONS,
+                text,
             )
             return None
         return embedding
@@ -87,6 +108,27 @@ def embed_text(text: str) -> list[float] | None:
 async def generate_event_embedding(event: Event) -> list[float] | None:
     text = generate_event_text(event)
     return embed_text(text)
+
+
+async def fetch_nearest_events(
+    db: AsyncSession,
+    embedding: list[float],
+    *,
+    exclude_event_id: str | None = None,
+    limit: int = 100,
+) -> list[Event]:
+    """Fetch vector-nearest events while leaving JSON ranking available to callers."""
+    if not is_valid_embedding(embedding):
+        return []
+
+    query = select(Event).where(Event.embedding_vector.is_not(None))
+    if exclude_event_id is not None:
+        query = query.where(Event.id != exclude_event_id)
+    query = query.order_by(
+        Event.embedding_vector.cosine_distance(embedding), Event.id
+    ).limit(limit)
+    result = await db.execute(query)
+    return list(result.scalars().all())
 
 
 def mean_embedding(embeddings: list[list[float]]) -> list[float] | None:

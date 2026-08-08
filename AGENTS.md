@@ -1,6 +1,6 @@
 # UBC Discovery
 
-Web-first campus event discovery app for the UBC community. Places, exploration progress, and social discovery are later roadmap areas.
+Web-first event discovery app for the UBC community.
 
 ## Agent skills
 

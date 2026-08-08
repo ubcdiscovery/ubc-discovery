@@ -1,6 +1,6 @@
 # UBC Discovery
 
-UBC Discovery is the public product name for an independent, student-built event and campus discovery product for UBC. The name reflects the product's core value of helping anyone in the UBC community discover what is happening on campus, with social connection as a signed-in member layer rather than the primary public promise.
+UBC Discovery is the public product name for an independent, student-built event discovery product for UBC. The name reflects the product's core value of helping anyone in the UBC community discover what is happening on campus, with personalization as a signed-in member layer rather than the primary public promise.
 
 ## Language
 
@@ -9,19 +9,19 @@ An unauthenticated person using the public experience to explore UBC Discovery l
 _Avoid_: Guest, anonymous user
 
 **Member**:
-A signed-in person with a profile who can participate in social discovery and connection features. A Member does not need to use a UBC email address or legal name.
+A signed-in person with a profile who can use member-only personalization features. A Member does not need to use a UBC email address or legal name.
 _Avoid_: User, account, student
 
 **Preferred Name**:
-The name a Member chooses to show in their profile and social discovery surfaces. Preferred Name is not a legal identity claim.
+The name a Member chooses to show in their profile. Preferred Name is not a legal identity claim.
 _Avoid_: Legal name, real name
 
 **Interest**:
-A fixed preference label a Member selects during onboarding and can edit later to describe what they want to explore or meet people around. Interests power the Personalized Event Feed and social matching, and are distinct from Vibes even when their labels overlap.
+A fixed preference label a Member selects during onboarding and can edit later to describe what they want to explore. Interests power the Personalized Event Feed and are distinct from Vibes even when their labels overlap.
 _Avoid_: Free-text hobby, arbitrary tag
 
 **Academic Context**:
-A Member's faculty, major, and year standing, collected during onboarding and editable later. Academic Context informs the Personalized Event Feed by filtering or ranking Event Listings by relevance — for example, a third-year student is less likely to see a first-year orientation event. Academic Context is a recommendation signal, distinct from Interests and not used for social matching in Meet.
+A Member's faculty, major, and year standing, collected during onboarding and editable later. Academic Context informs the Personalized Event Feed by filtering or ranking Event Listings by relevance — for example, a third-year student is less likely to see a first-year orientation event. Academic Context is a recommendation signal distinct from Interests.
 _Avoid_: Required for membership, social matching signal
 
 **Newcomer**:
@@ -29,39 +29,11 @@ A person who is newly arriving at or newly orienting themselves around UBC. Newc
 _Avoid_: All users, all students
 
 **Campus Explorer**:
-A UBC community member looking for things to do, places to discover, or people to meet around campus life. Campus Explorers are the broader public launch audience, with Newcomers as the initial wedge.
+A UBC community member looking for things to do around campus life. Campus Explorers are the broader public launch audience, with Newcomers as the initial wedge.
 _Avoid_: Generic social network user
 
-**Meet**:
-A secondary member-only social discovery surface based on selected Meet Areas rather than stored coordinates. Meet must not imply live location tracking, precise location sharing, or visibility to Visitors.
-_Avoid_: Nearby, live location, tracking, public nearby
-
-**Feature-gated Meet**:
-The rollout model for Meet before public launch. Feature-gated Meet is controlled by Feature Access for selected Members in the main deployment; it can appear in navigation for everyone, but Visitors and non-allowlisted Members see no profiles and only a coming-soon or request-access surface.
-_Avoid_: Separate beta deployment, public nearby
-
-**Feature Access**:
-A server-side, database-backed allowlist granting a Member access to a specific gated feature. Feature Access applies only to Members and should be generic rather than tied only to Meet so future risky or staged features can use the same concept.
-_Avoid_: Client-only flag, one-off beta column
-
-**Request Access**:
-A signed-in Member signal requesting access to a gated feature such as Meet. Request Access is stored for manual review, gauges demand, does not notify admins by default, and does not grant Feature Access by itself; Visitors should be prompted to sign in before requesting.
-_Avoid_: Waitlist approval, beta invite
-
-**Meet Area**:
-A named campus area or building-level location where a Member says they are open to meet, such as Around IKB, Around the Nest, or Main Mall. Meet Area selection is manual-first; a client may optionally use on-device location to suggest nearby Meet Areas, but the server should receive only the selected Meet Area rather than exact coordinates. Meet Area availability is temporary and should expire automatically.
-_Avoid_: Exact location, live coordinates
-
-**Contextual Social Discovery**:
-A member-only social discovery model where people are introduced around shared Interests, Event Listings, Places, or campus context. Meet Area results should be ranked by relevance rather than shown as a raw directory; private Saved Events may inform matching, but exact saved-event overlap should not be revealed to other Members by default.
-_Avoid_: Random nearby people, stranger feed
-
-**Available to Meet**:
-A temporary Member-controlled status that allows the Member to appear in Nearby for a selected Meet Area. Being Available to Meet does not share an exact location and expires after 3 hours by default if not refreshed.
-_Avoid_: Online now, live sharing
-
 **UBC-verified Member**:
-A Member who has proven control of a UBC email address and carries a durable trust badge. UBC verification is not required to become a Member, and the badge does not expire in the current product model. Deferred to V3 (Meet/social features) — verification builds trust between users, which has no value until users interact with each other.
+A Member who has proven control of a UBC email address and carries a durable trust badge. UBC verification is not required to become a Member, and the badge does not expire in the current product model.
 _Avoid_: Confirmed student, eligible user
 
 **Independent Campus Product**:
@@ -73,19 +45,19 @@ The official v1 contact, intake, and marketing channel for the Independent Campu
 _Avoid_: In-app event submission, support ticket system
 
 **Public Discovery Content**:
-Campus-oriented content that a Visitor can browse without becoming a Member, including zones, landmarks, public Event Listings, and shareable Event Listing detail pages. Public Discovery Content excludes identifiable Member profiles, live Meet availability, member distance, connection actions, and personalized matching.
-_Avoid_: Guest mode, anonymous nearby
+Public event content that a Visitor can browse without becoming a Member, including public Event Listings and shareable Event Listing detail pages. Public Discovery Content excludes identifiable Member profiles and personalized matching.
+_Avoid_: Guest mode, public member feed
 
 **Contextual Sign-up Trigger**:
-A prompt to become a Member that appears only when a Visitor tries to use a member-only capability, such as people discovery, meetups, saved progress, personalized recommendations, or connection actions. Contextual Sign-up Triggers replace a global authentication wall for public discovery. The trigger uses two presentation modes depending on available space: an **inline mode** for detail or full-screen views (replaces the action area with a short message and Sign In button, so the Visitor stays on the page and can still browse the content) and a **toast mode** for compact actions like a save icon on a card (a brief non-blocking bar slides up with a tappable Sign In link and auto-dismisses). Both modes share the same component and navigate to the same auth flow.
+A prompt to become a Member that appears only when a Visitor tries to use a member-only capability, such as Saved Events, ratings, personalized recommendations, or profile settings. Contextual Sign-up Triggers replace a global authentication wall for public discovery. The trigger uses two presentation modes depending on available space: an **inline mode** for detail or full-screen views (replaces the action area with a short message and Sign In button, so the Visitor stays on the page and can still browse the content) and a **toast mode** for compact actions like a save icon on a card (a brief non-blocking bar slides up with a tappable Sign In link and auto-dismisses). Both modes share the same component and navigate to the same auth flow.
 _Avoid_: Auth wall, forced login, modal popup over content
 
 **Campus Discovery**:
-The public-first experience of exploring UBC places, zones, landmarks, and newcomer-relevant happenings before participating socially. Campus Discovery is the primary public web promise.
-_Avoid_: Nearby people discovery, social feed
+The public-first experience of exploring newcomer-relevant UBC events before using member-only personalization. Campus Discovery is the primary public web promise.
+_Avoid_: Social feed, forced sign-in
 
 **Student-centered Discovery**:
-The product's primary public positioning: helping UBC community members find what is happening around campus in a lightweight, student-oriented way. Student-centered Discovery can include events, places, zones, and context that official or organizer-first calendars may not make easy to browse.
+The product's primary public positioning: helping UBC community members find what is happening around campus in a lightweight, student-oriented way. Student-centered Discovery focuses on events and campus happenings that official or organizer-first calendars may not make easy to browse.
 _Avoid_: Official event calendar, generic social network
 
 **Web-first Launch**:
@@ -93,39 +65,15 @@ The initial public launch posture prioritizing mobile web and desktop web discov
 _Avoid_: App-download-first launch
 
 **Discover**:
-The primary event-first surface for Student-centered Discovery. Discover centers Event Listings filtered by Vibe, source, and date, with an optional map view for location context. Users choose events by what they are about, not where they are; spatial browsing is secondary to content-based filtering.
-_Avoid_: Map-first, campus exploration tracker, separate Events tab
-
-**Zone**:
-A broad campus area used for orientation, clustering, and exploration progress. Zones should be visually secondary to Event Listings and Places on Discover, but may still support location-gated unlocks.
-_Avoid_: Venue, event, primary marker
-
-**Place**:
-A persistent campus landmark or spot worth discovering, such as Wreck Beach, Museum of Anthropology, IKB, Rose Garden, or UBC Farm. Places may have canonical public URLs, but Event Listings do not need to reference Places as venues.
-_Avoid_: Event, Zone, venue registry
-
-**Open in Maps**:
-A navigation action available for any Place or Event Listing with a map coordinate. Open in Maps helps the user navigate through their device's map app or web maps and does not imply exact event verification.
-_Avoid_: Verified location
+The primary event-first surface for Student-centered Discovery. Discover centers Event Listings filtered by Vibe, source, and date. Users choose events by what they are about, not by a separate location-browsing experience.
+_Avoid_: Separate Events tab
 
 **Report Issue**:
 An outbound contact action for flagging incorrect or inappropriate Event Listing details. Report Issue is visible to Visitors and Members; in the current product model, it sends users to the project's Instagram inbox rather than creating an in-app moderation workflow.
 _Avoid_: In-app report queue
 
-**Zone Unlock**:
-A Member's exploration-progress action that confirms they were within a Zone before awarding progress. Zone Unlock uses client-side proximity for this low-stakes check and stores only the resulting progress, not exact coordinates; it is not an Event Listing interaction or proof of event attendance.
-_Avoid_: Check-in, attendance
-
-**Exploration Progress**:
-A secondary Member feature that tracks campus exploration through Zone Unlocks and points. Exploration Progress supports motivation and lightweight sharing, but should not visually dominate Student-centered Discovery.
-_Avoid_: Primary product loop, attendance record
-
-**Shareable Achievement**:
-A generated social media-friendly summary of a Member's Exploration Progress or campus discovery milestone. Shareable Achievements are secondary growth features behind shareable Event Listings and should not disclose private Saved Events, exact locations, or Meet activity.
-_Avoid_: Public activity feed, location history
-
 **Event Listing**:
-A public, shareable pointer to an external campus or club event, usually with an organizer name, source link, location text, and optional map coordinate. Event Listing coordinates may be approximate when precise venue information is unavailable; location text is the human-facing source of truth. Event Listing sharing starts with canonical public URL sharing, and each Event Listing detail page should open directly on web without requiring the app or prior in-app state; interactions are outbound-only in the current product model, and an Event Listing is not an RSVP, attendance record, ticket, or organizer-managed registration inside UBC Discovery.
+A public, shareable pointer to an external campus or club event, usually with an organizer name, source link, and human-readable location text. Location text is the human-facing source of truth; Event Listings are not a location-browsing or attendance system. Event Listing sharing starts with canonical public URL sharing, and each Event Listing detail page should open directly on web without requiring the app or prior in-app state; interactions are outbound-only in the current product model, and an Event Listing is not an RSVP, attendance record, ticket, or organizer-managed registration inside UBC Discovery.
 _Avoid_: RSVP, attendance, booking
 
 **Event Source**:
@@ -191,49 +139,13 @@ Domain expert: "No. Newcomers are a core audience, but campus and event discover
 Dev: "Who is the public launch for?"
 Domain expert: "Campus Explorers broadly, while making the first version especially useful to Newcomers."
 
-Dev: "Is the public pitch mainly about finding nearby people?"
-Domain expert: "No. The public pitch is Student-centered Discovery; meeting people is a signed-in layer around shared events and places."
-
-Dev: "Should event discovery be map-first?"
-Domain expert: "No. Users choose events by what they're about, not where they are. Discover is event-list-first with vibe/source/date filtering; a map view is available for location context but is secondary."
-
 Dev: "Should Events be a separate bottom tab?"
 Domain expert: "No. Events are the primary content of Discover itself."
 
 Dev: "Should public launch require downloading the native app?"
 Domain expert: "No. Launch is web-first so Visitors can discover value before installing anything."
 
-Dev: "Are Zones primary map content?"
-Domain expert: "No. Zones are a subtle orientation and clustering layer, though they can still support location-gated unlock progress."
-
-Dev: "Does unlocking a Zone mean a Member attended an event there?"
-Domain expert: "No. Zone Unlocks only represent exploration progress for a campus area."
-
-Dev: "Should points be the main product loop?"
-Domain expert: "No. Exploration Progress is secondary to Student-centered Discovery, though it can support motivation and sharing."
-
-Dev: "Should nearby discovery only show UBC-verified Members?"
-Domain expert: "That should be a filter. Some Members may prefer seeing only UBC-verified Members, but unverified Members are still allowed to participate."
-
-Dev: "Can a Visitor see nearby Members before signing in?"
-Domain expert: "No. Identifiable people discovery starts only after sign-in."
-
-Dev: "Does Meet show exact live location?"
-Domain expert: "No. Meet uses selected Meet Areas rather than stored coordinates."
-
-Dev: "Should Meet be public at first launch?"
-Domain expert: "No. Meet should launch behind an allowlisted feature flag in the main deployment."
-
-Dev: "Can Visitors receive Feature Access?"
-Domain expert: "No. Feature Access applies only to Members, though Visitors may request access or see a coming-soon surface."
-
-Dev: "Does a Meet Area stay on a Member profile forever?"
-Domain expert: "No. Meet Area availability is temporary and should expire automatically."
-
-Dev: "Should social discovery start from random nearby people?"
-Domain expert: "No. Social discovery should be framed around shared events, places, or interests first, with Nearby as a secondary surface."
-
-Dev: "Should Visitors sign in before browsing the map?"
+Dev: "Should Visitors sign in before browsing Discover?"
 Domain expert: "No. Sign-up should be prompted only when a Visitor reaches for a member-only capability."
 
 Dev: "Can a Member RSVP to an Event Listing?"
@@ -280,12 +192,6 @@ Domain expert: "Show the event details that are known, but do not invent a parti
 
 Dev: "How should users report an incorrect Event Listing?"
 Domain expert: "For now, Report Issue should send them to the project's Instagram inbox."
-
-Dev: "Can an Event Listing detail depend on the map already being loaded?"
-Domain expert: "No. Event Listing detail needs a canonical public URL that opens directly on web."
-
-Dev: "Does every Event Listing need to link to a Place?"
-Domain expert: "No. Event Listings can carry their own location text and optional map coordinate."
 
 Dev: "Can AI decide an Event Listing's Vibe?"
 Domain expert: "AI can suggest Vibes, but only from the fixed student-facing taxonomy."
