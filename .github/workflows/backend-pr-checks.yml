@@ -90,7 +90,7 @@ jobs:
       CORS_ALLOWED_ORIGINS: '["http://localhost:5173"]'
     services:
       postgres:
-        image: postgres:18.4
+        image: pgvector/pgvector:pg18-trixie
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
