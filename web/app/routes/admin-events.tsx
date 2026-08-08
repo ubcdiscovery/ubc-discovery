@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/Table";
-import { api, type ApiEvent } from "~/lib/api";
+import { api, type AdminEventStatus, type ApiEvent } from "~/lib/api";
 import { SOURCES } from "~/lib/constants";
 
 const PAGE_SIZE = 25;
@@ -46,9 +46,10 @@ function EventTable({ events }: { events: ApiEvent[] }) {
             Date
           </TableHead>
           <TableHead scope="col">Location</TableHead>
-          <TableHead scope="col" className="whitespace-nowrap">
+        <TableHead scope="col" className="whitespace-nowrap">
             Source
           </TableHead>
+          <TableHead scope="col">Status</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -72,6 +73,9 @@ function EventTable({ events }: { events: ApiEvent[] }) {
             <TableCell className="font-mono text-xs font-bold uppercase tracking-wide text-accent whitespace-nowrap">
               {sourceLabel(event.source_label)}
             </TableCell>
+            <TableCell className="font-mono text-xs uppercase tracking-wide text-muted">
+              {event.is_archived ? "Archived" : "Active"}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -82,12 +86,14 @@ function EventTable({ events }: { events: ApiEvent[] }) {
 export default function AdminEvents() {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q")?.trim() ?? "";
+  const statusValue = searchParams.get("status") ?? "all";
+  const status: AdminEventStatus = statusValue === "active" || statusValue === "archived" ? statusValue : "all";
   const pageValue = Number.parseInt(searchParams.get("page") ?? "0", 10);
   const page = Number.isFinite(pageValue) && pageValue > 0 ? pageValue : 0;
   const [searchDraft, setSearchDraft] = useState(query);
   const eventsQuery = useQuery({
-    queryKey: ["admin-events", query, page],
-    queryFn: () => api.admin.events.list(query, page * PAGE_SIZE, PAGE_SIZE),
+    queryKey: ["admin-events", query, page, status],
+    queryFn: () => api.admin.events.list(query, page * PAGE_SIZE, PAGE_SIZE, status),
     retry: false,
   });
 
@@ -96,12 +102,16 @@ export default function AdminEvents() {
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextQuery = searchDraft.trim();
-    setSearchParams(nextQuery ? { q: nextQuery } : {});
+    const next: Record<string, string> = {};
+    if (nextQuery) next.q = nextQuery;
+    if (status !== "all") next.status = status;
+    setSearchParams(next);
   }
 
   function goToPage(nextPage: number) {
     const next: Record<string, string> = {};
     if (query) next.q = query;
+    if (status !== "all") next.status = status;
     if (nextPage > 0) next.page = String(nextPage);
     setSearchParams(next);
   }
@@ -124,6 +134,9 @@ export default function AdminEvents() {
         <p className="mt-3 max-w-110 text-sm/relaxed text-ink-soft md:mt-0 md:text-right">
           Find past and upcoming listings, inspect their source, and correct the public record.
         </p>
+        <Link to="/admin/events/new" className="mt-4 inline-block border border-ink bg-ink px-4 py-3 font-mono text-xs font-bold uppercase tracking-wide text-bg no-underline md:mt-0">
+          Create Event Listing
+        </Link>
       </div>
 
       <form onSubmit={submitSearch} role="search" className="mt-5 flex flex-col gap-2 sm:flex-row">
@@ -142,6 +155,18 @@ export default function AdminEvents() {
           Search catalogue
         </Button>
       </form>
+
+      <nav aria-label="Event Listing status" className="mt-4 flex flex-wrap gap-2 font-mono text-xs uppercase tracking-wide">
+        {(["all", "active", "archived"] as const).map((option) => (
+          <Link
+            key={option}
+            to={{ pathname: "/admin/events", search: new URLSearchParams({ ...(query ? { q: query } : {}), ...(option !== "all" ? { status: option } : {}) }).toString() }}
+            className={`border px-3 py-2 no-underline ${status === option ? "border-ink bg-ink text-bg" : "border-rule text-muted"}`}
+          >
+            {option === "all" ? "All records" : `${option} records`}
+          </Link>
+        ))}
+      </nav>
 
       <div className="mt-5 flex items-center justify-between border-b border-ink pb-2 font-mono text-xs uppercase tracking-wide text-muted">
         <span>{eventsQuery.isPending ? "Loading records…" : `${total} records`}</span>

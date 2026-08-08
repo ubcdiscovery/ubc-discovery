@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.event import Event
 from app.services import recommender
@@ -252,6 +253,20 @@ class TestForYou:
         assert data["source"] == "recent"
         assert len(data["events"]) > 0
         assert all(s == 0.0 for s in data["scores"])
+
+    async def test_archived_event_is_excluded_from_recommendations(
+        self, client: AsyncClient, db_session: AsyncSession, sample_events: list[Event]
+    ):
+        archived = sample_events[0]
+        archived.is_archived = True
+        await db_session.flush()
+
+        response = await client.get(
+            "/recommendations/events/for-you", params={"n": 5}
+        )
+
+        assert response.status_code == 200
+        assert archived.id not in {item["id"] for item in response.json()["events"]}
 
     async def test_requires_auth(self, unauthed_client: AsyncClient):
         resp = await unauthed_client.get("/recommendations/events/for-you")

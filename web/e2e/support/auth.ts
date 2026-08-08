@@ -46,6 +46,9 @@ export const mockEvent = {
   event_date: "2026-09-01T18:00:00Z",
   event_end_date: "2026-09-01T20:00:00Z",
   created_at: "2026-01-01T00:00:00Z",
+  is_archived: false,
+  archived_at: null,
+  archived_by: null,
 };
 
 export const adminProfile: MockProfile = {
@@ -68,7 +71,9 @@ export async function mockApi(
     onProfileUpdate?: (body: Record<string, unknown>) => void;
     onProfileRequest?: (uid: string | null) => Promise<void> | void;
     adminEvents?: AdminMockEvent[];
-    onAdminList?: (q: string) => void;
+  onAdminList?: (q: string) => void;
+  onAdminCreate?: (body: Record<string, unknown>) => void;
+  onAdminArchive?: (archived: boolean) => void;
     onAdminUpdate?: (body: Record<string, unknown>) => void;
     onAdminImageUpload?: () => void;
     adminUpdateError?: { status: number; detail: string };
@@ -80,6 +85,8 @@ export async function mockApi(
   const handleAdminApi = createAdminApiMock({
     events: options.adminEvents ?? [],
     onList: options.onAdminList,
+    onCreate: options.onAdminCreate,
+    onArchive: options.onAdminArchive,
     onUpdate: options.onAdminUpdate,
     onImageUpload: options.onAdminImageUpload,
     updateError: options.adminUpdateError,
