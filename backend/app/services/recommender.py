@@ -121,7 +121,9 @@ async def fetch_nearest_events(
     if not is_valid_embedding(embedding):
         return []
 
-    query = select(Event).where(Event.embedding_vector.is_not(None))
+    query = select(Event).where(
+        Event.embedding_vector.is_not(None), Event.is_archived.is_(False)
+    )
     if exclude_event_id is not None:
         query = query.where(Event.id != exclude_event_id)
     query = query.order_by(

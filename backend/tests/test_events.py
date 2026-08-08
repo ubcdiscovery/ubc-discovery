@@ -66,6 +66,33 @@ class TestGetEvent:
         resp = await unauthed_client.get("/events/notfound")
         assert resp.status_code == 404
 
+    async def test_archived_event_is_not_publicly_discoverable(
+        self,
+        unauthed_client: AsyncClient,
+        db_session: AsyncSession,
+    ):
+        event = Event(
+            title="Archived public event",
+            source="manual",
+            location_name="The Nest",
+            event_date=datetime.now(ZoneInfo("UTC")) + timedelta(days=1),
+            is_archived=True,
+        )
+        db_session.add(event)
+        await db_session.flush()
+
+        detail = await unauthed_client.get(f"/events/{event.id}")
+        listing = await unauthed_client.get("/events")
+
+        assert detail.status_code == 404
+        assert event.id not in {item["id"] for item in listing.json()["events"]}
+
+        search = await unauthed_client.get(
+            "/events/search", params={"q": "Archived public event"}
+        )
+        assert search.status_code == 200
+        assert event.id not in {item["id"] for item in search.json()["events"]}
+
 
 class TestSearchEvents:
     async def test_search_events_only_returns_upcoming_matches(

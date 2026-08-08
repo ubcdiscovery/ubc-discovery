@@ -1,4 +1,4 @@
-import type { ApiEvent, UpdateEventInput } from "~/lib/api";
+import type { ApiEvent, CreateEventInput, UpdateEventInput } from "~/lib/api";
 
 export type AdminEventDraft = {
   title: string;
@@ -35,6 +35,23 @@ export function draftFromEvent(event: ApiEvent): AdminEventDraft {
   };
 }
 
+export function emptyAdminEventDraft(): AdminEventDraft {
+  const start = new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000);
+  const end = new Date(start.getTime() + 2 * 60 * 60 * 1_000);
+  return {
+    title: "",
+    description: "",
+    clubName: "",
+    locationName: "",
+    eventDate: toLocalDateTime(start.toISOString()),
+    eventEndDate: toLocalDateTime(end.toISOString()),
+    sourceLabel: "campus_community",
+    sourceUrl: "",
+    externalCtaLabel: "",
+    vibes: [],
+  };
+}
+
 export function validateAdminEventDraft(draft: AdminEventDraft): string | null {
   if (!draft.title.trim()) return "Add an Event Listing title.";
   if (!draft.locationName.trim()) return "Add location text.";
@@ -63,4 +80,8 @@ export function updateInputFromDraft(draft: AdminEventDraft): UpdateEventInput {
     external_cta_label: draft.externalCtaLabel.trim() || null,
     vibes: draft.vibes,
   };
+}
+
+export function createInputFromDraft(draft: AdminEventDraft): CreateEventInput {
+  return updateInputFromDraft(draft) as CreateEventInput;
 }

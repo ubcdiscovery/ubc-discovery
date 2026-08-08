@@ -26,13 +26,15 @@ async def list_ratings(
     count_result = await db.execute(
         select(func.count())
         .select_from(EventRating)
-        .where(EventRating.user_id == user.id)
+        .join(Event, Event.id == EventRating.event_id)
+        .where(EventRating.user_id == user.id, Event.is_archived.is_(False))
     )
     total = count_result.scalar_one()
 
     result = await db.execute(
         select(EventRating)
-        .where(EventRating.user_id == user.id)
+        .join(Event, Event.id == EventRating.event_id)
+        .where(EventRating.user_id == user.id, Event.is_archived.is_(False))
         .order_by(EventRating.created_at.desc())
         .offset(skip)
         .limit(limit)
@@ -52,7 +54,9 @@ async def rate_event(
     db: AsyncSession = Depends(get_db),
 ):
     # Verify event exists
-    event_result = await db.execute(select(Event).where(Event.id == event_id))
+    event_result = await db.execute(
+        select(Event).where(Event.id == event_id, Event.is_archived.is_(False))
+    )
     if not event_result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Event not found")
 
@@ -92,8 +96,14 @@ async def get_rating(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EventRating).where(
-            and_(EventRating.user_id == user.id, EventRating.event_id == event_id)
+        select(EventRating)
+        .join(Event, Event.id == EventRating.event_id)
+        .where(
+            and_(
+                EventRating.user_id == user.id,
+                EventRating.event_id == event_id,
+                Event.is_archived.is_(False),
+            )
         )
     )
     rating = result.scalar_one_or_none()

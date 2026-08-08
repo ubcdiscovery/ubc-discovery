@@ -157,3 +157,44 @@ test("administrator uploads an Event Listing image", async ({ page }) => {
   await expect(page.getByRole("status")).toHaveText("Image uploaded.");
   expect(uploads).toBe(1);
 });
+
+test("administrator creates an Event Listing", async ({ page }) => {
+  let created: Record<string, unknown> | undefined;
+  await mockApi(page, {
+    profile: adminProfile,
+    onAdminCreate: (body) => {
+      created = body;
+    },
+  });
+  await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
+  await page.goto("/admin/events/new");
+
+  await page.getByLabel("Title").fill("New Campus Workshop");
+  await page.getByLabel("Location text").fill("The Nest");
+  await page.getByRole("button", { name: "Create Event Listing" }).click();
+
+  await expect(page).toHaveURL("/admin/events/created-event");
+  await expect(page.getByRole("heading", { name: "New Campus Workshop" })).toBeVisible();
+  expect(created).toMatchObject({ title: "New Campus Workshop", location_name: "The Nest" });
+});
+
+test("administrator archives and restores an Event Listing", async ({ page }) => {
+  const events = [{ ...mockEvent, is_archived: false }];
+  const archiveStates: boolean[] = [];
+  await mockApi(page, {
+    profile: adminProfile,
+    adminEvents: events,
+    onAdminArchive: (archived) => archiveStates.push(archived),
+  });
+  await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
+  await page.goto(`/admin/events/${mockEvent.id}`);
+
+  await page.getByRole("button", { name: "Archive listing" }).click();
+  await expect(page.getByRole("heading", { name: "Archived Event Listing" })).toBeVisible();
+  await expect(page.getByText("archive", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Restore listing" }).click();
+  await expect(page.getByRole("heading", { name: "Active Event Listing" })).toBeVisible();
+  await expect(page.getByText("restore", { exact: true })).toBeVisible();
+  expect(archiveStates).toEqual([true, false]);
+});

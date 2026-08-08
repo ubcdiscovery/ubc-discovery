@@ -5,7 +5,6 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from httpx import AsyncClient
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.constants import EVENT_EMBEDDING_DIMENSIONS
@@ -158,6 +157,37 @@ class TestAdminEventList:
         assert past_event.id in ids
         assert upcoming_event.id in ids
         assert data["total"] == 2
+
+    async def test_status_filter_finds_archived_records(
+        self,
+        admin_client: AsyncClient,
+        db_session: AsyncSession,
+    ):
+        archived = Event(
+            title="Archived catalogue record",
+            source="manual",
+            location_name="The Nest",
+            event_date=datetime(2026, 9, 1, tzinfo=ZoneInfo("UTC")),
+            is_archived=True,
+        )
+        active = Event(
+            title="Active catalogue record",
+            source="manual",
+            location_name="The Nest",
+            event_date=datetime(2026, 9, 2, tzinfo=ZoneInfo("UTC")),
+        )
+        db_session.add_all([archived, active])
+        await db_session.flush()
+
+        archived_resp = await admin_client.get(
+            "/admin/events", params={"status": "archived", "q": "catalogue record"}
+        )
+        active_resp = await admin_client.get(
+            "/admin/events", params={"status": "active", "q": "catalogue record"}
+        )
+
+        assert [item["id"] for item in archived_resp.json()["events"]] == [archived.id]
+        assert [item["id"] for item in active_resp.json()["events"]] == [active.id]
 
     async def test_searches_canonical_events_and_reports_total(
         self,
@@ -368,14 +398,14 @@ class TestUpdateAdminEvent:
         assert resp.status_code == 404
 
 
-class TestDeleteAdminEvent:
-    async def test_delete_event_success(
+class TestArchiveAdminEvent:
+    async def test_delete_event_archives_without_deleting_history(
         self,
         admin_client: AsyncClient,
         db_session: AsyncSession,
     ):
         event = Event(
-            title="Delete Me",
+            title="Archive Me",
             source="manual",
             location_name="The Nest",
             event_date=datetime(2026, 9, 1, 10, 0, tzinfo=ZoneInfo("UTC")),
@@ -384,15 +414,36 @@ class TestDeleteAdminEvent:
         await db_session.flush()
         event_id = event.id
 
-        with patch("app.routers.admin.events.s3.delete_object") as mock_delete:
-            resp = await admin_client.delete(f"/admin/events/{event_id}")
+        resp = await admin_client.delete(f"/admin/events/{event_id}")
 
         assert resp.status_code == 204
-        mock_delete.assert_called_once_with(f"event-pictures/{event_id}.webp")
-        result = await db_session.execute(select(Event).where(Event.id == event_id))
-        assert result.scalar_one_or_none() is None
+        await db_session.refresh(event)
+        assert event.is_archived is True
+        assert event.archived_at is not None
 
+        public_resp = await admin_client.get(f"/admin/events/{event_id}/audit")
+        assert public_resp.status_code == 200
+        assert public_resp.json()["entries"][-1]["action"] == "archive"
 
+    async def test_archive_and_restore_are_explicit_and_audited(
+        self, admin_client: AsyncClient, sample_events: list[Event]
+    ):
+        event = sample_events[0]
+
+        archived = await admin_client.post(f"/admin/events/{event.id}/archive")
+        assert archived.status_code == 200
+        assert archived.json()["is_archived"] is True
+
+        restored = await admin_client.post(f"/admin/events/{event.id}/restore")
+        assert restored.status_code == 200
+        assert restored.json()["is_archived"] is False
+
+        audit = await admin_client.get(f"/admin/events/{event.id}/audit")
+        assert audit.status_code == 200
+        assert [entry["action"] for entry in audit.json()["entries"][-2:]] == [
+            "archive",
+            "restore",
+        ]
 class TestAdminEventPresignedUpload:
     async def test_get_event_presigned_upload_url(
         self, admin_client: AsyncClient, sample_events: list[Event]
@@ -404,6 +455,9 @@ class TestAdminEventPresignedUpload:
         assert data["upload_url"] == "https://s3.example.com/presigned"
         assert data["file_key"] == f"event-pictures/{event.id}.webp"
         assert data["max_file_size_bytes"] == 3 * 1024 * 1024
+
+        audit = await admin_client.get(f"/admin/events/{event.id}/audit")
+        assert audit.json()["entries"][-1]["action"] == "image_upload"
 
     async def test_event_presigned_upload_not_found(self, admin_client: AsyncClient):
         resp = await admin_client.post("/admin/events/notfound/presigned-upload")

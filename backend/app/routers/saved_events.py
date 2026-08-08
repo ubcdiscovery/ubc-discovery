@@ -28,14 +28,15 @@ async def list_saved_events(
     count_result = await db.execute(
         select(func.count())
         .select_from(SavedEvent)
-        .where(SavedEvent.user_id == user.id)
+        .join(Event, Event.id == SavedEvent.event_id)
+        .where(SavedEvent.user_id == user.id, Event.is_archived.is_(False))
     )
     total = count_result.scalar_one()
 
     result = await db.execute(
         select(SavedEvent, Event)
         .join(Event, Event.id == SavedEvent.event_id)
-        .where(SavedEvent.user_id == user.id)
+        .where(SavedEvent.user_id == user.id, Event.is_archived.is_(False))
         .order_by(SavedEvent.saved_at.desc())
         .offset(skip)
         .limit(limit)
@@ -66,7 +67,9 @@ async def save_event(
     db: AsyncSession = Depends(get_db),
 ):
     # Verify event exists
-    event_result = await db.execute(select(Event).where(Event.id == event_id))
+    event_result = await db.execute(
+        select(Event).where(Event.id == event_id, Event.is_archived.is_(False))
+    )
     if not event_result.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
