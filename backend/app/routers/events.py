@@ -22,7 +22,7 @@ async def list_events(
     current_time = datetime.now(ZoneInfo("America/Vancouver"))
     result = await db.execute(
         select(Event)
-        .where(Event.event_date >= current_time)
+        .where(Event.event_date >= current_time, Event.is_archived.is_(False))
         .order_by(Event.event_date.desc(), Event.created_at.desc())
         .offset(skip)
         .limit(limit)
@@ -47,6 +47,7 @@ async def search_events(
         select(Event)
         .where(
             Event.event_date >= current_time,
+            Event.is_archived.is_(False),
             or_(
                 Event.title.ilike(pattern),
                 Event.description.ilike(pattern),
@@ -64,7 +65,9 @@ async def search_events(
 
 @router.get("/{event_id}", response_model=EventResponse)
 async def get_event(event_id: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Event).where(Event.id == event_id))
+    result = await db.execute(
+        select(Event).where(Event.id == event_id, Event.is_archived.is_(False))
+    )
     event = result.scalar_one_or_none()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")

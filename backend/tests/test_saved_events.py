@@ -46,6 +46,24 @@ async def test_list_saved_events_returns_event_representation(
     assert item["event"]["id"] == event.id
 
 
+async def test_archived_event_is_hidden_from_saved_surface(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    sample_events: list[Event],
+):
+    event = sample_events[0]
+    await client.put(f"/saved-events/{event.id}")
+    event.is_archived = True
+    await db_session.flush()
+
+    listing = await client.get("/saved-events")
+    saving_again = await client.put(f"/saved-events/{event.id}")
+
+    assert listing.status_code == 200
+    assert listing.json() == {"saved_events": [], "total": 0}
+    assert saving_again.status_code == 404
+
+
 async def test_unsave_event_is_idempotent(
     client: AsyncClient,
     sample_events: list[Event],

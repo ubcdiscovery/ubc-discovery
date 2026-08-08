@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Self
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -33,6 +33,9 @@ class EventResponse(BaseModel):
     event_date: datetime | None
     event_end_date: datetime | None
     created_at: datetime
+    is_archived: bool
+    archived_at: datetime | None
+    archived_by: str | None
 
     model_config = {"from_attributes": True}
 
@@ -153,3 +156,21 @@ class EventListResponse(BaseModel):
 class AdminEventListResponse(BaseModel):
     events: list[EventResponse]
     total: int
+
+
+class EventAuditResponse(BaseModel):
+    id: str
+    event_id: str
+    actor_type: str
+    actor_id: str | None
+    action: str
+    before: dict[str, Any] | None
+    after: dict[str, Any] | None
+    created_at: datetime
+
+
+class EventAuditListResponse(BaseModel):
+    entries: list[EventAuditResponse]
+
+
+EventAdminStatus = Literal["all", "active", "archived"]

@@ -10,21 +10,24 @@ import { Select } from "~/components/ui/Select";
 import { Textarea } from "~/components/ui/Textarea";
 import {
   draftFromEvent,
+  emptyAdminEventDraft,
+  createInputFromDraft,
   updateInputFromDraft,
   validateAdminEventDraft,
   type AdminEventDraft,
 } from "~/lib/admin-events";
-import type { ApiEvent, UpdateEventInput } from "~/lib/api";
+import type { ApiEvent, CreateEventInput, UpdateEventInput } from "~/lib/api";
 import { SOURCES, VIBES } from "~/lib/constants";
 
 type AdminEventFormProps = {
-  event: ApiEvent;
-  onSave: (input: UpdateEventInput) => Promise<ApiEvent>;
-  onUploadImage: (file: File) => Promise<ApiEvent>;
+  event?: ApiEvent;
+  onSave?: (input: UpdateEventInput) => Promise<ApiEvent>;
+  onCreate?: (input: CreateEventInput) => Promise<ApiEvent>;
+  onUploadImage?: (file: File) => Promise<ApiEvent>;
 };
 
-export function AdminEventForm({ event, onSave, onUploadImage }: AdminEventFormProps) {
-  const [draft, setDraft] = useState(() => draftFromEvent(event));
+export function AdminEventForm({ event, onSave, onCreate, onUploadImage }: AdminEventFormProps) {
+  const [draft, setDraft] = useState(() => (event ? draftFromEvent(event) : emptyAdminEventDraft()));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -44,7 +47,7 @@ export function AdminEventForm({ event, onSave, onUploadImage }: AdminEventFormP
   }
 
   function resetDraft() {
-    setDraft(draftFromEvent(event));
+    setDraft(event ? draftFromEvent(event) : emptyAdminEventDraft());
     setError("");
     setSaved(false);
   }
@@ -61,7 +64,10 @@ export function AdminEventForm({ event, onSave, onUploadImage }: AdminEventFormP
     setError("");
     setSaved(false);
     try {
-      const updated = await onSave(updateInputFromDraft(draft));
+      const updated = event
+        ? await onSave?.(updateInputFromDraft(draft))
+        : await onCreate?.(createInputFromDraft(draft));
+      if (!updated) throw new Error("Could not save Event Listing.");
       setDraft(draftFromEvent(updated));
       setSaved(true);
     } catch (cause) {
@@ -197,23 +203,29 @@ export function AdminEventForm({ event, onSave, onUploadImage }: AdminEventFormP
       <div className="grid gap-4 self-start lg:sticky lg:top-5">
         <Card className="border-2">
           <CardHeader>
-            <CardTitle>Canonical record</CardTitle>
+              <CardTitle>{event ? "Canonical record" : "New Event Listing"}</CardTitle>
           </CardHeader>
           <CardContent>
-            <dl className="grid gap-3 font-mono text-xs">
-              <div className="border-b border-rule-soft pb-2">
-                <dt className="uppercase tracking-wide text-muted">Listing ID</dt>
-                <dd className="mt-1 font-bold text-ink">{event.id}</dd>
-              </div>
-              <div className="border-b border-rule-soft pb-2">
-                <dt className="uppercase tracking-wide text-muted">Ingestion source</dt>
-                <dd className="mt-1 font-bold text-ink">{event.source}</dd>
-              </div>
-              <div>
-                <dt className="uppercase tracking-wide text-muted">Created</dt>
-                <dd className="mt-1 font-bold text-ink">{new Date(event.created_at).toLocaleString()}</dd>
-              </div>
-            </dl>
+            {event ? (
+              <dl className="grid gap-3 font-mono text-xs">
+                <div className="border-b border-rule-soft pb-2">
+                  <dt className="uppercase tracking-wide text-muted">Listing ID</dt>
+                  <dd className="mt-1 font-bold text-ink">{event.id}</dd>
+                </div>
+                <div className="border-b border-rule-soft pb-2">
+                  <dt className="uppercase tracking-wide text-muted">Ingestion source</dt>
+                  <dd className="mt-1 font-bold text-ink">{event.source}</dd>
+                </div>
+                <div>
+                  <dt className="uppercase tracking-wide text-muted">Created</dt>
+                  <dd className="mt-1 font-bold text-ink">{new Date(event.created_at).toLocaleString()}</dd>
+                </div>
+              </dl>
+            ) : (
+              <p className="text-sm text-ink-soft">
+                Save the listing first, then upload an image and manage its lifecycle.
+              </p>
+            )}
 
             {(error || saved) && (
               <Alert variant={error ? "error" : "success"} className="mt-4">
@@ -223,7 +235,7 @@ export function AdminEventForm({ event, onSave, onUploadImage }: AdminEventFormP
 
             <div className="mt-5 grid grid-cols-2 gap-2 lg:grid-cols-1">
               <Button type="submit" variant="primary" disabled={saving}>
-                {saving ? "Saving…" : "Save changes"}
+                {saving ? "Saving…" : event ? "Save changes" : "Create Event Listing"}
               </Button>
               <Button type="button" onClick={resetDraft} disabled={saving}>
                 Reset
@@ -232,7 +244,7 @@ export function AdminEventForm({ event, onSave, onUploadImage }: AdminEventFormP
           </CardContent>
         </Card>
 
-        <AdminEventImage event={event} onUpload={onUploadImage} />
+        {event && onUploadImage && <AdminEventImage event={event} onUpload={onUploadImage} />}
       </div>
     </form>
   );
