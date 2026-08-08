@@ -23,6 +23,7 @@ dependencies = [
 dev = [
     "botocore[crt]>=1.43.5",
     "httpx>=0.28.1",
+    "pre-commit>=4.6.1",
     "pytest>=9.0.3",
     "pytest-asyncio>=0.23.0",
     "ruff>=0.16.2",
