@@ -3,7 +3,6 @@ import type { Route } from "@playwright/test";
 export type AdminMockApiCredential = {
   id: string;
   label: string;
-  purpose: string;
   created_by_user_id: string;
   created_by_name: string;
   created_by_email: string;
@@ -17,7 +16,6 @@ export type AdminMockApiCredential = {
 export const mockApiCredential: AdminMockApiCredential = {
   id: "11111111-1111-1111-1111-111111111111",
   label: "Calendar importer",
-  purpose: "candidate_ingestion",
   created_by_user_id: "admin-1",
   created_by_name: "Morgan",
   created_by_email: "admin@example.com",

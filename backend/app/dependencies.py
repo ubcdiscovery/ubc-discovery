@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.api_credential import ApiCredential, ApiCredentialPurpose
+from app.models.api_credential import ApiCredential
 from app.models.audit_actor import AuditActorType
 from app.models.user import User
 from app.services import api_credentials, firebase_auth
@@ -51,7 +51,6 @@ async def require_candidate_ingester(
     now = datetime.now(UTC)
     if (
         credential is None
-        or credential.purpose != ApiCredentialPurpose.CANDIDATE_INGESTION
         or credential.revoked_at is not None
         or (credential.expires_at is not None and credential.expires_at <= now)
         or not api_credentials.verify_secret(secret, credential.secret_hash)

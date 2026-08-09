@@ -5,7 +5,6 @@ type ApiCredentialStatus = "active" | "expired" | "revoked";
 export interface ApiCredential {
   id: string;
   label: string;
-  purpose: string;
   created_by_user_id: string;
   created_by_name: string;
   created_by_email: string;

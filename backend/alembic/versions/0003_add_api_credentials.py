@@ -18,12 +18,6 @@ def upgrade() -> None:
         "api_credentials",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("label", sa.String(length=80), nullable=False),
-        sa.Column(
-            "purpose",
-            sa.String(length=50),
-            server_default="candidate_ingestion",
-            nullable=False,
-        ),
         sa.Column("secret_hash", sa.String(length=255), nullable=False),
         sa.Column("created_by_user_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column(
@@ -35,10 +29,6 @@ def upgrade() -> None:
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("last_used_at", sa.DateTime(timezone=True), nullable=True),
-        sa.CheckConstraint(
-            "purpose = 'candidate_ingestion'",
-            name="ck_api_credentials_candidate_ingestion_purpose",
-        ),
         sa.ForeignKeyConstraint(
             ["created_by_user_id"], ["users.id"], ondelete="RESTRICT"
         ),

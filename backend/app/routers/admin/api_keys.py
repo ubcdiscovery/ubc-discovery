@@ -42,7 +42,6 @@ def _credential_response(
     return ApiCredentialResponse(
         id=credential.id,
         label=credential.label,
-        purpose=credential.purpose,
         created_by_user_id=credential.created_by_user_id,
         created_by_name=creator.preferred_name,
         created_by_email=creator.email,

@@ -11,10 +11,6 @@ from app.database import Base
 from app.models.audit_actor import AuditActorType
 
 
-class ApiCredentialPurpose(StrEnum):
-    CANDIDATE_INGESTION = "candidate_ingestion"
-
-
 class ApiCredentialAuditAction(StrEnum):
     CREATE = "create"
     REPLACE = "replace"
@@ -23,22 +19,11 @@ class ApiCredentialAuditAction(StrEnum):
 
 class ApiCredential(Base):
     __tablename__ = "api_credentials"
-    __table_args__ = (
-        CheckConstraint(
-            "purpose = 'candidate_ingestion'",
-            name="ck_api_credentials_candidate_ingestion_purpose",
-        ),
-    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     label: Mapped[str] = mapped_column(String(80))
-    purpose: Mapped[ApiCredentialPurpose] = mapped_column(
-        String(50),
-        default=ApiCredentialPurpose.CANDIDATE_INGESTION,
-        server_default=ApiCredentialPurpose.CANDIDATE_INGESTION.value,
-    )
     secret_hash: Mapped[str] = mapped_column(String(255))
     created_by_user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), index=True

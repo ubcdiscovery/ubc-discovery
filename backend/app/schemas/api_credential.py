@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models.api_credential import ApiCredentialAuditAction, ApiCredentialPurpose
+from app.models.api_credential import ApiCredentialAuditAction
 from app.models.audit_actor import AuditActorType
 
 CredentialStatus = Literal["active", "expired", "revoked"]
@@ -41,7 +41,6 @@ class ApiCredentialReplaceRequest(BaseModel):
 class ApiCredentialResponse(BaseModel):
     id: uuid.UUID
     label: str
-    purpose: ApiCredentialPurpose
     created_by_user_id: uuid.UUID
     created_by_name: str
     created_by_email: str
