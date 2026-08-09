@@ -7,7 +7,7 @@ import { useSavedEventDetails } from "~/lib/saved-events-query";
 type SavedTab = "upcoming" | "past";
 
 export function meta() {
-  return [{ title: "Saved — UBC Discovery" }];
+  return [{ title: "Saved · UBC Discovery" }];
 }
 
 function VisitorSaved() {

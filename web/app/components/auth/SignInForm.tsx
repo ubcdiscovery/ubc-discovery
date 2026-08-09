@@ -34,9 +34,9 @@ export function SignInForm() {
 
           <div className="my-1.5 text-center font-mono text-xs uppercase tracking-wider text-muted md:my-1 md:flex md:items-center md:gap-2.5">
             <span className="hidden h-px flex-1 bg-rule-soft md:block" />
-            <span className="md:hidden">— </span>
+            <span className="md:hidden">- </span>
             or
-            <span className="md:hidden"> —</span>
+            <span className="md:hidden"> -</span>
             <span className="hidden h-px flex-1 bg-rule-soft md:block" />
           </div>
 

@@ -49,6 +49,17 @@ export const FACULTIES = [
   "Other",
 ];
 
+// Organizers cannot label their own event as official UBC programming;
+// a reviewer can promote the source label when approving.
+export const SUBMITTABLE_SOURCES = [
+  { id: "ams_club", label: "AMS club or student society" },
+  { id: "campus_community", label: "Campus community" },
+] as const;
+
+export type SubmittableSourceId = (typeof SUBMITTABLE_SOURCES)[number]["id"];
+
+export const MAX_SUBMISSION_VIBES = 3;
+
 export const YEARS = [
   "1st year",
   "2nd year",

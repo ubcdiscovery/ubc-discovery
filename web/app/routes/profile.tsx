@@ -3,7 +3,7 @@ import { MemberBoundary } from "~/components/MemberBoundary";
 import { MemberProfile } from "~/components/profile/MemberProfile";
 
 export function meta() {
-  return [{ title: "Profile — UBC Discovery" }];
+  return [{ title: "Profile · UBC Discovery" }];
 }
 
 function VisitorProfile() {

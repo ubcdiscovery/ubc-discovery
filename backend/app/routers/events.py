@@ -158,7 +158,8 @@ async def delete_event(
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    s3.delete_object(event_image_key(event.id))
+    if event.event_picture_key:
+        s3.delete_object(event.event_picture_key)
     await db.delete(event)
     await db.commit()
 
@@ -175,7 +176,8 @@ async def get_event_presigned_upload(
     content_type = "image/webp"
 
     result = await db.execute(select(Event).where(Event.id == event_id))
-    if not result.scalar_one_or_none():
+    event = result.scalar_one_or_none()
+    if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
     url, fields, file_key = s3.generate_presigned_upload_url(
@@ -183,6 +185,8 @@ async def get_event_presigned_upload(
         file_key=event_image_key(event_id),
         max_file_size_bytes=settings.event_image_max_bytes,
     )
+    event.event_picture_key = file_key
+    await db.commit()
     return PresignedUploadResponse(
         upload_url=url,
         fields=fields,

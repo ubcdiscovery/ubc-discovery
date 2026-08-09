@@ -3,11 +3,14 @@ import { FiMenu } from "react-icons/fi";
 import { Link } from "react-router";
 import { NavIconButton } from "~/components/NavIconButton";
 import { useTheme } from "~/lib/theme";
+import { useAuth } from "~/lib/auth";
 
 export function MobileUtilityMenu() {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { resolvedTheme, toggleTheme } = useTheme();
+  const { state } = useAuth();
+  const isAdmin = state.status === "member" && state.profile.is_admin;
 
   useEffect(() => {
     if (!open) return;
@@ -52,6 +55,16 @@ export function MobileUtilityMenu() {
           >
             For organizers
           </Link>
+          {isAdmin && (
+            <Link
+              to="/admin"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex min-h-11 items-center border-b border-rule-soft px-3 font-mono text-xs font-bold tracking-wide text-ink uppercase hover:bg-accent-soft"
+            >
+              Review queue
+            </Link>
+          )}
           <button
             type="button"
             role="menuitem"

@@ -18,8 +18,8 @@ This is a single-context repository using the root domain glossary and root ADR 
 
 ## Architecture
 
-- **Backend**: Python FastAPI in `backend/` — async SQLAlchemy + asyncpg
-- **Frontend**: React web app in `web/` — React Router 7 + React 19 + Tailwind CSS
+- **Backend**: Python FastAPI in `backend/`: async SQLAlchemy + asyncpg
+- **Frontend**: React web app in `web/`: React Router 7 + React 19 + Tailwind CSS
 - **Database**: PostgreSQL 18.4 on AWS RDS
 - **AI**: AWS Bedrock Titan Embeddings for content-based event recommendations
 
@@ -58,10 +58,10 @@ backend/
 │   ├── config.py        # Pydantic settings from .env
 │   ├── database.py      # Async SQLAlchemy engine + session
 │   ├── dependencies.py  # Firebase ID token → User and admin authorization
-│   ├── models/          # User, Event, SavedEvent, EventRating, OTPCode
+│   ├── models/          # User, Event, SavedEvent, EventRating, EventSubmission, OTPCode
 │   ├── presenters/      # API response presentation helpers
 │   ├── schemas/         # Pydantic request/response models (auto Swagger docs)
-│   ├── routers/         # auth, users, events, ratings, recommendations, saved_events
+│   ├── routers/         # auth, users, events, event_submissions, ratings, recommendations, saved_events
 │   └── services/        # email, firebase_auth, recommender, s3
 ├── scripts/
 │   └── seed_events.py   # Event seed/import script
@@ -82,11 +82,14 @@ web/
 
 ### Backend
 - ORM-backed Pydantic response models use `model_config = {"from_attributes": True}`
-- Auth: event discovery is public; saved events, ratings, profiles, and personalized recommendations are member-only
+- Auth: event discovery is public; saved events, ratings, profiles, personalized recommendations, and event submission are member-only
 - Sign-in uses email OTP plus Firebase custom tokens; API requests authenticate with Firebase ID tokens
 - UBC email is not required for membership; `*.ubc.ca` is only used to set/confirm the optional `ubc_verified` trust badge
 - Profile pictures and event images: S3 presigned URLs (upload + download), key stored in DB (`profile_picture_key`, `event_picture_key`)
 - Event coordinates are optional lat/lng floats; location text remains the human-facing source of truth
+- Organizer submissions: members POST `/event-submissions`; the row stays in `event_submissions` and never reaches Discover until an admin approves it, which is what creates the `Event`. Organizers cannot self-assign the `ubc_official` source label.
+- Admin review: the queue lives at `/admin` in the web app, gated on `is_admin` from `/users/me`. `require_admin` still accepts `Api-Key` for scripts. The same page lists published events and can delete them.
+- Submission cover images: organizers upload after the submission exists (its id is the S3 key), via `POST /event-submissions/{id}/presigned-upload`. Approval carries `event_picture_key` to the published `Event`, reusing the same object.
 - Recommender: Content-based event similarity using Bedrock Titan embeddings + vibe Jaccard weighted blend. Embeddings pre-computed at event creation and stored as JSON.
 
 ### Frontend (Web)

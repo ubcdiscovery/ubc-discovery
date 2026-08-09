@@ -11,7 +11,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
   const event = loaderData as ApiEvent | undefined;
   return [
     {
-      title: event ? `${event.title} - UBC Discovery` : "Event — UBC Discovery",
+      title: event ? `${event.title} - UBC Discovery` : "Event · UBC Discovery",
     },
   ];
 }
@@ -86,7 +86,7 @@ export default function EventDetail() {
             ],
             ["WHERE", event.location_name, "OPEN IN MAPS →"],
             ["HOST", event.club_name ?? event.source_label.replace(/_/g, " "), ""],
-            ["SOURCE", event.source_url ?? "—", event.source_url ? "OPEN ↗" : ""],
+            ["SOURCE", event.source_url ?? "-", event.source_url ? "OPEN ↗" : ""],
           ].map(([k, v, action], i, arr) => (
             <div
               key={k}

@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import { SignInForm } from "~/components/auth/SignInForm";
 
 export function meta() {
-  return [{ title: "Sign In — UBC Discovery" }];
+  return [{ title: "Sign In · UBC Discovery" }];
 }
 
 export default function SignIn() {
@@ -37,7 +37,7 @@ export default function SignIn() {
           </h2>
           <p className="mt-3.5 max-w-95 text-base/relaxed text-bg opacity-70">
             UBC Discovery pulls events from official UBC channels, AMS clubs, and community
-            organizers — filterable by what you&rsquo;re into.
+            organizers, filterable by what you&rsquo;re into.
           </p>
 
           <div className="mt-auto pt-6 font-mono text-xs uppercase tracking-wide text-bg opacity-50">

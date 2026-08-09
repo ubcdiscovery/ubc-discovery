@@ -161,7 +161,7 @@ def main():
                 print(f"  Created: {event['title']}")
             else:
                 failed += 1
-                print(f"  FAILED:  {event['title']} — {resp.status_code} {resp.text}")
+                print(f"  FAILED:  {event['title']}: {resp.status_code} {resp.text}")
 
     print(f"\nDone: {created} created, {failed} failed")
     if failed:

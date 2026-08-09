@@ -9,5 +9,6 @@ def event_image_key(event_id: str) -> str:
 
 def event_to_response(event: Event) -> EventResponse:
     response = EventResponse.model_validate(event)
-    response.event_picture_url = s3.public_url(event_image_key(event.id))
+    if event.event_picture_key:
+        response.event_picture_url = s3.public_url(event.event_picture_key)
     return response

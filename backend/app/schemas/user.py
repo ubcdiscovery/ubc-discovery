@@ -33,6 +33,7 @@ class UserResponse(BaseModel):
     bio: str | None
     profile_picture_url: str | None = None
     ubc_verified: bool
+    is_admin: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -24,7 +24,7 @@ export function fmtTime(d: Date): string {
 }
 
 export function fmtRange(a: Date, b: Date): string {
-  return `${fmtTime(a)}—${fmtTime(b)}`;
+  return `${fmtTime(a)}-${fmtTime(b)}`;
 }
 
 export function fmtDay(d: Date): string {

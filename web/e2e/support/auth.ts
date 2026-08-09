@@ -11,6 +11,7 @@ export type MockProfile = {
   bio: string | null;
   profile_picture_url: string | null;
   ubc_verified: boolean;
+  is_admin: boolean;
   created_at: string;
 };
 
@@ -25,6 +26,7 @@ export const existingProfile: MockProfile = {
   bio: null,
   profile_picture_url: null,
   ubc_verified: false,
+  is_admin: false,
   created_at: "2026-01-01T00:00:00Z",
 };
 

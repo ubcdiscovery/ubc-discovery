@@ -45,6 +45,7 @@ export interface UserResponse {
   bio: string | null;
   profile_picture_url: string | null;
   ubc_verified: boolean;
+  is_admin: boolean;
   created_at: string;
 }
 
@@ -63,6 +64,42 @@ export interface SavedEventResponse {
 export interface SavedEventListItem {
   saved_at: string;
   event: ApiEvent;
+}
+
+export type SubmissionStatus = "pending" | "approved" | "rejected";
+
+export interface EventSubmissionResponse {
+  id: string;
+  submitted_by_id: string;
+  title: string;
+  description: string;
+  club_name: string;
+  source_label: string;
+  source_url: string | null;
+  external_cta_label: string | null;
+  vibes: string[];
+  location_name: string;
+  event_date: string;
+  event_end_date: string | null;
+  event_picture_url: string | null;
+  status: SubmissionStatus;
+  review_note: string | null;
+  reviewed_at: string | null;
+  published_event_id: string | null;
+  created_at: string;
+}
+
+export interface CreateEventSubmissionRequest {
+  title: string;
+  description?: string;
+  club_name: string;
+  source_label: string;
+  source_url?: string | null;
+  external_cta_label?: string | null;
+  vibes: string[];
+  location_name: string;
+  event_date: string;
+  event_end_date?: string | null;
 }
 
 export interface EventRatingResponse {
@@ -120,6 +157,8 @@ export const api = {
       apiFetch<EventListResponse>(
         `/events/search?q=${encodeURIComponent(q)}&limit=${limit}`
       ),
+    remove: (id: string) =>
+      authenticatedApiFetch<void>(`/events/${id}`, { method: "DELETE" }),
   },
   auth: {
     sendOtp: (email: string) =>
@@ -189,6 +228,37 @@ export const api = {
       authenticatedApiFetch<void>(`/saved-events/${eventId}`, {
         method: "DELETE",
       }),
+  },
+  submissions: {
+    create: (data: CreateEventSubmissionRequest) =>
+      authenticatedApiFetch<EventSubmissionResponse>("/event-submissions", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    mine: () =>
+      authenticatedApiFetch<{
+        submissions: EventSubmissionResponse[];
+        total: number;
+      }>("/event-submissions/mine", {}),
+    queue: (status: SubmissionStatus = "pending") =>
+      authenticatedApiFetch<{
+        submissions: EventSubmissionResponse[];
+        total: number;
+      }>(`/event-submissions?status=${status}`, {}),
+    presignedUpload: (id: string) =>
+      authenticatedApiFetch<PresignedUploadResponse>(
+        `/event-submissions/${id}/presigned-upload`,
+        { method: "POST" }
+      ),
+    approve: (id: string) =>
+      authenticatedApiFetch<ApiEvent>(`/event-submissions/${id}/approve`, {
+        method: "POST",
+      }),
+    reject: (id: string, reviewNote: string | null) =>
+      authenticatedApiFetch<EventSubmissionResponse>(
+        `/event-submissions/${id}/reject`,
+        { method: "POST", body: JSON.stringify({ review_note: reviewNote }) }
+      ),
   },
   ratings: {
     list: () =>

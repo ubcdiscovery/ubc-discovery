@@ -10,7 +10,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base
 from app import models  # noqa: F401 - register all model metadata before create_all
-from app.routers import auth, users, events, ratings, saved_events, recommendations
+from app.routers import (
+    auth,
+    users,
+    events,
+    event_submissions,
+    ratings,
+    saved_events,
+    recommendations,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +34,11 @@ async def lifespan(app: FastAPI):
         firebase_admin.initialize_app(cred)
         logger.info("Firebase Admin SDK initialized")
     else:
-        logger.warning("FIREBASE_CREDENTIALS_JSON not set — Firebase auth disabled")
+        logger.warning("FIREBASE_CREDENTIALS_JSON not set: Firebase auth disabled")
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        # GIN trigram index for fast ILIKE search — requires pg_trgm extension
+        # GIN trigram index for fast ILIKE search: requires pg_trgm extension
         try:
             from sqlalchemy import text
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
@@ -66,6 +74,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(events.router)
+app.include_router(event_submissions.router)
 app.include_router(ratings.router)
 app.include_router(saved_events.router)
 app.include_router(recommendations.router)

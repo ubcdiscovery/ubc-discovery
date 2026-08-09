@@ -21,7 +21,7 @@ A fixed preference label a Member selects during onboarding and can edit later t
 _Avoid_: Free-text hobby, arbitrary tag
 
 **Academic Context**:
-A Member's faculty, major, and year standing, collected during onboarding and editable later. Academic Context informs the Personalized Event Feed by filtering or ranking Event Listings by relevance — for example, a third-year student is less likely to see a first-year orientation event. Academic Context is a recommendation signal, distinct from Interests and not used for social matching in Meet.
+A Member's faculty, major, and year standing, collected during onboarding and editable later. Academic Context informs the Personalized Event Feed by filtering or ranking Event Listings by relevance: for example, a third-year student is less likely to see a first-year orientation event. Academic Context is a recommendation signal, distinct from Interests and not used for social matching in Meet.
 _Avoid_: Required for membership, social matching signal
 
 **Newcomer**:
@@ -61,7 +61,7 @@ A temporary Member-controlled status that allows the Member to appear in Nearby 
 _Avoid_: Online now, live sharing
 
 **UBC-verified Member**:
-A Member who has proven control of a UBC email address and carries a durable trust badge. UBC verification is not required to become a Member, and the badge does not expire in the current product model. Deferred to V3 (Meet/social features) — verification builds trust between users, which has no value until users interact with each other.
+A Member who has proven control of a UBC email address and carries a durable trust badge. UBC verification is not required to become a Member, and the badge does not expire in the current product model. Deferred to V3 (Meet/social features): verification builds trust between users, which has no value until users interact with each other.
 _Avoid_: Confirmed student, eligible user
 
 **Independent Campus Product**:

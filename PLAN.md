@@ -58,7 +58,7 @@ Frontend:
 
 A voluntary post-event signal where a Member tells the app they went to an event (e.g., via share-to-app or a post-event prompt). This feeds the For You recommendation engine with actual attendance preferences, not just saved intent. Unlike Saved Events (pre-event interest), this captures "I went and want more like this."
 
-This is NOT an attendance record, RSVP, or proof of attendance — it is a private recommendation signal owned by the Member. It requires its own data model (Member × Event join table with timestamp), not a counter on the User row.
+This is NOT an attendance record, RSVP, or proof of attendance: it is a private recommendation signal owned by the Member. It requires its own data model (Member × Event join table with timestamp), not a counter on the User row.
 
 ## Phase 4: Event Ingestion and Curation
 

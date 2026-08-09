@@ -22,6 +22,10 @@ class Event(Base):
     club_name: Mapped[str | None] = mapped_column(String(255))
     vibes: Mapped[list[str]] = mapped_column(JSON, default=list)
 
+    # Set when a poster upload is issued; absent means the client should fall
+    # back to the generated poster instead of requesting a nonexistent object.
+    event_picture_key: Mapped[str | None] = mapped_column(String(512))
+
     location_name: Mapped[str] = mapped_column(String(255), nullable=False)
 
     event_date: Mapped[datetime] = mapped_column(

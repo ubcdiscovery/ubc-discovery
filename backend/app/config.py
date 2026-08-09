@@ -3,6 +3,9 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     database_url: str = ""
+    # asyncpg SSL mode. RDS requires SSL; a local Postgres usually has it off,
+    # so local dev can set DATABASE_SSL=prefer.
+    database_ssl: str = "require"
 
     aws_region: str = "us-west-2"
     s3_bucket_name: str = ""
@@ -19,6 +22,11 @@ class Settings(BaseSettings):
     otp_rate_limit_per_15min: int = 3
 
     admin_api_key: str = ""
+
+    # LOCAL DEVELOPMENT ONLY. Accepts the web app's VITE_AUTH_TEST_MODE tokens so
+    # signed-in screens can be used without a Firebase project. Ignored whenever
+    # firebase_credentials_json is set, so it cannot weaken a real environment.
+    auth_dev_bypass: bool = False
 
     cors_allowed_origins: list[str] = [
         "http://localhost:5173",  # React Router web dev server

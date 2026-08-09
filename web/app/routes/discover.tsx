@@ -8,7 +8,7 @@ import { EventPosterFeed } from "~/components/EventPosterFeed";
 
 export function meta() {
   return [
-    { title: "Discover — UBC Discovery" },
+    { title: "Discover · UBC Discovery" },
     { name: "description", content: "Find events happening on campus" },
   ];
 }

@@ -14,7 +14,7 @@ import {
 import { onboardingDraftStore } from "~/lib/onboarding-draft";
 
 export function meta() {
-  return [{ title: "Academic context — UBC Discovery" }];
+  return [{ title: "Academic context · UBC Discovery" }];
 }
 
 function SelectField({

@@ -65,7 +65,7 @@ class TestGetEvent:
         assert data["title"] == event.title
         assert data["source_label"] == event.source_label
         assert data["vibes"] == event.vibes
-        assert data["event_picture_url"].endswith(f"/event-pictures/{event.id}.webp")
+        assert data["event_picture_url"] is None  # no poster uploaded
         assert data["event_date"] is not None
         assert data["event_end_date"] is not None
 
@@ -263,7 +263,7 @@ class TestUpdateEvent:
         data = resp.json()
         assert data["title"] == "Updated Event Title"
         assert data["description"] == event.description
-        assert data["event_picture_url"].endswith(f"/event-pictures/{event.id}.webp")
+        assert data["event_picture_url"] is None  # no poster uploaded
         mock_embedding.assert_called_once()
 
     async def test_update_event_non_embedding_field_does_not_regenerate_embedding(
@@ -329,6 +329,8 @@ class TestDeleteEvent:
         db_session.add(event)
         await db_session.flush()
         event_id = event.id
+        event.event_picture_key = f"event-pictures/{event_id}.webp"
+        await db_session.flush()
 
         with patch("app.routers.events.s3.delete_object") as mock_delete:
             resp = await admin_client.delete(f"/events/{event_id}")
@@ -337,6 +339,26 @@ class TestDeleteEvent:
         mock_delete.assert_called_once_with(f"event-pictures/{event_id}.webp")
         result = await db_session.execute(select(Event).where(Event.id == event_id))
         assert result.scalar_one_or_none() is None
+
+    async def test_delete_event_without_poster_skips_s3(
+        self,
+        admin_client: AsyncClient,
+        db_session: AsyncSession,
+    ):
+        event = Event(
+            title="No Poster",
+            source="manual",
+            location_name="The Nest",
+            event_date=datetime(2026, 9, 1, 10, 0, tzinfo=ZoneInfo("UTC")),
+        )
+        db_session.add(event)
+        await db_session.flush()
+
+        with patch("app.routers.events.s3.delete_object") as mock_delete:
+            resp = await admin_client.delete(f"/events/{event.id}")
+
+        assert resp.status_code == 204
+        mock_delete.assert_not_called()
 
     async def test_delete_event_not_found(self, admin_client: AsyncClient):
         resp = await admin_client.delete("/events/notfound")
@@ -356,6 +378,12 @@ class TestEventPresignedUpload:
         assert data["fields"]["Content-Type"] == "image/webp"
         assert data["file_key"] == f"event-pictures/{event.id}.webp"
         assert data["max_file_size_bytes"] == 3 * 1024 * 1024
+
+        # Issuing the upload is what makes the event advertise a poster URL.
+        listing = await admin_client.get(f"/events/{event.id}")
+        assert listing.json()["event_picture_url"].endswith(
+            f"/event-pictures/{event.id}.webp"
+        )
 
     async def test_event_presigned_upload_not_found(self, admin_client: AsyncClient):
         resp = await admin_client.post("/events/notfound/presigned-upload")

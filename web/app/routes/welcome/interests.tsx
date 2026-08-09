@@ -12,7 +12,7 @@ import { onboardingDraftStore } from "~/lib/onboarding-draft";
 import { clearAuthFlowNotice, setAuthFlowNotice } from "~/lib/auth-flow";
 
 export function meta() {
-  return [{ title: "What are you into? — UBC Discovery" }];
+  return [{ title: "What are you into? · UBC Discovery" }];
 }
 
 export default function OnboardingInterests() {

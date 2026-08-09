@@ -9,7 +9,7 @@ import { useAuth } from "~/lib/auth";
 import { onboardingDraftStore } from "~/lib/onboarding-draft";
 
 export function meta() {
-  return [{ title: "What should we call you? — UBC Discovery" }];
+  return [{ title: "What should we call you? · UBC Discovery" }];
 }
 
 export default function OnboardingName() {
