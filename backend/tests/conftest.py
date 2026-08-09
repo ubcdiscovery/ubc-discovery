@@ -35,11 +35,13 @@ from alembic import command
 from app.config import settings
 from app.database import get_db
 from app.dependencies import (
+    AdminActor,
     FirebaseIdentity,
     get_current_user,
     get_firebase_identity,
     require_admin,
 )
+from app.models.audit_actor import AuditActorType
 from app.models.event import Event
 from app.models.user import User
 
@@ -162,6 +164,7 @@ def _mock_external_services():
             "uid": "test-uid-111",
             "email": "testuser@student.ubc.ca",
             "name": "Test User",
+            "email_verified": True,
         }
 
         mock_get_or_create.return_value = "test-uid-111"
@@ -248,7 +251,10 @@ async def admin_client(
         yield db_session
 
     async def _override_require_admin():
-        return None
+        return AdminActor(
+            actor_type=AuditActorType.MEMBER,
+            actor_id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
+        )
 
     app.dependency_overrides[get_db] = _override_get_db
     app.dependency_overrides[require_admin] = _override_require_admin
@@ -257,6 +263,35 @@ async def admin_client(
     async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
         yield ac
 
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture(loop_scope="session")
+async def credential_admin_client(
+    db_session: AsyncSession,
+    test_user: User,
+) -> AsyncGenerator[AsyncClient]:
+    """Admin client whose actor identity is backed by the test Member."""
+    from main import app
+
+    test_user.is_admin = True
+    await db_session.flush()
+
+    async def _override_get_db():
+        yield db_session
+
+    async def _override_require_admin():
+        return AdminActor(actor_type=AuditActorType.MEMBER, actor_id=test_user.id)
+
+    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[require_admin] = _override_require_admin
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        yield ac
+
+    test_user.is_admin = False
+    await db_session.flush()
     app.dependency_overrides.clear()
 
 

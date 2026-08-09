@@ -1,10 +1,10 @@
-"""Seed UBC events via the API. Requires ADMIN_API_KEY.
+"""Seed UBC events via the API. Requires a Firebase admin ID token.
 
 Dates are computed relative to today so seed data always produces future events.
 
 Usage:
-    ADMIN_API_KEY=secret uv run python scripts/seed_events.py
-    ADMIN_API_KEY=secret uv run python scripts/seed_events.py --api-url https://api.example.com
+    FIREBASE_ID_TOKEN=token uv run python scripts/seed_events.py
+    FIREBASE_ID_TOKEN=token uv run python scripts/seed_events.py --api-url https://api.example.com
 """
 
 import argparse
@@ -170,12 +170,12 @@ def main():
     )
     args = parser.parse_args()
 
-    api_key = os.environ.get("ADMIN_API_KEY")
-    if not api_key:
-        print("Error: ADMIN_API_KEY environment variable is required")
+    firebase_id_token = os.environ.get("FIREBASE_ID_TOKEN")
+    if not firebase_id_token:
+        print("Error: FIREBASE_ID_TOKEN environment variable is required")
         sys.exit(1)
 
-    headers = {"Authorization": f"Api-Key {api_key}"}
+    headers = {"Authorization": f"Bearer {firebase_id_token}"}
     url = f"{args.api_url.rstrip('/')}/admin/events"
 
     created = 0

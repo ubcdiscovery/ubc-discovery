@@ -143,7 +143,7 @@ async function apiFetch<T>(
   return res.json();
 }
 
-async function authenticatedApiFetch<T>(
+export async function authenticatedApiFetch<T>(
   path: string,
   options: RequestInit = {}
 ) {

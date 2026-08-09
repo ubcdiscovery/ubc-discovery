@@ -1,0 +1,77 @@
+import uuid
+from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.models.api_credential import ApiCredentialAuditAction, ApiCredentialPurpose
+from app.models.audit_actor import AuditActorType
+
+CredentialStatus = Literal["active", "expired", "revoked"]
+
+
+class ApiCredentialCreateRequest(BaseModel):
+    label: str = Field(min_length=1, max_length=80)
+    expires_at: datetime | None = None
+
+    @field_validator("label")
+    @classmethod
+    def strip_label(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("label must contain text")
+        return value
+
+
+class ApiCredentialReplaceRequest(BaseModel):
+    label: str | None = Field(default=None, max_length=80)
+    expires_at: datetime | None = None
+
+    @field_validator("label")
+    @classmethod
+    def strip_label(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("label must contain text")
+        return value
+
+
+class ApiCredentialResponse(BaseModel):
+    id: uuid.UUID
+    label: str
+    purpose: ApiCredentialPurpose
+    created_by_user_id: uuid.UUID
+    created_by_name: str
+    created_by_email: str
+    created_at: datetime
+    expires_at: datetime | None
+    revoked_at: datetime | None
+    last_used_at: datetime | None
+    status: CredentialStatus
+
+
+class ApiCredentialCreateResponse(ApiCredentialResponse):
+    raw_token: str
+    replaced_credential_id: uuid.UUID | None = None
+
+
+class ApiCredentialListResponse(BaseModel):
+    credentials: list[ApiCredentialResponse]
+
+
+class ApiCredentialAuditResponse(BaseModel):
+    id: uuid.UUID
+    credential_id: uuid.UUID
+    actor_type: AuditActorType
+    actor_id: uuid.UUID
+    action: ApiCredentialAuditAction
+    details: dict | None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ApiCredentialAuditListResponse(BaseModel):
+    entries: list[ApiCredentialAuditResponse]

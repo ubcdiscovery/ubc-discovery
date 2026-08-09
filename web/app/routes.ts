@@ -24,6 +24,7 @@ export default [
   route("admin", "routes/admin-layout.tsx", [
     index("routes/admin-index.tsx"),
     route("events", "routes/admin-events.tsx"),
+    route("api-keys", "routes/admin-api-keys.tsx"),
     route("events/:id", "routes/admin-event-edit.tsx"),
   ]),
 ] satisfies RouteConfig;
