@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     aws_region: str = "us-west-2"
     s3_bucket_name: str = ""
     s3_public_base_url: str = ""
+    # LOCAL DEVELOPMENT ONLY. When set (and no S3 bucket is configured),
+    # uploads are written here and served from /media instead of S3.
+    local_media_dir: str = ""
     profile_photo_max_bytes: int = 512 * 1024
     event_image_max_bytes: int = 3 * 1024 * 1024
 

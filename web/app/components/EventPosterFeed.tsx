@@ -1,88 +1,143 @@
-import { Link } from "react-router";
+import { useState } from "react";
+import { useNavigate } from "react-router";
 import type { ApiEvent } from "~/lib/api";
-import { fmtDate02, fmtMonth, fmtTime } from "~/lib/date";
+import { fmtMonth, relativeDateTime } from "~/lib/date";
 import { SaveEventButton } from "./SaveEventButton";
-import { SourceBadge } from "./SourceBadge";
 import { VibeTag } from "./VibeTag";
 
-function EventDate({ event }: { event: ApiEvent }) {
-  if (!event.event_date) return <span>Date TBA</span>;
-  const date = new Date(event.event_date);
+const WEEKDAY_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+
+/** Tags beyond this collapse into a "+n" chip so every card bottom lines up. */
+const VISIBLE_TAGS = 2;
+
+function organizerOf(event: ApiEvent): string {
+  if (event.club_name) return event.club_name;
+  return event.source_label
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function MetaRow({ label, value }: { label: string; value: string }) {
   return (
-    <>
-      {fmtMonth(date)} {fmtDate02(date)} · {fmtTime(date)}
-    </>
+    <div className="flex items-baseline gap-2">
+      <span className="w-5 shrink-0 font-mono text-2xs tracking-wider text-muted uppercase">
+        {label}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-sm text-ink-soft">
+        {value}
+      </span>
+    </div>
   );
 }
 
-function Poster({
-  event,
-  priority,
-  className,
-}: {
-  event: ApiEvent;
-  priority: boolean;
-  className: string;
-}) {
+function EventTile({ event }: { event: ApiEvent }) {
+  const navigate = useNavigate();
+  const date = event.event_date ? new Date(event.event_date) : null;
+  const when = date ? relativeDateTime(date) : null;
+  const hidden = Math.max(0, event.vibes.length - VISIBLE_TAGS);
+  const [coverFailed, setCoverFailed] = useState(false);
+  const cover = coverFailed ? null : event.event_picture_url;
+
+  function open() {
+    void navigate(`/events/${event.id}`);
+  }
+
   return (
-    <div
-      className={`relative isolate flex aspect-square items-center justify-center overflow-hidden bg-accent-soft ${className}`}
+    <article
+      role="link"
+      tabIndex={0}
+      aria-label={
+        when ? `${event.title}, ${when.label.replace(" · ", " at ")}` : event.title
+      }
+      onClick={open}
+      onKeyDown={(keyEvent) => {
+        if (keyEvent.key === "Enter" || keyEvent.key === " ") {
+          keyEvent.preventDefault();
+          open();
+        }
+      }}
+      className="group flex cursor-pointer flex-col border-2 border-ink bg-surface shadow-hard-sm transition-[transform,box-shadow] duration-150 hover:translate-[-3px] hover:shadow-hard-lg focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:hover:translate-0"
     >
-      {event.event_picture_url ? (
-        <>
-          <img
-            src={event.event_picture_url}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 size-full scale-110 object-cover opacity-15 blur-xl"
-          />
-          <img
-            src={event.event_picture_url}
-            alt=""
-            loading={priority ? "eager" : "lazy"}
-            decoding="async"
-            className="relative z-10 size-full object-contain"
-          />
-        </>
-      ) : (
-        <div
-          aria-hidden="true"
-          className="flex size-full flex-col justify-between bg-accent p-[9%] text-on-color"
-        >
-          <span className="font-mono text-xs font-bold tracking-brand uppercase">
-            UBC Discovery
+      <div className="relative h-30 shrink-0 overflow-hidden border-b-2 border-ink bg-accent">
+        {cover ? (
+          <>
+            <img
+              src={cover}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              decoding="async"
+              onError={() => setCoverFailed(true)}
+              className="absolute inset-0 size-full object-cover"
+            />
+            {/* Fixed dark scrim, not an ink token: the date stays white in
+                both themes, so the wash behind it must stay dark in both. */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-linear-to-r from-black/80 via-black/45 to-black/10"
+            />
+          </>
+        ) : null}
+
+        <div className="relative flex h-full items-start justify-between gap-3 px-4 py-3 text-on-color">
+          {date ? (
+            <div>
+              <div className="font-display text-4xl leading-none font-extrabold tabular-nums">
+                {date.getDate()}
+              </div>
+              <div className="mt-1 font-mono text-2xs font-bold tracking-wider uppercase">
+                {fmtMonth(date)} · {WEEKDAY_SHORT[date.getDay()]}
+              </div>
+            </div>
+          ) : (
+            <div className="font-mono text-2xs font-bold tracking-wider uppercase">
+              Date TBA
+            </div>
+          )}
+          <SaveEventButton eventId={event.id} event={event} variant="cardIcon" />
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col p-4">
+        {when ? (
+          <span
+            className={`self-start px-2 py-1 font-mono text-2xs font-extrabold tracking-wider uppercase ${
+              when.isToday ? "bg-ink text-bg" : "bg-hi text-on-hi"
+            }`}
+          >
+            {when.label}
           </span>
-          <strong className="max-w-[13ch] font-display text-3xl leading-none tracking-tight">
-            {event.title}
-          </strong>
-          <span className="font-mono text-xs font-bold tracking-wider uppercase">
-            <EventDate event={event} />
+        ) : null}
+
+        <h2 className="mt-2.5 font-display text-card font-extrabold tracking-tight text-ink text-balance">
+          {event.title}
+        </h2>
+
+        <div className="mt-3 grid gap-1">
+          <MetaRow label="By" value={organizerOf(event)} />
+          <MetaRow label="At" value={event.location_name} />
+        </div>
+
+        <div className="mt-auto flex items-end justify-between gap-3 pt-4">
+          <div className="flex min-w-0 flex-wrap gap-1.5">
+            {event.vibes.slice(0, VISIBLE_TAGS).map((vibe) => (
+              <VibeTag key={vibe} vibe={vibe} />
+            ))}
+            {hidden > 0 ? (
+              <span className="inline-flex h-5.5 items-center border border-dashed border-muted px-1.5 font-mono text-xs font-semibold tracking-wide text-muted">
+                +{hidden}
+              </span>
+            ) : null}
+          </div>
+          <span
+            aria-hidden="true"
+            className="shrink-0 font-mono text-2xs font-bold tracking-wider text-accent uppercase"
+          >
+            Details →
           </span>
         </div>
-      )}
-      <div className="absolute bottom-0 left-0 z-20 bg-hi px-3 py-2 font-mono text-xs font-extrabold tracking-wider text-on-hi uppercase">
-        <EventDate event={event} />
       </div>
-    </div>
-  );
-}
-
-function CardDetails({ event }: { event: ApiEvent }) {
-  return (
-    <div className="min-w-0">
-      <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
-      <h2 className="mt-2 max-w-[25ch] font-display text-2xl font-extrabold leading-none tracking-tight text-balance lg:text-3xl">
-        {event.title}
-      </h2>
-      <p className="mt-3 font-mono text-xs tracking-wide text-muted uppercase">
-        ↳ {event.location_name}
-      </p>
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {event.vibes.slice(0, 3).map((vibe) => (
-          <VibeTag key={vibe} vibe={vibe} />
-        ))}
-      </div>
-    </div>
+    </article>
   );
 }
 
@@ -90,33 +145,10 @@ export function EventPosterFeed({ events }: { events: ApiEvent[] }) {
   return (
     <section
       aria-label="Upcoming events"
-      className="mx-auto grid w-full max-w-245 grid-cols-1 gap-x-4 gap-y-10 sm:grid-cols-[minmax(0,25rem)] sm:justify-center md:grid-cols-[repeat(auto-fit,minmax(18rem,19.75rem))]"
+      className="grid w-full grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6"
     >
-      {events.map((event, index) => (
-        <article
-          key={event.id}
-          className="group relative min-w-0 border-b border-rule-soft pb-9 md:border-b-0 md:pb-0"
-        >
-          <Link
-            to={`/events/${event.id}`}
-            className="block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
-          >
-            <Poster
-              event={event}
-              priority={index < 2}
-              className="transition-transform duration-200 group-hover:-translate-y-1 md:border md:border-ink"
-            />
-            <div className="pt-4 md:border-x md:border-b md:border-ink md:p-4 md:pb-5">
-              <CardDetails event={event} />
-            </div>
-          </Link>
-          <SaveEventButton
-            eventId={event.id}
-            event={event}
-            variant="largeIcon"
-            className="absolute right-3 top-3 z-30 bg-bg shadow-hard-sm"
-          />
-        </article>
+      {events.map((event) => (
+        <EventTile key={event.id} event={event} />
       ))}
     </section>
   );

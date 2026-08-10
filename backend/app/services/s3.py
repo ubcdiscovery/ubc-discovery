@@ -1,10 +1,25 @@
 from functools import lru_cache
+from pathlib import Path
 from urllib.parse import quote
 
 import boto3
 from botocore.config import Config
 
 from app.config import settings
+
+
+def local_media_enabled() -> bool:
+    """Local disk stands in for S3 only when a dir is set and no bucket is."""
+    return bool(settings.local_media_dir) and not settings.s3_bucket_name
+
+
+def local_media_path(file_key: str) -> Path:
+    """Resolve a key under the media dir, refusing anything that escapes it."""
+    root = Path(settings.local_media_dir).resolve()
+    target = (root / file_key).resolve()
+    if not target.is_relative_to(root):
+        raise ValueError("file key escapes the media directory")
+    return target
 
 
 @lru_cache
@@ -25,6 +40,11 @@ def generate_presigned_upload_url(
     file_key: str,
     max_file_size_bytes: int,
 ) -> tuple[str, dict[str, str], str]:
+    if local_media_enabled():
+        # Same URL the browser will later read the image from, so one route
+        # handles both the upload and the download in development.
+        return public_url(file_key), {}, file_key
+
     post = _client().generate_presigned_post(
         Bucket=settings.s3_bucket_name,
         Key=file_key,
@@ -41,6 +61,9 @@ def generate_presigned_upload_url(
 
 
 def delete_object(file_key: str) -> None:
+    if local_media_enabled():
+        local_media_path(file_key).unlink(missing_ok=True)
+        return
     _client().delete_object(Bucket=settings.s3_bucket_name, Key=file_key)
 
 

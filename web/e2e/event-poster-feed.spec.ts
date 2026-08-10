@@ -1,168 +1,206 @@
 import { expect, test } from "@playwright/test";
-import { mockApi, mockEvent } from "./support/auth";
+import { existingProfile, mockApi, mockEvent, setAuthenticatedUser } from "./support/auth";
 
 const longTitle =
   "Community climate workshop and garden supper on the Main Mall";
-const posterDataUrl = `data:image/svg+xml,${encodeURIComponent(`
-  <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
-    <rect width="400" height="400" fill="#1e40ff" />
-  </svg>
-`)}`;
+
+function inDays(days: number, hour = 17) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  d.setHours(hour, 0, 0, 0);
+  return d.toISOString();
+}
+
+/** Six events: today, tomorrow, inside the week, then further out. */
+function feed() {
+  const offsets = [0, 1, 3, 12, 20, 30];
+  return Array.from({ length: 6 }, (_, i) => ({
+    ...mockEvent,
+    id: `event-${i + 1}`,
+    title: i === 0 ? longTitle : `Campus event ${i + 1}`,
+    club_name: `Club ${i + 1}`,
+    location_name: "Nest Room 2301",
+    event_picture_url: null,
+    vibes: ["social", "food", "outdoors"],
+    event_date: inDays(offsets[i]),
+    event_end_date: null,
+  }));
+}
 
 test.beforeEach(async ({ page }) => {
-  await mockApi(page);
+  await mockApi(page, { profile: existingProfile });
+  await page.route("http://api.test/events?**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ events: feed(), total: 6 }),
+    })
+  );
+});
+
+test("shows each title and time once, with a comfortable save target", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const card = page
+    .getByRole("region", { name: "Upcoming events" })
+    .locator('article[role="link"]')
+    .first();
+
+  await expect(card.getByRole("heading", { name: longTitle })).toHaveCount(1);
+  await expect(card.getByText(/\d{1,2}:\d{2} (AM|PM)/)).toHaveCount(1);
+  await expect(card.getByText(/UBC DISCOVERY/i)).toHaveCount(0);
+  await expect(card.getByText("Nest Room 2301")).toBeVisible();
+
+  const save = card.getByRole("button", { name: "Save event" });
+  const box = await save.boundingBox();
+  expect(box!.width).toBeGreaterThanOrEqual(44);
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+});
+
+test("labels dates relative to now", async ({ page }) => {
+  await page.goto("/");
+  const feedRegion = page.getByRole("region", { name: "Upcoming events" });
+
+  await expect(feedRegion.getByText(/^TODAY · /)).toBeVisible();
+  await expect(feedRegion.getByText(/^TOMORROW · /)).toBeVisible();
+  // Day 3 is inside the week, so it reads as a weekday rather than a date.
+  await expect(
+    feedRegion.getByText(/^(MON|TUE|WED|THU|FRI|SAT|SUN) · /)
+  ).toHaveCount(1);
+});
+
+test("opens an event by click and by keyboard", async ({ page }) => {
+  await page.goto("/");
+  const cards = page.locator('article[role="link"]');
+
+  await cards.first().click();
+  await expect(page).toHaveURL("/events/event-1");
+
+  await page.goBack();
+  await cards.nth(1).focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL("/events/event-2");
+});
+
+test("caps tags at two and keeps every card bottom aligned", async ({ page }) => {
+  await page.goto("/");
+  const card = page.locator('article[role="link"]').first();
+
+  // Three vibes in the data, two shown, one folded into the overflow chip.
+  await expect(card.getByText(/^\[/)).toHaveCount(2);
+  await expect(card.getByText("+1", { exact: true })).toBeVisible();
+
+  const mismatched = await page.evaluate(() => {
+    const rows = new Map<number, Set<number>>();
+    for (const el of document.querySelectorAll('article[role="link"]')) {
+      const box = el.getBoundingClientRect();
+      const top = Math.round(box.top);
+      if (!rows.has(top)) rows.set(top, new Set());
+      rows.get(top)!.add(Math.round(box.bottom));
+    }
+    return [...rows.values()].filter((bottoms) => bottoms.size > 1).length;
+  });
+  expect(mismatched).toBe(0);
+});
+
+test("the save button toggles without opening the event", async ({ page }) => {
+  await setAuthenticatedUser(page);
+  await mockApi(page, { profile: existingProfile });
+  await page.route("http://api.test/events?**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ events: feed(), total: 6 }),
+    })
+  );
+
+  // The shared mock always reports an empty shortlist, which would undo the
+  // optimistic update on refetch. Keep the saved state here instead.
+  const saved = new Set<string>();
+  await page.route("http://api.test/saved-events**", (route) => {
+    const url = new URL(route.request().url());
+    const id = url.pathname.split("/")[2];
+    if (route.request().method() === "PUT") {
+      saved.add(id);
+      return route.fulfill({ status: 201, contentType: "application/json",
+        body: JSON.stringify({ event_id: id, saved_at: new Date().toISOString() }) });
+    }
+    if (route.request().method() === "DELETE") {
+      saved.delete(id);
+      return route.fulfill({ status: 204, body: "" });
+    }
+    const items = feed()
+      .filter((event) => saved.has(event.id))
+      .map((event) => ({ saved_at: new Date().toISOString(), event }));
+    return route.fulfill({ status: 200, contentType: "application/json",
+      body: JSON.stringify({ saved_events: items, total: items.length }) });
+  });
+
+  await page.goto("/");
+
+  const save = page
+    .locator('article[role="link"]')
+    .first()
+    .getByRole("button", { name: "Save event" });
+
+  await expect(save).toHaveAttribute("aria-pressed", "false");
+  await save.click();
+
+  await expect(
+    page.getByRole("button", { name: "Remove from saved events" }).first()
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page).toHaveURL("/");
+});
+
+test("never scrolls sideways on a narrow phone", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "This checks the mobile feed.");
+
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 760 });
+    await page.goto("/");
+    await expect(page.locator('article[role="link"]').first()).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+      width
+    );
+  }
+});
+
+test("uses the cover image in the header band when there is one", async ({
+  page,
+}) => {
+  const cover = `data:image/svg+xml,${encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="400" height="200" fill="#e8f542"/></svg>'
+  )}`;
+  await mockApi(page, { profile: existingProfile });
   await page.route("http://api.test/events?**", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        events: Array.from({ length: 6 }, (_, index) => ({
-          ...mockEvent,
-          id: `event-${index + 1}`,
-          title: index === 0 ? longTitle : `Campus event ${index + 1}`,
-          event_picture_url: posterDataUrl,
-          vibes: ["social", "food", "outdoors"],
-        })),
-        total: 6,
+        // Identical apart from the cover, so any height gap is the cover's doing.
+        events: [
+          { ...feed()[1], id: "with-cover", event_picture_url: cover },
+          { ...feed()[1], id: "no-cover", event_picture_url: null },
+        ],
+        total: 2,
       }),
     })
   );
-});
-
-test("renders a semantic poster-led Event Listing with a comfortable save target", async ({
-  page,
-}) => {
   await page.goto("/");
 
-  const listing = page
-    .getByRole("region", { name: "Upcoming events" })
-    .locator("article")
-    .first();
-  const listingLink = listing.getByRole("link", {
-    name: new RegExp(longTitle),
-  });
-  await expect(listingLink).toHaveAttribute("href", "/events/event-1");
-  await expect(listingLink.getByRole("heading", { name: longTitle })).toBeVisible();
-  await expect(listingLink.getByText(/^↳ Main Mall$/)).toBeVisible();
-  await expect(listingLink.getByText("[SOCIAL]", { exact: true })).toBeVisible();
-  await expect(listing.locator("img").last()).toBeVisible();
+  const withCover = page.locator('article[role="link"]').first();
+  const noCover = page.locator('article[role="link"]').nth(1);
 
-  const save = listing.getByRole("button", { name: "Save event" });
-  const saveBox = await save.boundingBox();
-  expect(saveBox).not.toBeNull();
-  expect(saveBox!.width).toBeGreaterThanOrEqual(44);
-  expect(saveBox!.height).toBeGreaterThanOrEqual(44);
-});
+  await expect(withCover.locator("img")).toBeVisible();
+  await expect(noCover.locator("img")).toHaveCount(0);
 
-test("uses an unboxed, full-width poster feed at 320 and 390 pixels", async ({
-  page,
-  isMobile,
-}) => {
-  test.skip(!isMobile, "This checks the mobile Event Listing feed.");
+  // The date has to stay readable on top of the artwork.
+  await expect(withCover.getByText(/^AUG|^SEP/)).toBeVisible();
 
-  for (const width of [320, 390]) {
-    await page.setViewportSize({ width, height: 760 });
-    await page.goto("/");
-
-    const article = page
-      .getByRole("region", { name: "Upcoming events" })
-      .locator("article")
-      .first();
-    const heading = article.getByRole("heading", { name: longTitle });
-    const poster = article.locator("img").last();
-    const articleBox = await article.boundingBox();
-    const headingBox = await heading.boundingBox();
-    const posterBox = await poster.boundingBox();
-    expect(articleBox).not.toBeNull();
-    expect(headingBox).not.toBeNull();
-    expect(posterBox).not.toBeNull();
-
-    expect(headingBox!.width / articleBox!.width).toBeGreaterThan(0.8);
-    expect(headingBox!.x).toBeCloseTo(articleBox!.x, 0);
-    expect(posterBox!.width / articleBox!.width).toBeGreaterThan(0.95);
-    expect(posterBox!.y).toBeLessThan(headingBox!.y);
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth)
-    ).toBe(width);
-    await expect(poster).toBeVisible();
-  }
-});
-
-test("uses a large poster above the event details on desktop", async ({
-  page,
-  isMobile,
-}) => {
-  test.skip(isMobile, "This checks the desktop poster wall.");
-  await page.goto("/");
-
-  const article = page
-    .getByRole("region", { name: "Upcoming events" })
-    .locator("article")
-    .first();
-  const headingBox = await article
-    .getByRole("heading", { name: longTitle })
-    .boundingBox();
-  const articleBox = await article.boundingBox();
-  const poster = article.locator("img").last();
-  const posterBox = await poster.boundingBox();
-
-  expect(articleBox).not.toBeNull();
-  expect(headingBox).not.toBeNull();
-  expect(posterBox).not.toBeNull();
-  expect(posterBox!.width / articleBox!.width).toBeGreaterThan(0.95);
-  expect(posterBox!.y).toBeLessThan(headingBox!.y);
-  await expect(poster).toBeVisible();
-});
-
-test("keeps posters centered and bounded in a wall of at most three columns", async ({
-  page,
-  isMobile,
-}) => {
-  test.skip(isMobile, "Custom responsive matrix runs once in the desktop project.");
-
-  const matrix = [
-    { width: 640, columns: 1, maxPosterWidth: 401 },
-    { width: 768, columns: 1, maxPosterWidth: 317 },
-    { width: 1024, columns: 2, maxPosterWidth: 317 },
-    { width: 1280, columns: 3, maxPosterWidth: 317 },
-    { width: 1536, columns: 3, maxPosterWidth: 317 },
-  ];
-
-  for (const { width, columns, maxPosterWidth } of matrix) {
-    await page.setViewportSize({ width, height: 900 });
-    await page.goto("/");
-
-    const feed = page.getByRole("region", { name: "Upcoming events" });
-    await expect(feed.locator("article")).toHaveCount(6);
-    const articleBoxes = await feed.locator("article").evaluateAll((articles) =>
-      articles.map((article) => {
-        const box = article.getBoundingClientRect();
-        return { x: box.x, y: box.y, width: box.width };
-      })
-    );
-    const firstPoster = feed.locator("article").first().locator("img").last();
-    const gridColumns = await feed.evaluate((element) =>
-      getComputedStyle(element).gridTemplateColumns.split(" ").length
-    );
-    const feedBox = await feed.boundingBox();
-    const posterBox = await firstPoster.boundingBox();
-    const firstRow = articleBoxes.filter(
-      (box) => Math.abs(box.y - articleBoxes[0].y) < 1
-    );
-    const rowLeft = firstRow[0].x;
-    const rowRight = firstRow[firstRow.length - 1].x +
-      firstRow[firstRow.length - 1].width;
-
-    expect(gridColumns).toBe(columns);
-    expect(feedBox).not.toBeNull();
-    expect(posterBox).not.toBeNull();
-    expect(posterBox!.width).toBeLessThanOrEqual(maxPosterWidth);
-    expect((rowLeft + rowRight) / 2).toBeCloseTo(
-      feedBox!.x + feedBox!.width / 2,
-      0
-    );
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth)
-    ).toBe(width);
-  }
+  // A cover must not make one card taller than its neighbour.
+  const a = await withCover.boundingBox();
+  const b = await noCover.boundingBox();
+  expect(Math.abs(a!.height - b!.height)).toBeLessThanOrEqual(1);
 });

@@ -89,6 +89,7 @@ web/
 - Event coordinates are optional lat/lng floats; location text remains the human-facing source of truth
 - Organizer submissions: members POST `/event-submissions`; the row stays in `event_submissions` and never reaches Discover until an admin approves it, which is what creates the `Event`. Organizers cannot self-assign the `ubc_official` source label.
 - Admin review: the queue lives at `/admin` in the web app, gated on `is_admin` from `/users/me`. `require_admin` still accepts `Api-Key` for scripts. The same page lists published events and can delete them.
+- Local media: with no `S3_BUCKET_NAME`, setting `LOCAL_MEDIA_DIR` plus `S3_PUBLIC_BASE_URL=http://localhost:8001/media` stores uploads on disk and serves them from `/media`, so image uploads work without AWS. The route 404s unless both conditions hold.
 - Submission cover images: organizers upload after the submission exists (its id is the S3 key), via `POST /event-submissions/{id}/presigned-upload`. Approval carries `event_picture_key` to the published `Event`, reusing the same object.
 - Recommender: Content-based event similarity using Bedrock Titan embeddings + vibe Jaccard weighted blend. Embeddings pre-computed at event creation and stored as JSON.
 

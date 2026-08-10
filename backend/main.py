@@ -15,6 +15,7 @@ from app.routers import (
     users,
     events,
     event_submissions,
+    media,
     ratings,
     saved_events,
     recommendations,
@@ -75,6 +76,7 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(events.router)
 app.include_router(event_submissions.router)
+app.include_router(media.router)
 app.include_router(ratings.router)
 app.include_router(saved_events.router)
 app.include_router(recommendations.router)

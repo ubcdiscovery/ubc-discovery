@@ -8,6 +8,10 @@
   --text-2xs: 0.625rem;
   --text-2xs--line-height: 0.875rem;
 
+  /* Event card headline */
+  --text-card: 1.375rem;
+  --text-card--line-height: 1.05;
+
   --leading-display: 0.92;
   --tracking-brand: 0.2em;
   --tracking-otp: 0.5em;

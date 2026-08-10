@@ -8,12 +8,14 @@ import { startAuthFlow } from "~/lib/auth-flow";
 type SaveEventButtonProps = {
   eventId: string;
   event: ApiEvent;
-  variant: "largeIcon" | "bar" | "wide";
+  variant: "largeIcon" | "cardIcon" | "bar" | "wide";
   className?: string;
 };
 
 const variantClasses = {
   largeIcon: "size-11 p-0 text-base",
+  // 44px hit target with a hard offset, for the blue band on event cards.
+  cardIcon: "size-11 shrink-0 border-2 p-0 text-lg shadow-hard-sm",
   bar: "px-3.5 py-3 text-xs",
   wide: "w-full py-3.5 text-xs",
 };
@@ -53,7 +55,7 @@ export function SaveEventButton({ eventId, event, variant, className = "" }: Sav
   }
 
   const text =
-    variant === "largeIcon"
+    variant === "largeIcon" || variant === "cardIcon"
       ? saved
         ? "♥"
         : "♡"
@@ -78,7 +80,11 @@ export function SaveEventButton({ eventId, event, variant, className = "" }: Sav
       onClick={handleClick}
       disabled={pending}
       className={`inline-flex items-center justify-center border font-mono font-bold tracking-wider uppercase cursor-pointer disabled:opacity-60 ${
-        saved ? "border-accent bg-accent text-on-color" : "border-ink bg-bg text-ink"
+        saved
+          ? variant === "cardIcon"
+            ? "border-ink bg-hi text-on-hi"
+            : "border-accent bg-accent text-on-color"
+          : "border-ink bg-bg text-ink"
       } ${variantClasses[variant]} ${className}`}
     >
       {text}
