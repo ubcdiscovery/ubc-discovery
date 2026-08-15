@@ -95,6 +95,10 @@ class TestApiCredentialLifecycle:
 
         credential = await db_session.get(ApiCredential, uuid.UUID(created["id"]))
         assert credential is not None and credential.last_used_at is not None
+        first_last_used = credential.last_used_at
+
+        await require_candidate_ingester(f"Api-Key {token}", db_session)
+        assert credential.last_used_at == first_last_used
 
         await credential_admin_client.post(f"/admin/api-keys/{created['id']}/revoke")
         with pytest.raises(HTTPException, match="Invalid API credential") as error:
@@ -140,7 +144,7 @@ class TestApiCredentialBoundaries:
     ):
         credential = ApiCredential(
             label="Constraint test",
-            secret_hash="scrypt$test",
+            secret_hash="digest-test",
             created_by_user_id=test_user.id,
         )
         db_session.add(credential)

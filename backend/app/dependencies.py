@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import Depends, Header, HTTPException
 from sqlalchemy import select
@@ -11,6 +11,8 @@ from app.models.api_credential import ApiCredential
 from app.models.audit_actor import AuditActorType
 from app.models.user import User
 from app.services import api_credentials, firebase_auth
+
+LAST_USED_UPDATE_INTERVAL = timedelta(minutes=5)
 
 
 class FirebaseIdentity:
@@ -57,7 +59,11 @@ async def require_candidate_ingester(
     ):
         raise HTTPException(status_code=403, detail="Invalid API credential")
 
-    credential.last_used_at = now
+    if (
+        credential.last_used_at is None
+        or now - credential.last_used_at >= LAST_USED_UPDATE_INTERVAL
+    ):
+        credential.last_used_at = now
     return CandidateIngestionCredential(
         actor_type=AuditActorType.API_KEY,
         actor_id=credential.id,

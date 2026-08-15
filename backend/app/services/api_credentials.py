@@ -15,29 +15,17 @@ def generate_secret() -> str:
 
 
 def hash_secret(secret: str) -> str:
-    salt = secrets.token_bytes(16)
-    digest = hashlib.scrypt(
-        secret.encode("utf-8"), salt=salt, n=2**14, r=8, p=1, dklen=32
-    )
-    return f"scrypt$16384$8$1${salt.hex()}${digest.hex()}"
+    """Digest a server-generated high-entropy secret for storage.
+
+    This is intentionally not a password KDF: secrets are generated with
+    256 bits of randomness and are never supplied by users.
+    """
+    return hashlib.sha256(secret.encode("utf-8")).hexdigest()
 
 
 def verify_secret(secret: str, encoded_hash: str) -> bool:
-    try:
-        algorithm, n, r, p, salt_hex, digest_hex = encoded_hash.split("$")
-        if algorithm != "scrypt":
-            return False
-        digest = hashlib.scrypt(
-            secret.encode("utf-8"),
-            salt=bytes.fromhex(salt_hex),
-            n=int(n),
-            r=int(r),
-            p=int(p),
-            dklen=len(bytes.fromhex(digest_hex)),
-        )
-    except TypeError, ValueError:
-        return False
-    return hmac.compare_digest(digest, bytes.fromhex(digest_hex))
+    digest = hashlib.sha256(secret.encode("utf-8")).hexdigest()
+    return hmac.compare_digest(digest, encoded_hash)
 
 
 def format_token(credential_id: uuid.UUID, secret: str) -> str:
