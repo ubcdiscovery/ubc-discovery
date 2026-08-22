@@ -19,8 +19,6 @@ class Settings(BaseSettings):
     otp_max_attempts: int = 5
     otp_rate_limit_per_15min: int = 3
 
-    admin_api_key: str = ""
-
     cors_allowed_origins: list[str] = [
         "http://localhost:5173",  # React Router web dev server
     ]

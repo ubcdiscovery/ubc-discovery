@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { createAdminApiMock, type AdminMockEvent } from "./admin";
+import { createApiKeysMock, type AdminMockApiCredential } from "./api-keys";
 
 export type MockProfile = {
   id: string;
@@ -72,6 +73,9 @@ export async function mockApi(
     onAdminUpdate?: (body: Record<string, unknown>) => void;
     onAdminImageUpload?: () => void;
     adminUpdateError?: { status: number; detail: string };
+    adminApiKeys?: AdminMockApiCredential[];
+    onApiKeyCreate?: (body: Record<string, unknown>) => void;
+    onApiKeyRevoke?: (id: string) => void;
     otpUid?: string;
     profilesByUid?: Record<string, MockProfile | null>;
   } = {}
@@ -83,6 +87,11 @@ export async function mockApi(
     onUpdate: options.onAdminUpdate,
     onImageUpload: options.onAdminImageUpload,
     updateError: options.adminUpdateError,
+  });
+  const handleApiKeys = createApiKeysMock({
+    apiKeys: options.adminApiKeys,
+    onCreate: options.onApiKeyCreate,
+    onRevoke: options.onApiKeyRevoke,
   });
 
   await page.route("http://api.test/**", async (route) => {
@@ -146,6 +155,7 @@ export async function mockApi(
       return;
     }
     if (await handleAdminApi(route, url)) return;
+    if (await handleApiKeys(route, url)) return;
     if (url.pathname === "/events/event-1") {
       await route.fulfill({
         status: 200,

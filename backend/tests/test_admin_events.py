@@ -65,16 +65,15 @@ class TestAdminAuthorization:
             test_user.is_admin = False
             await db_session.flush()
 
-    async def test_admin_api_key_can_access_admin_events(
+    async def test_api_key_cannot_access_admin_events(
         self, unauthed_client: AsyncClient
     ):
-        with patch("app.dependencies.settings.admin_api_key", "test-admin-key"):
-            resp = await unauthed_client.get(
-                "/admin/events",
-                headers={"Authorization": "Api-Key test-admin-key"},
-                params={"q": "no matching records"},
-            )
-        assert resp.status_code == 200
+        resp = await unauthed_client.get(
+            "/admin/events",
+            headers={"Authorization": "Api-Key test-admin-key"},
+            params={"q": "no matching records"},
+        )
+        assert resp.status_code == 403
 
     async def test_old_event_mutation_routes_are_removed(
         self, unauthed_client: AsyncClient, sample_events: list[Event]
