@@ -15,9 +15,9 @@ or its hash.
 
 ## Rotation and revocation
 
-Use replacement to mint a new credential while the old credential remains
-valid during the handoff. Revoke the old credential after the integration has
-been updated. Revocation preserves the credential row and audit history.
+Generate a new credential before changing the integration, verify that the
+integration is using it, then revoke the old credential. Revocation preserves
+the credential row and audit history.
 
 Credentials may have an expiry date. The ingestion dependency rejects unknown,
 malformed, expired, and revoked tokens and records the last successful use on

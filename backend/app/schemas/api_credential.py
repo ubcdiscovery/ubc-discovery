@@ -14,24 +14,16 @@ class ApiCredentialCreateRequest(BaseModel):
     label: str = Field(min_length=1, max_length=80)
     expires_at: datetime | None = None
 
+    @field_validator("expires_at")
+    @classmethod
+    def require_timezone(cls, value: datetime | None) -> datetime | None:
+        if value is not None and (value.tzinfo is None or value.utcoffset() is None):
+            raise ValueError("expires_at must include a timezone")
+        return value
+
     @field_validator("label")
     @classmethod
     def strip_label(cls, value: str) -> str:
-        value = value.strip()
-        if not value:
-            raise ValueError("label must contain text")
-        return value
-
-
-class ApiCredentialReplaceRequest(BaseModel):
-    label: str | None = Field(default=None, max_length=80)
-    expires_at: datetime | None = None
-
-    @field_validator("label")
-    @classmethod
-    def strip_label(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
         value = value.strip()
         if not value:
             raise ValueError("label must contain text")
@@ -53,7 +45,6 @@ class ApiCredentialResponse(BaseModel):
 
 class ApiCredentialCreateResponse(ApiCredentialResponse):
     raw_token: str
-    replaced_credential_id: uuid.UUID | None = None
 
 
 class ApiCredentialListResponse(BaseModel):

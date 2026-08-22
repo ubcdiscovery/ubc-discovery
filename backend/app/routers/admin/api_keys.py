@@ -19,7 +19,6 @@ from app.schemas.api_credential import (
     ApiCredentialCreateRequest,
     ApiCredentialCreateResponse,
     ApiCredentialListResponse,
-    ApiCredentialReplaceRequest,
     ApiCredentialResponse,
     CredentialStatus,
 )
@@ -139,57 +138,6 @@ async def create_api_credential(
     return ApiCredentialCreateResponse(
         **_credential_response(credential, admin, now).model_dump(),
         raw_token=api_credentials.format_token(credential.id, secret),
-    )
-
-
-@router.post(
-    "/{credential_id}/replace",
-    response_model=ApiCredentialCreateResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-async def replace_api_credential(
-    credential_id: uuid.UUID,
-    body: ApiCredentialReplaceRequest,
-    db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_admin_user),
-    actor: AdminActor = Depends(require_admin),
-):
-    old_credential, _ = await _get_credential(credential_id, db)
-    if old_credential.revoked_at is not None:
-        raise HTTPException(status_code=409, detail="API credential is already revoked")
-    now = datetime.now(UTC)
-    if body.expires_at is not None and body.expires_at <= now:
-        raise HTTPException(status_code=422, detail="expires_at must be in the future")
-
-    secret = api_credentials.generate_secret()
-    credential = ApiCredential(
-        label=body.label or old_credential.label,
-        secret_hash=api_credentials.hash_secret(secret),
-        created_by_user_id=admin.id,
-        expires_at=body.expires_at,
-    )
-    db.add(credential)
-    await db.flush()
-    _add_audit(
-        db,
-        old_credential,
-        actor,
-        ApiCredentialAuditAction.REPLACE,
-        {"replacement_credential_id": str(credential.id)},
-    )
-    _add_audit(
-        db,
-        credential,
-        actor,
-        ApiCredentialAuditAction.CREATE,
-        {"replaced_credential_id": str(old_credential.id)},
-    )
-    await db.commit()
-    await db.refresh(credential)
-    return ApiCredentialCreateResponse(
-        **_credential_response(credential, admin, now).model_dump(),
-        raw_token=api_credentials.format_token(credential.id, secret),
-        replaced_credential_id=old_credential.id,
     )
 
 

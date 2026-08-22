@@ -59,7 +59,6 @@ export function createApiKeysMock(options: {
         body: JSON.stringify({
           ...credential,
           raw_token: `ubc_live_${credential.id}.generated-secret`,
-          replaced_credential_id: null,
         }),
       });
       return true;

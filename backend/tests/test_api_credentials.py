@@ -48,36 +48,48 @@ class TestApiCredentialLifecycle:
         assert "secret_hash" not in listed
         assert raw_token not in listing.text
 
-    async def test_replacement_and_revocation_are_audited(
+    async def test_new_credential_can_be_created_before_old_one_is_revoked(
         self,
         credential_admin_client: AsyncClient,
     ):
-        created, raw_token = await _create_credential(
+        old_credential, old_token = await _create_credential(
             credential_admin_client, "Rotating importer"
         )
-        replacement = await credential_admin_client.post(
-            f"/admin/api-keys/{created['id']}/replace",
-            json={"label": "Rotating importer replacement"},
+        new_credential, new_token = await _create_credential(
+            credential_admin_client, "Rotating importer new credential"
         )
-        assert replacement.status_code == 201
-        replacement_data = replacement.json()
-        assert replacement_data["raw_token"] != raw_token
+        assert new_credential["id"] != old_credential["id"]
+        assert new_token != old_token
 
         revoked = await credential_admin_client.post(
-            f"/admin/api-keys/{created['id']}/revoke"
+            f"/admin/api-keys/{old_credential['id']}/revoke"
         )
         assert revoked.status_code == 200
         assert revoked.json()["status"] == "revoked"
 
         audit_response = await credential_admin_client.get(
-            f"/admin/api-keys/{created['id']}/audit"
+            f"/admin/api-keys/{old_credential['id']}/audit"
         )
         assert [entry["action"] for entry in audit_response.json()["entries"]] == [
             "create",
-            "replace",
             "revoke",
         ]
-        assert raw_token not in audit_response.text
+        assert old_token not in audit_response.text
+
+    async def test_naive_expiry_is_rejected(
+        self,
+        credential_admin_client: AsyncClient,
+    ):
+        response = await credential_admin_client.post(
+            "/admin/api-keys",
+            json={
+                "label": "Timezone test",
+                "expires_at": "2099-01-01T00:00:00",
+            },
+        )
+
+        assert response.status_code == 422
+        assert "expires_at must include a timezone" in response.text
 
     async def test_managed_token_dependency_tracks_last_use_and_rejects_revocation(
         self,

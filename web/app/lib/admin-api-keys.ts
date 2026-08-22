@@ -17,7 +17,6 @@ export interface ApiCredential {
 
 export interface ApiCredentialCreateResponse extends ApiCredential {
   raw_token: string;
-  replaced_credential_id: string | null;
 }
 
 export const adminApiKeysApi = {
@@ -28,11 +27,6 @@ export const adminApiKeysApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  replace: (id: string, data: { label?: string; expires_at?: string | null }) =>
-    authenticatedApiFetch<ApiCredentialCreateResponse>(
-      `/admin/api-keys/${encodeURIComponent(id)}/replace`,
-      { method: "POST", body: JSON.stringify(data) }
-    ),
   revoke: (id: string) =>
     authenticatedApiFetch<ApiCredential>(
       `/admin/api-keys/${encodeURIComponent(id)}/revoke`,
