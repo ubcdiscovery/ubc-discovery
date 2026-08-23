@@ -29,7 +29,6 @@ class EventResponse(BaseModel):
     source: str
     source_label: str
     source_url: str | None
-    external_cta_label: str | None
     club_name: str | None
     event_picture_url: str | None = None
     vibes: list[str]
@@ -54,7 +53,6 @@ class CreateEventRequest(BaseModel):
     club_name: str | None = None
     source_label: str = "campus_community"
     source_url: str | None = None
-    external_cta_label: str | None = None
     vibes: list[str] = Field(default_factory=list)
     location_name: str = Field(min_length=1)
     event_date: datetime
@@ -98,7 +96,6 @@ class UpdateEventRequest(BaseModel):
     club_name: str | None = None
     source_label: str | None = None
     source_url: str | None = None
-    external_cta_label: str | None = None
     vibes: list[str] | None = None
     location_name: str | None = Field(default=None, min_length=1)
     event_date: datetime | None = None

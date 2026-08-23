@@ -324,7 +324,6 @@ async def sample_events(db_session: AsyncSession) -> list[Event]:
             description=f"Description for event {i}",
             source="manual",
             source_label="ubc_official" if i == 0 else "campus_community",
-            external_cta_label="View details",
             club_name=f"Club {i}",
             vibes=["social", "academic"] if i == 0 else ["social"],
             location_name=f"Location {i}",

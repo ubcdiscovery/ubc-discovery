@@ -35,7 +35,6 @@ def _event_snapshot(event: Event) -> dict:
         "source": event.source,
         "source_label": event.source_label,
         "source_url": event.source_url,
-        "external_cta_label": event.external_cta_label,
         "club_name": event.club_name,
         "vibes": event.vibes or [],
         "location_name": event.location_name,
