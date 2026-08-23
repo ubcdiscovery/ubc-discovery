@@ -23,7 +23,7 @@ router = APIRouter(
 
 
 @router.get("", response_model=AdminEventListingCandidateListResponse)
-async def list_admin_candidates(
+async def list_admin_candidates(  # noqa: PLR0913
     q: str = Query(default=""),
     status: CandidateStatus | None = Query(default=None),
     source_type: str | None = Query(default=None, min_length=1, max_length=50),
