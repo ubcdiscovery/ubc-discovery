@@ -21,7 +21,9 @@ async def get_similar_events(
     vibe_weight: float = Query(default=recommender.VIBE_WEIGHT_DEFAULT, ge=0.0, le=1.0),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(Event).where(Event.id == event_id))
+    result = await db.execute(
+        select(Event).where(Event.id == event_id, Event.is_archived.is_(False))
+    )
     source_event = result.scalar_one_or_none()
     if not source_event:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -36,7 +38,7 @@ async def get_similar_events(
     else:
         result = await db.execute(
             select(Event)
-            .where(Event.id != event_id)
+            .where(Event.id != event_id, Event.is_archived.is_(False))
             .order_by(Event.event_date.desc().nullslast())
         )
         candidates = list(result.scalars().all())
@@ -69,7 +71,9 @@ async def get_for_you(
     if saved_rows:
         saved_event_ids = [s.event_id for s in saved_rows]
         events_result = await db.execute(
-            select(Event).where(Event.id.in_(saved_event_ids))
+            select(Event).where(
+                Event.id.in_(saved_event_ids), Event.is_archived.is_(False)
+            )
         )
         saved_events = list(events_result.scalars().all())
 
@@ -95,7 +99,7 @@ async def get_for_you(
         if taste:
             candidates_result = await db.execute(
                 select(Event)
-                .where(Event.id.notin_(saved_event_ids))
+                .where(Event.id.notin_(saved_event_ids), Event.is_archived.is_(False))
                 .order_by(Event.event_date.desc().nullslast())
                 .limit(200)
             )
@@ -114,6 +118,7 @@ async def get_for_you(
 
     recent_result = await db.execute(
         select(Event)
+        .where(Event.is_archived.is_(False))
         .order_by(Event.event_date.desc().nullslast(), Event.created_at.desc())
         .limit(n)
     )

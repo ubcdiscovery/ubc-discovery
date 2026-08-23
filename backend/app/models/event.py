@@ -1,8 +1,10 @@
+import uuid
 from datetime import datetime
 
 from nanoid import generate
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, DateTime, String, Text, func
+from sqlalchemy import JSON, Boolean, DateTime, String, Text, false, func
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.constants import EVENT_EMBEDDING_DIMENSIONS
@@ -33,6 +35,11 @@ class Event(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+    is_archived: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    archived_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     embedding: Mapped[list[float] | None] = mapped_column(
         JSON, nullable=True, default=None
     )

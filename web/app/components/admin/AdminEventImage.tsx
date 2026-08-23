@@ -4,11 +4,13 @@ import { Button } from "~/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/Card";
 import { Field } from "~/components/ui/Field";
 import { Input } from "~/components/ui/Input";
-import type { ApiEvent } from "~/lib/api";
+import type { AdminApiEvent } from "~/lib/api";
 
 type AdminEventImageProps = {
-  event: ApiEvent;
-  onUpload: (file: File) => Promise<ApiEvent>;
+  title: string;
+  pictureUrl?: string | null;
+  onUpload?: (file: File) => Promise<AdminApiEvent>;
+  onFileChange?: (file: File | null) => void;
 };
 
 function cacheBustedUrl(url: string, version: number) {
@@ -16,8 +18,13 @@ function cacheBustedUrl(url: string, version: number) {
   return `${url}${url.includes("?") ? "&" : "?"}v=${version}`;
 }
 
-export function AdminEventImage({ event, onUpload }: AdminEventImageProps) {
-  const [imageUrl, setImageUrl] = useState(event.event_picture_url);
+export function AdminEventImage({
+  title,
+  pictureUrl,
+  onUpload,
+  onFileChange,
+}: AdminEventImageProps) {
+  const [imageUrl, setImageUrl] = useState(pictureUrl ?? null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageVersion, setImageVersion] = useState(0);
@@ -47,10 +54,11 @@ export function AdminEventImage({ event, onUpload }: AdminEventImageProps) {
     setImageLoadError(false);
     setError("");
     setUploaded(false);
+    onFileChange?.(file);
   }
 
   async function uploadImage() {
-    if (!imageFile) return;
+    if (!imageFile || !onUpload) return;
     setUploading(true);
     setError("");
     setUploaded(false);
@@ -63,6 +71,7 @@ export function AdminEventImage({ event, onUpload }: AdminEventImageProps) {
       setImageLoadError(false);
       setUploaded(true);
       setFileInputKey((current) => current + 1);
+      onFileChange?.(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not upload event image.");
     } finally {
@@ -80,7 +89,7 @@ export function AdminEventImage({ event, onUpload }: AdminEventImageProps) {
           {showImage ? (
             <img
               src={previewUrl ?? undefined}
-              alt={`${event.title} event poster`}
+              alt={`${title || "Event Listing"} event poster`}
               onError={() => setImageLoadError(true)}
               className="size-full object-contain"
             />
@@ -92,7 +101,7 @@ export function AdminEventImage({ event, onUpload }: AdminEventImageProps) {
         </div>
 
         <div className="mt-4 grid gap-3">
-          <Field label="Choose image" htmlFor="admin-event-image" description="Images are converted to WebP before upload.">
+          <Field label="Choose image" htmlFor="admin-event-image">
             <Input
               key={fileInputKey}
               id="admin-event-image"
@@ -104,9 +113,11 @@ export function AdminEventImage({ event, onUpload }: AdminEventImageProps) {
           {imageFile && <p className="truncate text-xs text-muted">Selected: {imageFile.name}</p>}
           {error && <Alert variant="error">{error}</Alert>}
           {uploaded && <Alert variant="success">Image uploaded.</Alert>}
-          <Button type="button" onClick={() => void uploadImage()} disabled={!imageFile || uploading}>
-            {uploading ? "Uploading…" : "Upload image"}
-          </Button>
+          {onUpload ? (
+            <Button type="button" onClick={() => void uploadImage()} disabled={!imageFile || uploading}>
+              {uploading ? "Uploading…" : "Upload image"}
+            </Button>
+          ) : null}
         </div>
       </CardContent>
     </Card>

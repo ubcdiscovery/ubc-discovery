@@ -1,6 +1,7 @@
 from app.models.api_credential import ApiCredential, ApiCredentialAuditLog
 from app.models.audit_actor import AuditActorType
 from app.models.event import Event
+from app.models.event_audit import EventAuditAction, EventAuditLog
 from app.models.event_rating import EventRating
 from app.models.otp_code import OTPCode
 from app.models.saved_event import SavedEvent
@@ -11,6 +12,8 @@ __all__ = [
     "ApiCredentialAuditLog",
     "AuditActorType",
     "Event",
+    "EventAuditAction",
+    "EventAuditLog",
     "EventRating",
     "OTPCode",
     "SavedEvent",

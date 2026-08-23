@@ -61,10 +61,40 @@ class TestGetEvent:
         assert data["event_picture_url"].endswith(f"/event-pictures/{event.id}.webp")
         assert data["event_date"] is not None
         assert data["event_end_date"] is not None
+        assert "is_archived" not in data
+        assert "archived_at" not in data
+        assert "archived_by" not in data
 
     async def test_get_event_not_found(self, unauthed_client: AsyncClient):
         resp = await unauthed_client.get("/events/notfound")
         assert resp.status_code == 404
+
+    async def test_archived_event_is_not_publicly_discoverable(
+        self,
+        unauthed_client: AsyncClient,
+        db_session: AsyncSession,
+    ):
+        event = Event(
+            title="Archived public event",
+            source="manual",
+            location_name="The Nest",
+            event_date=datetime.now(ZoneInfo("UTC")) + timedelta(days=1),
+            is_archived=True,
+        )
+        db_session.add(event)
+        await db_session.flush()
+
+        detail = await unauthed_client.get(f"/events/{event.id}")
+        listing = await unauthed_client.get("/events")
+
+        assert detail.status_code == 404
+        assert event.id not in {item["id"] for item in listing.json()["events"]}
+
+        search = await unauthed_client.get(
+            "/events/search", params={"q": "Archived public event"}
+        )
+        assert search.status_code == 200
+        assert event.id not in {item["id"] for item in search.json()["events"]}
 
 
 class TestSearchEvents:

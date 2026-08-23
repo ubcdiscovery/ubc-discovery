@@ -1,4 +1,4 @@
-import type { ApiEvent, UpdateEventInput } from "~/lib/api";
+import type { ApiEvent, CreateEventInput, UpdateEventInput } from "~/lib/api";
 
 export type AdminEventDraft = {
   title: string;
@@ -35,6 +35,23 @@ export function draftFromEvent(event: ApiEvent): AdminEventDraft {
   };
 }
 
+export function emptyAdminEventDraft(): AdminEventDraft {
+  const start = new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000);
+  const end = new Date(start.getTime() + 2 * 60 * 60 * 1_000);
+  return {
+    title: "",
+    description: "",
+    clubName: "",
+    locationName: "",
+    eventDate: toLocalDateTime(start.toISOString()),
+    eventEndDate: toLocalDateTime(end.toISOString()),
+    sourceLabel: "campus_community",
+    sourceUrl: "",
+    externalCtaLabel: "",
+    vibes: [],
+  };
+}
+
 export function validateAdminEventDraft(draft: AdminEventDraft): string | null {
   if (!draft.title.trim()) return "Add an Event Listing title.";
   if (!draft.locationName.trim()) return "Add location text.";
@@ -63,4 +80,44 @@ export function updateInputFromDraft(draft: AdminEventDraft): UpdateEventInput {
     external_cta_label: draft.externalCtaLabel.trim() || null,
     vibes: draft.vibes,
   };
+}
+
+export function createInputFromDraft(draft: AdminEventDraft): CreateEventInput {
+  return updateInputFromDraft(draft) as CreateEventInput;
+}
+
+export type AuditFieldChange = {
+  field: string;
+  from: string;
+  to: string;
+};
+
+function formatAuditValue(value: unknown): string {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "boolean") return value ? "yes" : "no";
+  if (typeof value === "string") return value || "—";
+  if (typeof value === "number") return String(value);
+  if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
+    return value.length ? value.join(", ") : "—";
+  }
+  return JSON.stringify(value);
+}
+
+export function auditFieldChanges(
+  before: Record<string, unknown> | null,
+  after: Record<string, unknown> | null
+): AuditFieldChange[] {
+  const keys = [...new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})])];
+  return keys.flatMap((field) => {
+    const fromValue = before?.[field];
+    const toValue = after?.[field];
+    if (JSON.stringify(fromValue) === JSON.stringify(toValue)) return [];
+    return [
+      {
+        field: field.replaceAll("_", " "),
+        from: formatAuditValue(fromValue),
+        to: formatAuditValue(toValue),
+      },
+    ];
+  });
 }
