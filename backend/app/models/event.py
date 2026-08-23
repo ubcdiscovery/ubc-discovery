@@ -22,7 +22,6 @@ class Event(Base):
     source: Mapped[str] = mapped_column(String(50))  # "instagram", "manual"
     source_label: Mapped[str] = mapped_column(String(50), default="campus_community")
     source_url: Mapped[str | None] = mapped_column(String(1024))
-    external_cta_label: Mapped[str | None] = mapped_column(String(80))
     club_name: Mapped[str | None] = mapped_column(String(255))
     vibes: Mapped[list[str]] = mapped_column(JSON, default=list)
 

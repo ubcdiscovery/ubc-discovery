@@ -9,7 +9,6 @@ export type AdminEventDraft = {
   eventEndDate: string;
   sourceLabel: string;
   sourceUrl: string;
-  externalCtaLabel: string;
   vibes: string[];
 };
 
@@ -30,7 +29,6 @@ export function draftFromEvent(event: ApiEvent): AdminEventDraft {
     eventEndDate: toLocalDateTime(event.event_end_date),
     sourceLabel: event.source_label,
     sourceUrl: event.source_url ?? "",
-    externalCtaLabel: event.external_cta_label ?? "",
     vibes: event.vibes,
   };
 }
@@ -47,7 +45,6 @@ export function emptyAdminEventDraft(): AdminEventDraft {
     eventEndDate: toLocalDateTime(end.toISOString()),
     sourceLabel: "campus_community",
     sourceUrl: "",
-    externalCtaLabel: "",
     vibes: [],
   };
 }
@@ -77,7 +74,6 @@ export function updateInputFromDraft(draft: AdminEventDraft): UpdateEventInput {
       : null,
     source_label: draft.sourceLabel,
     source_url: draft.sourceUrl.trim() || null,
-    external_cta_label: draft.externalCtaLabel.trim() || null,
     vibes: draft.vibes,
   };
 }

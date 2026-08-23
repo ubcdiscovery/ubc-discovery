@@ -39,7 +39,6 @@ export const mockEvent = {
   source: "ubc",
   source_label: "ubc_official",
   source_url: null,
-  external_cta_label: null,
   club_name: null,
   event_picture_url: null,
   vibes: ["social"],

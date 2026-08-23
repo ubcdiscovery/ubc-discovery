@@ -173,13 +173,6 @@ export function AdminEventForm({ event, onSave, onCreate, onUploadImage }: Admin
                 onChange={(change) => updateDraft({ sourceUrl: change.target.value })}
               />
             </Field>
-            <Field label="External action label" htmlFor="admin-cta-label">
-              <Input
-                id="admin-cta-label"
-                value={draft.externalCtaLabel}
-                onChange={(change) => updateDraft({ externalCtaLabel: change.target.value })}
-              />
-            </Field>
           </CardContent>
         </Card>
 

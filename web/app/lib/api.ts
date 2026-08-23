@@ -20,7 +20,6 @@ export interface ApiEvent {
   source: string;
   source_label: string;
   source_url: string | null;
-  external_cta_label: string | null;
   club_name: string | null;
   event_picture_url: string | null;
   vibes: string[];
@@ -46,7 +45,6 @@ export interface CreateEventInput {
   source?: string;
   source_label?: string;
   source_url?: string | null;
-  external_cta_label?: string | null;
   club_name?: string | null;
   vibes?: string[];
   location_name: string;
@@ -60,7 +58,6 @@ export interface UpdateEventInput {
   source?: string;
   source_label?: string;
   source_url?: string | null;
-  external_cta_label?: string | null;
   club_name?: string | null;
   vibes?: string[];
   location_name?: string;

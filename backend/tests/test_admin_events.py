@@ -238,7 +238,6 @@ class TestCreateAdminEvent:
                 "club_name": "Coding Club",
                 "source_label": "ams_club",
                 "source_url": "https://example.com/event",
-                "external_cta_label": "View registration",
                 "vibes": ["career", "social"],
                 "location_name": "The Nest",
                 "event_date": "2026-09-01T10:00:00Z",
