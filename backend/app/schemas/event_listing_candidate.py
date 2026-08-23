@@ -83,6 +83,14 @@ class EventListingCandidateResponse(BaseModel):
     source_url: str | None
     source_type: str
     external_source_id: str
+    status: CandidateStatus
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EventListingCandidateAdminResponse(EventListingCandidateResponse):
     image_urls: list[str] = Field(
         default_factory=list,
         description=(
@@ -90,11 +98,6 @@ class EventListingCandidateResponse(BaseModel):
             "Empty when no images were uploaded."
         ),
     )
-    status: CandidateStatus
-    created_at: datetime
-    updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class EventListingCandidateIngestionAuditResponse(BaseModel):
@@ -110,7 +113,7 @@ class EventListingCandidateIngestionAuditResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class EventListingCandidateDetailResponse(EventListingCandidateResponse):
+class EventListingCandidateDetailResponse(EventListingCandidateAdminResponse):
     ingestion_audits: list[EventListingCandidateIngestionAuditResponse]
 
 
@@ -136,7 +139,7 @@ class AdminCandidateListQuery(BaseModel):
 
 
 class AdminEventListingCandidateListResponse(BaseModel):
-    candidates: list[EventListingCandidateResponse]
+    candidates: list[EventListingCandidateAdminResponse]
     total: int
 
 

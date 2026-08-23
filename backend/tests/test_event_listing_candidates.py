@@ -170,7 +170,7 @@ class TestCandidateIngestion:
         assert candidate.image_keys == []
         assert candidate.status == CandidateStatus.PENDING
         assert "image_keys" not in data["candidate"]
-        assert data["candidate"]["image_urls"] == []
+        assert "image_urls" not in data["candidate"]
 
         audit = await db_session.get(
             EventListingCandidateIngestionAudit, data["receipt_id"]
@@ -362,6 +362,15 @@ class TestCandidateIngestion:
         )
         assert "image_keys" not in detail.json()
 
+        replay = await credential_admin_client.post(
+            "/ingestion/event-candidates",
+            headers=headers,
+            json=_payload("carousel-123"),
+        )
+        assert replay.status_code == 200
+        assert "image_urls" not in replay.json()["candidate"]
+        assert "X-Amz-Signature" not in replay.text
+
     async def test_image_presign_rejects_counts_outside_the_capture_cap(
         self, credential_admin_client: AsyncClient
     ):
@@ -421,7 +430,7 @@ class TestCandidateIngestion:
         )
 
         assert caption_only.status_code == 201
-        assert caption_only.json()["candidate"]["image_urls"] == []
+        assert "image_urls" not in caption_only.json()["candidate"]
         assert foreign_keys.status_code == 422
 
 
