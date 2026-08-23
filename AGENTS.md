@@ -112,27 +112,3 @@ Pushes to `main` build the backend image in GitHub Actions and deploy it to AWS 
 ## DB Credentials
 
 All in `.env` (not committed).
-
-## Cursor Cloud specific instructions
-
-The startup update script runs `uv sync` in `backend/` and `pnpm install` in `web/`. Everything below is not automated and must be started/created per session as needed.
-
-### Toolchain / PATH gotcha
-- The base image ships `/exec-daemon/node` (Node 22) early on `PATH`, which shadows nvm. `~/.bashrc` sources nvm and pins Node 24, so interactive shells and tmux login shells (`bash -l`) get Node 24 + pnpm 11.13.1 automatically. Non-interactive `bash -c` scripts do NOT source `~/.bashrc`; source nvm and prepend `~/.local/bin` (for `uv`) yourself: `export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"; nvm use 24; export PATH="$HOME/.local/bin:$PATH"`.
-- Python is managed by `uv` (pinned to 3.14 via `.python-version`); always run backend commands through `uv run`.
-
-### Database (native PostgreSQL, not Docker)
-- Postgres 18 + pgvector is installed natively (Docker is not available). The root `compose.yml` is NOT used in this environment.
-- Start it each session: `sudo pg_ctlcluster 18 main start` (data dir `/var/lib/postgresql/18/main` persists in the snapshot).
-- A superuser role `ubc_discovery` (password `ubc_discovery`) and database `ubc_discovery` already exist. `backend/.env` points at `postgresql+asyncpg://ubc_discovery:ubc_discovery@localhost:5432/ubc_discovery` with `DATABASE_SSL=false` (required for the local, non-TLS server).
-- Migrations are already applied; re-run with `cd backend && uv run alembic upgrade head` if needed.
-
-### Local env files (created for dev, not committed / gitignored)
-- `backend/.env` and `web/.env` exist for local dev. `FIREBASE_*` and AWS (`S3_*`) values are intentionally blank.
-- Consequences of blank secrets: the API logs "Firebase auth disabled" and only public endpoints work. Member-only flows (email OTP sign-in, saved events, ratings, personalized recommendations, admin) require real Firebase + AWS credentials. Event images are broken locally because image URLs point at a placeholder S3 bucket — this is expected, not a bug.
-
-### Running the apps (see README / root AGENTS.md for the standard commands)
-- Backend binds `127.0.0.1:8000` (Swagger at `/docs`); web dev server runs on `:5173`. Public event discovery works fully with just Postgres + backend + web.
-
-### Seeding local data
-- `backend/scripts/seed_events.py` needs a Firebase admin ID token, so it is unusable without Firebase. For public-discovery data, insert rows directly into the `events` table. Only events with `event_date >= now()` appear in the public feed/search.
