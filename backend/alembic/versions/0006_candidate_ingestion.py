@@ -1,4 +1,4 @@
-"""Store extracted Event Listing Candidates and ingestion receipts."""
+"""Store Event Listing Candidate source captures and ingestion receipts."""
 
 from __future__ import annotations
 
@@ -17,20 +17,12 @@ def upgrade() -> None:
     op.create_table(
         "event_listing_candidates",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("title", sa.String(length=500), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
-        sa.Column("club_name", sa.String(length=255), nullable=True),
+        sa.Column("source_account", sa.String(length=255), nullable=False),
         sa.Column("source_url", sa.String(length=1024), nullable=True),
-        sa.Column("vibes", sa.JSON(), nullable=False),
-        sa.Column("location_name", sa.String(length=255), nullable=True),
-        sa.Column("event_date", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("event_end_date", sa.DateTime(timezone=True), nullable=True),
         sa.Column("source_type", sa.String(length=50), nullable=False),
         sa.Column("external_source_id", sa.String(length=512), nullable=False),
         sa.Column("image_reference", sa.String(length=1024), nullable=True),
-        sa.Column("extraction_confidence", sa.Float(), nullable=False),
-        sa.Column("extraction_metadata", sa.JSON(), nullable=False),
-        sa.Column("extraction_output", sa.JSON(), nullable=False),
         sa.Column(
             "status",
             sa.String(length=32),

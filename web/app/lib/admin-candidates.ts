@@ -4,20 +4,12 @@ export type CandidateStatus = "pending" | "approved" | "rejected";
 
 export interface ApiCandidate {
   id: string;
-  title: string;
   description: string;
-  club_name: string | null;
+  source_account: string;
   source_url: string | null;
-  vibes: string[];
-  location_name: string | null;
-  event_date: string | null;
-  event_end_date: string | null;
   source_type: string;
   external_source_id: string;
   image_reference: string | null;
-  extraction_confidence: number;
-  extraction_metadata: Record<string, unknown>;
-  extraction_output: Record<string, unknown>;
   status: CandidateStatus;
   created_at: string;
   updated_at: string;

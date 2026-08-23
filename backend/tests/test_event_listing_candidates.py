@@ -22,38 +22,20 @@ from app.services import api_credentials
 def _payload(
     external_source_id: str = "post-123",
     *,
-    title: str = "Campus Candidate",
+    description: str = "A useful campus event description.",
 ) -> dict:
     return {
-        "title": title,
-        "description": "A useful campus event description.",
-        "club_name": "Campus Club",
+        "description": description,
+        "source_account": "ubcams",
         "source_url": "https://example.com/posts/post-123",
-        "vibes": ["career", "social"],
-        "location_name": "The Nest",
-        "event_date": "2026-09-01T18:00:00Z",
-        "event_end_date": "2026-09-01T20:00:00Z",
         "source_type": "instagram",
         "external_source_id": external_source_id,
         "image_reference": "instagram://media/post-123",
-        "extraction_confidence": 0.91,
-        "extraction_metadata": {
-            "extractor_version": "2026-08-08",
-            "model": "test-extractor",
-            "field_count": 9,
-        },
     }
 
 
 def _model_payload(external_source_id: str = "post-123") -> dict:
-    payload = _payload(external_source_id)
-    payload["event_date"] = datetime.fromisoformat(
-        payload["event_date"].replace("Z", "+00:00")
-    )
-    payload["event_end_date"] = datetime.fromisoformat(
-        payload["event_end_date"].replace("Z", "+00:00")
-    )
-    return payload
+    return _payload(external_source_id)
 
 
 async def _mint_credential(
@@ -151,14 +133,11 @@ class TestCandidateIngestion:
         assert response.status_code == 201
         data = response.json()
         assert data["outcome"] == "created"
-        assert data["candidate"]["title"] == "Campus Candidate"
+        assert data["candidate"]["source_account"] == "ubcams"
         assert data["candidate"]["source_type"] == "instagram"
-        assert data["candidate"]["extraction_confidence"] == 0.91
-        assert data["candidate"]["extraction_output"]["location_name"] == "The Nest"
 
         candidate = await db_session.get(EventListingCandidate, data["candidate"]["id"])
         assert candidate is not None
-        assert candidate.extraction_metadata["extractor_version"] == "2026-08-08"
         assert candidate.description == "A useful campus event description."
         assert candidate.status == CandidateStatus.PENDING
 
@@ -188,14 +167,16 @@ class TestCandidateIngestion:
         second = await credential_admin_client.post(
             "/ingestion/event-candidates",
             headers=headers,
-            json=_payload(title="Changed retry payload"),
+            json=_payload(description="Changed retry payload"),
         )
 
         assert first.status_code == 201
         assert second.status_code == 200
         assert second.json()["outcome"] == "existing"
         assert second.json()["candidate"]["id"] == first.json()["candidate"]["id"]
-        assert second.json()["candidate"]["title"] == "Campus Candidate"
+        assert second.json()["candidate"]["description"] == (
+            "A useful campus event description."
+        )
 
         audits = await db_session.scalars(
             select(EventListingCandidateIngestionAudit).order_by(
@@ -253,7 +234,10 @@ class TestCandidateIngestion:
         extra_content = await credential_admin_client.post(
             "/ingestion/event-candidates",
             headers=_api_key_headers(token),
-            json={**_payload("post-extra"), "source_excerpt": "leftover excerpt"},
+            json={
+                **_payload("post-extra"),
+                "extraction_metadata": {"model": "leftover"},
+            },
         )
 
         assert extra_content.status_code == 422
@@ -268,17 +252,12 @@ class TestCandidateIngestion:
             json={
                 **_payload("post-contact"),
                 "description": "RSVP club@ubc.ca for details.",
-                "extraction_metadata": {
-                    "extractor_version": "2026-08-08",
-                    "contact": "club@ubc.ca",
-                },
             },
         )
 
         assert response.status_code == 201
         candidate = response.json()["candidate"]
         assert candidate["description"] == "RSVP club@ubc.ca for details."
-        assert candidate["extraction_metadata"]["contact"] == "club@ubc.ca"
 
 
 class TestAdminCandidateQueue:
@@ -289,14 +268,10 @@ class TestAdminCandidateQueue:
     ):
         candidates = [
             EventListingCandidate(
-                title=f"Queue Candidate {index}",
-                description="Candidate description",
-                vibes=["social"],
+                description=f"Queue Candidate {index}",
+                source_account="ubcams",
                 source_type="instagram" if index < 2 else "calendar",
                 external_source_id=f"queue-{index}",
-                extraction_confidence=0.5 + index / 10,
-                extraction_metadata={"extractor_version": "test"},
-                extraction_output={"title": f"Queue Candidate {index}"},
                 status=(
                     CandidateStatus.PENDING if index < 2 else CandidateStatus.REJECTED
                 ),
@@ -329,12 +304,7 @@ class TestAdminCandidateQueue:
         admin_client: AsyncClient,
         db_session: AsyncSession,
     ):
-        candidate = EventListingCandidate(
-            **{
-                **_model_payload(),
-                "extraction_output": {"title": "Campus Candidate"},
-            }
-        )
+        candidate = EventListingCandidate(**_model_payload())
         db_session.add(candidate)
         await db_session.flush()
         actor_id = uuid.UUID("11111111-1111-1111-1111-111111111111")
@@ -369,7 +339,7 @@ class TestAdminCandidateQueue:
         candidate = EventListingCandidate(
             **{
                 **_model_payload("public-check"),
-                "extraction_output": {"title": "Candidate-only title"},
+                "description": "Candidate-only caption",
             }
         )
         db_session.add(candidate)
@@ -379,6 +349,6 @@ class TestAdminCandidateQueue:
 
         assert response.status_code == 200
         assert all(
-            event["title"] != "Candidate-only title"
+            event["title"] != "Candidate-only caption"
             for event in response.json()["events"]
         )

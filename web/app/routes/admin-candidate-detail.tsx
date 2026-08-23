@@ -10,12 +10,8 @@ export function meta() {
 }
 
 function formatDate(value: string | null) {
-  if (!value) return "Not extracted";
+  if (!value) return "Unknown";
   return new Date(value).toLocaleString("en", { dateStyle: "medium", timeStyle: "short" });
-}
-
-function prettyJson(value: Record<string, unknown>) {
-  return JSON.stringify(value, null, 2);
 }
 
 export default function AdminCandidateDetail() {
@@ -48,23 +44,16 @@ export default function AdminCandidateDetail() {
     <div className="px-4.5 py-6 md:px-8 md:py-10">
       <div className="border-b-2 border-ink pb-5">
         <p className="font-mono text-xs font-bold uppercase tracking-wider text-accent">Candidate evidence</p>
-        <h1 className="mt-1 text-balance font-display text-4xl font-extrabold tracking-tighter md:text-6xl">{candidate.title}</h1>
+        <h1 className="mt-1 text-balance font-display text-4xl font-extrabold tracking-tighter md:text-6xl">{candidate.source_account}</h1>
         <p className="mt-3 font-mono text-xs uppercase tracking-wide text-muted">{candidate.id}</p>
       </div>
 
       <div className="mt-6 grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
         <div className="grid gap-5">
           <Card>
-            <CardHeader><CardTitle>Normalized fields</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Source text</CardTitle></CardHeader>
             <CardContent>
-              <dl className="grid gap-4 sm:grid-cols-2">
-                <div><dt className="font-mono text-xs uppercase tracking-wide text-muted">Description</dt><dd className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{candidate.description || "Not extracted"}</dd></div>
-                <div><dt className="font-mono text-xs uppercase tracking-wide text-muted">Organizer</dt><dd className="mt-1 text-sm text-ink-soft">{candidate.club_name || "Not extracted"}</dd></div>
-                <div><dt className="font-mono text-xs uppercase tracking-wide text-muted">Location</dt><dd className="mt-1 text-sm text-ink-soft">{candidate.location_name || "Not extracted"}</dd></div>
-                <div><dt className="font-mono text-xs uppercase tracking-wide text-muted">Event date</dt><dd className="mt-1 text-sm text-ink-soft">{formatDate(candidate.event_date)}</dd></div>
-                <div><dt className="font-mono text-xs uppercase tracking-wide text-muted">Event ends</dt><dd className="mt-1 text-sm text-ink-soft">{formatDate(candidate.event_end_date)}</dd></div>
-                <div><dt className="font-mono text-xs uppercase tracking-wide text-muted">Vibes</dt><dd className="mt-1 text-sm text-ink-soft">{candidate.vibes.length ? candidate.vibes.join(", ") : "Not extracted"}</dd></div>
-              </dl>
+              <p className="whitespace-pre-wrap text-sm/relaxed text-ink-soft">{candidate.description || "No caption supplied."}</p>
             </CardContent>
           </Card>
 
@@ -77,13 +66,6 @@ export default function AdminCandidateDetail() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader><CardTitle>Extraction output</CardTitle></CardHeader>
-            <CardContent>
-              <pre className="overflow-x-auto whitespace-pre-wrap border border-rule-soft bg-bg p-4 font-mono text-xs/relaxed text-ink-soft">{prettyJson(candidate.extraction_output)}</pre>
-            </CardContent>
-          </Card>
         </div>
 
         <div className="grid content-start gap-5">
@@ -93,20 +75,13 @@ export default function AdminCandidateDetail() {
               <dl className="grid gap-3 font-mono text-xs">
                 <div><dt className="uppercase tracking-wide text-muted">Status</dt><dd className="mt-1 font-bold uppercase text-accent">{candidate.status}</dd></div>
                 <div><dt className="uppercase tracking-wide text-muted">Source type</dt><dd className="mt-1 font-bold text-ink">{candidate.source_type}</dd></div>
+                <div><dt className="uppercase tracking-wide text-muted">Source account</dt><dd className="mt-1 font-bold text-ink">{candidate.source_account}</dd></div>
                 <div><dt className="uppercase tracking-wide text-muted">External source ID</dt><dd className="mt-1 break-all font-bold text-ink">{candidate.external_source_id}</dd></div>
-                <div><dt className="uppercase tracking-wide text-muted">Confidence</dt><dd className="mt-1 font-bold text-ink">{Math.round(candidate.extraction_confidence * 100)}%</dd></div>
                 <div><dt className="uppercase tracking-wide text-muted">Received</dt><dd className="mt-1 font-bold text-ink">{formatDate(candidate.created_at)}</dd></div>
               </dl>
               {candidate.source_url && (
                 <a href={candidate.source_url} target="_blank" rel="noreferrer" className="mt-5 block break-all text-sm text-accent underline">Open source URL</a>
               )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle>Extraction metadata</CardTitle></CardHeader>
-            <CardContent>
-              <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-xs/relaxed text-ink-soft">{prettyJson(candidate.extraction_metadata)}</pre>
             </CardContent>
           </Card>
         </div>

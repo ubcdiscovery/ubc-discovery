@@ -22,21 +22,6 @@ from app.schemas.event_listing_candidate import (
 router = APIRouter(prefix="/event-candidates", tags=["Candidate Ingestion"])
 
 
-def _extraction_output(body: EventListingCandidateIngestionRequest) -> dict:
-    return {
-        "title": body.title,
-        "description": body.description,
-        "club_name": body.club_name,
-        "source_url": body.source_url,
-        "vibes": body.vibes,
-        "location_name": body.location_name,
-        "event_date": body.event_date.isoformat() if body.event_date else None,
-        "event_end_date": (
-            body.event_end_date.isoformat() if body.event_end_date else None
-        ),
-    }
-
-
 @router.post(
     "",
     response_model=EventListingCandidateIngestionResponse,
@@ -48,10 +33,7 @@ async def ingest_event_listing_candidate(
     credential: CandidateIngestionCredential = Depends(require_candidate_ingester),
     db: AsyncSession = Depends(get_db),
 ):
-    values = {
-        **body.model_dump(),
-        "extraction_output": _extraction_output(body),
-    }
+    values = body.model_dump()
     inserted = await db.execute(
         insert(EventListingCandidate)
         .values(values)

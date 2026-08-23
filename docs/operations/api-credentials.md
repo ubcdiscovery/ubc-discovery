@@ -13,10 +13,10 @@ shown only in the generation response and page state. Copy it immediately into
 the integration's secret store. The credential list never returns the raw token
 or its hash.
 
-Submit extracted Candidates with that token:
+Submit Candidate source captures with that token:
 
     curl -X POST \
-      -H 'Api-Key: ubc_live_<credential-id>.<random-secret>' \
+      -H 'Authorization: Api-Key ubc_live_<credential-id>.<random-secret>' \
       -H 'Content-Type: application/json' \
       https://api.example/ingestion/event-candidates
 

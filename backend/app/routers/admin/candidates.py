@@ -33,9 +33,8 @@ async def list_admin_candidates(
         pattern = f"%{filters.q}%"
         conditions.append(
             or_(
-                EventListingCandidate.title.ilike(pattern),
-                EventListingCandidate.club_name.ilike(pattern),
-                EventListingCandidate.location_name.ilike(pattern),
+                EventListingCandidate.description.ilike(pattern),
+                EventListingCandidate.source_account.ilike(pattern),
                 EventListingCandidate.source_type.ilike(pattern),
                 EventListingCandidate.external_source_id.ilike(pattern),
             )

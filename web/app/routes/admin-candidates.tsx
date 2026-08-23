@@ -35,6 +35,12 @@ function statusLabel(status: CandidateStatus) {
   return status.replaceAll("_", " ");
 }
 
+function captionPreview(description: string) {
+  const line = description.trim().split("\n")[0] ?? "";
+  if (!line) return "No caption supplied.";
+  return line.length > 80 ? `${line.slice(0, 80)}…` : line;
+}
+
 function CandidateTable({ candidates }: { candidates: ApiCandidate[] }) {
   return (
     <Table className="mt-4 border border-ink bg-surface text-left">
@@ -43,7 +49,6 @@ function CandidateTable({ candidates }: { candidates: ApiCandidate[] }) {
         <TableRow className="hover:bg-accent-soft">
           <TableHead scope="col">Candidate</TableHead>
           <TableHead scope="col">Status</TableHead>
-          <TableHead scope="col">Confidence</TableHead>
           <TableHead scope="col">Source</TableHead>
           <TableHead scope="col" className="whitespace-nowrap">
             Received
@@ -59,7 +64,10 @@ function CandidateTable({ candidates }: { candidates: ApiCandidate[] }) {
                 className="block text-ink no-underline hover:text-accent"
               >
                 <span className="font-display text-xl font-extrabold tracking-tight">
-                  {candidate.title}
+                  {candidate.source_account}
+                </span>
+                <span className="mt-1 block text-sm text-ink-soft">
+                  {captionPreview(candidate.description)}
                 </span>
                 <span className="mt-1 block font-mono text-2xs uppercase tracking-wide text-muted">
                   {candidate.external_source_id}
@@ -68,9 +76,6 @@ function CandidateTable({ candidates }: { candidates: ApiCandidate[] }) {
             </TableCell>
             <TableCell className="font-mono text-xs font-bold uppercase tracking-wide text-accent">
               {statusLabel(candidate.status)}
-            </TableCell>
-            <TableCell className="font-mono text-xs text-ink-soft">
-              {Math.round(candidate.extraction_confidence * 100)}%
             </TableCell>
             <TableCell className="font-mono text-xs text-ink-soft">
               {candidate.source_type}
@@ -160,7 +165,7 @@ export default function AdminCandidates() {
           type="search"
           value={searchDraft}
           onChange={(event) => setSearchDraft(event.target.value)}
-          placeholder="Search title, source ID, organizer…"
+          placeholder="Search caption, account, source ID…"
           className="min-w-0 px-4 py-3 font-body"
         />
         <label htmlFor="admin-candidate-source" className="sr-only">

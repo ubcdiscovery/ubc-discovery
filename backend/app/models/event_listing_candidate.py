@@ -3,10 +3,8 @@ from datetime import datetime
 from enum import StrEnum
 
 from sqlalchemy import (
-    JSON,
     CheckConstraint,
     DateTime,
-    Float,
     ForeignKey,
     String,
     Text,
@@ -48,21 +46,13 @@ class EventListingCandidate(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    title: Mapped[str] = mapped_column(String(500))
     description: Mapped[str] = mapped_column(Text, default="")
-    club_name: Mapped[str | None] = mapped_column(String(255))
+    source_account: Mapped[str] = mapped_column(String(255))
     source_url: Mapped[str | None] = mapped_column(String(1024))
-    vibes: Mapped[list[str]] = mapped_column(JSON, default=list)
-    location_name: Mapped[str | None] = mapped_column(String(255))
-    event_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    event_end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     source_type: Mapped[str] = mapped_column(String(50), index=True)
     external_source_id: Mapped[str] = mapped_column(String(512))
     image_reference: Mapped[str | None] = mapped_column(String(1024))
-    extraction_confidence: Mapped[float] = mapped_column(Float)
-    extraction_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
-    extraction_output: Mapped[dict] = mapped_column(JSON, default=dict)
 
     status: Mapped[CandidateStatus] = mapped_column(
         String(32),

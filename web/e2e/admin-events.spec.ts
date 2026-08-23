@@ -272,17 +272,20 @@ test("administrator filters and inspects an Event Listing Candidate", async ({ p
 
   await expect(page.getByRole("heading", { name: "Candidates" })).toBeVisible();
   await expect(page.getByRole("table", { name: "Event Listing Candidates" })).toBeVisible();
-  await expect(page.getByRole("link", { name: mockCandidate.title })).toBeVisible();
+  await expect(page.getByRole("link", { name: mockCandidate.source_account })).toBeVisible();
 
   await page.getByRole("combobox", { name: "Filter candidate status" }).selectOption("pending");
   await expect(page).toHaveURL(/status=pending/);
   expect(candidateQueries.at(-1)).toMatchObject({ status: "pending" });
 
-  await page.getByRole("link", { name: mockCandidate.title }).click();
+  await page.getByRole("link", { name: mockCandidate.source_account }).click();
 
   await expect(page).toHaveURL(`/admin/candidates/${mockCandidate.id}`);
-  await expect(page.getByRole("heading", { name: mockCandidate.title })).toBeVisible();
-  await expect(page.getByText(mockCandidate.description)).toBeVisible();
+  await expect(page.getByRole("heading", { name: mockCandidate.source_account })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Source text" })).toBeVisible();
+  await expect(page.getByText(mockCandidate.description, { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Extraction output" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Extraction metadata" })).toHaveCount(0);
   await expect(page.getByText("created", { exact: true })).toBeVisible();
   await expect(page.getByText("Campus importer", { exact: true })).toBeVisible();
 });
