@@ -72,10 +72,6 @@ export default function AdminCandidateDetail() {
             <CardHeader><CardTitle>Minimal source evidence</CardTitle></CardHeader>
             <CardContent className="grid gap-4">
               <div>
-                <p className="font-mono text-xs uppercase tracking-wide text-muted">Relevant excerpt</p>
-                <p className="mt-2 border-l-2 border-accent pl-3 text-sm/relaxed text-ink-soft">{candidate.source_excerpt || "No excerpt supplied."}</p>
-              </div>
-              <div>
                 <p className="font-mono text-xs uppercase tracking-wide text-muted">Image reference</p>
                 <p className="mt-1 break-all text-sm text-ink-soft">{candidate.image_reference || "No image reference supplied."}</p>
               </div>

@@ -28,7 +28,6 @@ def _extraction_output(body: EventListingCandidateIngestionRequest) -> dict:
         "description": body.description,
         "club_name": body.club_name,
         "source_url": body.source_url,
-        "external_cta_label": body.external_cta_label,
         "vibes": body.vibes,
         "location_name": body.location_name,
         "event_date": body.event_date.isoformat() if body.event_date else None,

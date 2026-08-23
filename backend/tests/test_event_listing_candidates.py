@@ -29,14 +29,12 @@ def _payload(
         "description": "A useful campus event description.",
         "club_name": "Campus Club",
         "source_url": "https://example.com/posts/post-123",
-        "external_cta_label": "Learn more",
         "vibes": ["career", "social"],
         "location_name": "The Nest",
         "event_date": "2026-09-01T18:00:00Z",
         "event_end_date": "2026-09-01T20:00:00Z",
         "source_type": "instagram",
         "external_source_id": external_source_id,
-        "source_excerpt": "Join us at The Nest for a campus workshop.",
         "image_reference": "instagram://media/post-123",
         "extraction_confidence": 0.91,
         "extraction_metadata": {
@@ -161,7 +159,7 @@ class TestCandidateIngestion:
         candidate = await db_session.get(EventListingCandidate, data["candidate"]["id"])
         assert candidate is not None
         assert candidate.extraction_metadata["extractor_version"] == "2026-08-08"
-        assert candidate.source_excerpt == "Join us at The Nest for a campus workshop."
+        assert candidate.description == "A useful campus event description."
         assert candidate.status == CandidateStatus.PENDING
 
         audit = await db_session.get(
@@ -255,7 +253,7 @@ class TestCandidateIngestion:
         extra_content = await credential_admin_client.post(
             "/ingestion/event-candidates",
             headers=_api_key_headers(token),
-            json={**_payload("post-extra"), "raw_capture": "not a modeled field"},
+            json={**_payload("post-extra"), "source_excerpt": "leftover excerpt"},
         )
 
         assert extra_content.status_code == 422
@@ -269,7 +267,7 @@ class TestCandidateIngestion:
             headers=_api_key_headers(token),
             json={
                 **_payload("post-contact"),
-                "source_excerpt": "RSVP club@ubc.ca for details.",
+                "description": "RSVP club@ubc.ca for details.",
                 "extraction_metadata": {
                     "extractor_version": "2026-08-08",
                     "contact": "club@ubc.ca",
@@ -279,7 +277,7 @@ class TestCandidateIngestion:
 
         assert response.status_code == 201
         candidate = response.json()["candidate"]
-        assert candidate["source_excerpt"] == "RSVP club@ubc.ca for details."
+        assert candidate["description"] == "RSVP club@ubc.ca for details."
         assert candidate["extraction_metadata"]["contact"] == "club@ubc.ca"
 
 
@@ -357,7 +355,7 @@ class TestAdminCandidateQueue:
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == str(candidate.id)
-        assert data["source_excerpt"] == candidate.source_excerpt
+        assert data["description"] == candidate.description
         assert data["ingestion_audits"][0]["outcome"] == "created"
         assert data["ingestion_audits"][0]["actor_type"] == "api_key"
         assert data["ingestion_audits"][0]["actor_id"] == str(actor_id)
@@ -380,7 +378,6 @@ class TestAdminCandidateQueue:
         response = await unauthed_client.get("/events")
 
         assert response.status_code == 200
-        assert all("source_excerpt" not in event for event in response.json()["events"])
         assert all(
             event["title"] != "Candidate-only title"
             for event in response.json()["events"]

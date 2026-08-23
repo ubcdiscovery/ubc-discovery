@@ -19,7 +19,6 @@ class EventListingCandidateIngestionRequest(BaseModel):
     description: str = Field(default="", max_length=20_000)
     club_name: str | None = Field(default=None, max_length=255)
     source_url: str | None = Field(default=None, max_length=1024)
-    external_cta_label: str | None = Field(default=None, max_length=80)
     vibes: list[str] = Field(default_factory=list)
     location_name: str | None = Field(default=None, max_length=255)
     event_date: datetime | None = None
@@ -27,7 +26,6 @@ class EventListingCandidateIngestionRequest(BaseModel):
 
     source_type: str = Field(min_length=1, max_length=50)
     external_source_id: str = Field(min_length=1, max_length=512)
-    source_excerpt: str | None = Field(default=None, max_length=4_000)
     image_reference: str | None = Field(default=None, max_length=1024)
     extraction_confidence: float = Field(ge=0, le=1)
     extraction_metadata: dict[str, str | int | float | bool | None] = Field(
@@ -57,7 +55,6 @@ class EventListingCandidateIngestionRequest(BaseModel):
         "location_name",
         "source_url",
         "image_reference",
-        "source_excerpt",
     )
     @classmethod
     def strip_optional_text(cls, value: str | None) -> str | None:
@@ -94,14 +91,12 @@ class EventListingCandidateResponse(BaseModel):
     description: str
     club_name: str | None
     source_url: str | None
-    external_cta_label: str | None
     vibes: list[str]
     location_name: str | None
     event_date: datetime | None
     event_end_date: datetime | None
     source_type: str
     external_source_id: str
-    source_excerpt: str | None
     image_reference: str | None
     extraction_confidence: float
     extraction_metadata: dict

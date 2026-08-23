@@ -8,7 +8,6 @@ export type AdminMockCandidate = {
   location_name: string | null;
   source_type: string;
   external_source_id: string;
-  source_excerpt: string | null;
   image_reference: string | null;
   extraction_confidence: number;
   extraction_metadata: Record<string, unknown>;
@@ -33,14 +32,12 @@ export const mockCandidate: AdminMockCandidate = {
   description: "A workshop found in the source channel.",
   club_name: "Campus Club",
   source_url: "https://example.com/workshop",
-  external_cta_label: "Learn more",
   vibes: ["career", "social"],
   location_name: "The Nest",
   event_date: "2026-09-01T18:00:00Z",
   event_end_date: "2026-09-01T20:00:00Z",
   source_type: "instagram",
   external_source_id: "post-123",
-  source_excerpt: "Join us at The Nest for a campus workshop.",
   image_reference: "instagram://media/post-123",
   extraction_confidence: 0.91,
   extraction_metadata: { extractor_version: "2026-08-08", model: "test-extractor" },

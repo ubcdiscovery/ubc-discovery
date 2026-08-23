@@ -7,8 +7,8 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision = "0005_candidate_ingestion"
-down_revision = "0004_add_event_lifecycle_audit"
+revision = "0006_candidate_ingestion"
+down_revision = "0005_drop_external_cta_label"
 branch_labels = None
 depends_on = None
 
@@ -21,14 +21,12 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column("club_name", sa.String(length=255), nullable=True),
         sa.Column("source_url", sa.String(length=1024), nullable=True),
-        sa.Column("external_cta_label", sa.String(length=80), nullable=True),
         sa.Column("vibes", sa.JSON(), nullable=False),
         sa.Column("location_name", sa.String(length=255), nullable=True),
         sa.Column("event_date", sa.DateTime(timezone=True), nullable=True),
         sa.Column("event_end_date", sa.DateTime(timezone=True), nullable=True),
         sa.Column("source_type", sa.String(length=50), nullable=False),
         sa.Column("external_source_id", sa.String(length=512), nullable=False),
-        sa.Column("source_excerpt", sa.Text(), nullable=True),
         sa.Column("image_reference", sa.String(length=1024), nullable=True),
         sa.Column("extraction_confidence", sa.Float(), nullable=False),
         sa.Column("extraction_metadata", sa.JSON(), nullable=False),

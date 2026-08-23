@@ -8,14 +8,12 @@ export interface ApiCandidate {
   description: string;
   club_name: string | null;
   source_url: string | null;
-  external_cta_label: string | null;
   vibes: string[];
   location_name: string | null;
   event_date: string | null;
   event_end_date: string | null;
   source_type: string;
   external_source_id: string;
-  source_excerpt: string | null;
   image_reference: string | null;
   extraction_confidence: number;
   extraction_metadata: Record<string, unknown>;

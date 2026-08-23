@@ -282,7 +282,7 @@ test("administrator filters and inspects an Event Listing Candidate", async ({ p
 
   await expect(page).toHaveURL(`/admin/candidates/${mockCandidate.id}`);
   await expect(page.getByRole("heading", { name: mockCandidate.title })).toBeVisible();
-  await expect(page.getByText(mockCandidate.source_excerpt!)).toBeVisible();
+  await expect(page.getByText(mockCandidate.description)).toBeVisible();
   await expect(page.getByText("created", { exact: true })).toBeVisible();
   await expect(page.getByText("Campus importer", { exact: true })).toBeVisible();
 });

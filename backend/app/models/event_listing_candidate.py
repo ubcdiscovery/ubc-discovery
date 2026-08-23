@@ -52,7 +52,6 @@ class EventListingCandidate(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     club_name: Mapped[str | None] = mapped_column(String(255))
     source_url: Mapped[str | None] = mapped_column(String(1024))
-    external_cta_label: Mapped[str | None] = mapped_column(String(80))
     vibes: Mapped[list[str]] = mapped_column(JSON, default=list)
     location_name: Mapped[str | None] = mapped_column(String(255))
     event_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -60,7 +59,6 @@ class EventListingCandidate(Base):
 
     source_type: Mapped[str] = mapped_column(String(50), index=True)
     external_source_id: Mapped[str] = mapped_column(String(512))
-    source_excerpt: Mapped[str | None] = mapped_column(Text)
     image_reference: Mapped[str | None] = mapped_column(String(1024))
     extraction_confidence: Mapped[float] = mapped_column(Float)
     extraction_metadata: Mapped[dict] = mapped_column(JSON, default=dict)
