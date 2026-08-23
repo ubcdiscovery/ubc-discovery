@@ -1,4 +1,3 @@
-import re
 import uuid
 from datetime import datetime
 from typing import Self
@@ -11,12 +10,6 @@ from app.models.event_listing_candidate import (
     CandidateStatus,
 )
 from app.schemas.event import EVENT_VIBES
-
-_EMAIL_PATTERN = re.compile(r"\b[\w.+-]+@[\w.-]+\.\w+\b")
-_PRIVATE_METADATA_KEY_PATTERN = re.compile(
-    r"(?:^|_)(?:raw|email|phone|personal|content|body|html|excerpt)(?:_|$)",
-    re.IGNORECASE,
-)
 
 
 class EventListingCandidateIngestionRequest(BaseModel):
@@ -59,7 +52,13 @@ class EventListingCandidateIngestionRequest(BaseModel):
             raise ValueError("field must contain text")
         return value
 
-    @field_validator("club_name", "location_name", "source_url", "image_reference")
+    @field_validator(
+        "club_name",
+        "location_name",
+        "source_url",
+        "image_reference",
+        "source_excerpt",
+    )
     @classmethod
     def strip_optional_text(cls, value: str | None) -> str | None:
         return value.strip() if value is not None else None
@@ -72,13 +71,6 @@ class EventListingCandidateIngestionRequest(BaseModel):
             raise ValueError("vibes must use the fixed event vibe taxonomy")
         return value
 
-    @field_validator("source_excerpt")
-    @classmethod
-    def reject_private_source_content(cls, value: str | None) -> str | None:
-        if value is not None and _EMAIL_PATTERN.search(value):
-            raise ValueError("source_excerpt must not contain email addresses")
-        return value.strip() if value is not None else None
-
     @field_validator("extraction_metadata")
     @classmethod
     def validate_extraction_metadata(
@@ -89,16 +81,10 @@ class EventListingCandidateIngestionRequest(BaseModel):
                 raise ValueError(
                     "extraction_metadata keys must be 64 characters or fewer"
                 )
-            if _PRIVATE_METADATA_KEY_PATTERN.search(key):
-                raise ValueError(
-                    "extraction_metadata must not contain personal or raw source data"
-                )
             if isinstance(item, str) and len(item) > 500:
                 raise ValueError(
                     "extraction_metadata string values must be 500 characters or fewer"
                 )
-            if isinstance(item, str) and _EMAIL_PATTERN.search(item):
-                raise ValueError("extraction_metadata must not contain email addresses")
         return value
 
 

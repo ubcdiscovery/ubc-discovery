@@ -248,36 +248,39 @@ class TestCandidateIngestion:
         assert first_audit.credential_label == "Importer one"
         assert second_audit.credential_label == "Importer two"
 
-    async def test_ingestion_rejects_private_or_unmodeled_source_content(
+    async def test_ingestion_rejects_unmodeled_fields(
         self, credential_admin_client: AsyncClient
     ):
         _created, token = await _mint_credential(credential_admin_client)
-        headers = _api_key_headers(token)
         extra_content = await credential_admin_client.post(
             "/ingestion/event-candidates",
-            headers=headers,
-            json={**_payload("post-extra"), "full_email_body": "private content"},
-        )
-        email_excerpt = await credential_admin_client.post(
-            "/ingestion/event-candidates",
-            headers=headers,
-            json={
-                **_payload("post-email"),
-                "source_excerpt": "Contact organizer@example.com for details.",
-            },
-        )
-        private_metadata = await credential_admin_client.post(
-            "/ingestion/event-candidates",
-            headers=headers,
-            json={
-                **_payload("post-metadata"),
-                "extraction_metadata": {"raw_source": "private content"},
-            },
+            headers=_api_key_headers(token),
+            json={**_payload("post-extra"), "raw_capture": "not a modeled field"},
         )
 
         assert extra_content.status_code == 422
-        assert email_excerpt.status_code == 422
-        assert private_metadata.status_code == 422
+
+    async def test_ingestion_persists_public_contact_text(
+        self, credential_admin_client: AsyncClient
+    ):
+        _created, token = await _mint_credential(credential_admin_client)
+        response = await credential_admin_client.post(
+            "/ingestion/event-candidates",
+            headers=_api_key_headers(token),
+            json={
+                **_payload("post-contact"),
+                "source_excerpt": "RSVP club@ubc.ca for details.",
+                "extraction_metadata": {
+                    "extractor_version": "2026-08-08",
+                    "contact": "club@ubc.ca",
+                },
+            },
+        )
+
+        assert response.status_code == 201
+        candidate = response.json()["candidate"]
+        assert candidate["source_excerpt"] == "RSVP club@ubc.ca for details."
+        assert candidate["extraction_metadata"]["contact"] == "club@ubc.ca"
 
 
 class TestAdminCandidateQueue:
