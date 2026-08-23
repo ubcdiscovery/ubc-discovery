@@ -58,12 +58,28 @@ export default function AdminCandidateDetail() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Minimal source evidence</CardTitle></CardHeader>
-            <CardContent className="grid gap-4">
-              <div>
-                <p className="font-mono text-xs uppercase tracking-wide text-muted">Image reference</p>
-                <p className="mt-1 break-all text-sm text-ink-soft">{candidate.image_reference || "No image reference supplied."}</p>
-              </div>
+            <CardHeader><CardTitle>Source images</CardTitle></CardHeader>
+            <CardContent>
+              {candidate.image_urls.length === 0 ? (
+                <p className="font-mono text-xs uppercase tracking-wide text-muted">No source images supplied.</p>
+              ) : (
+                <ol className="grid gap-3 sm:grid-cols-2">
+                  {candidate.image_urls.map((url, index) => (
+                    <li key={`${url}-${index}`} className="grid gap-2">
+                      <p className="font-mono text-2xs uppercase tracking-wide text-muted">
+                        {String(index + 1).padStart(2, "0")}
+                      </p>
+                      <div className="flex aspect-square items-center justify-center overflow-hidden border border-rule-soft bg-accent-soft">
+                        <img
+                          src={url}
+                          alt={`Source image ${index + 1} for ${candidate.source_account}`}
+                          className="size-full object-contain"
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </CardContent>
           </Card>
         </div>

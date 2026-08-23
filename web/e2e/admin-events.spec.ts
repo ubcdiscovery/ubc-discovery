@@ -284,6 +284,10 @@ test("administrator filters and inspects an Event Listing Candidate", async ({ p
   await expect(page.getByRole("heading", { name: mockCandidate.source_account })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Source text" })).toBeVisible();
   await expect(page.getByText(mockCandidate.description, { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Source images" })).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: `Source image 1 for ${mockCandidate.source_account}` })
+  ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Extraction output" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Extraction metadata" })).toHaveCount(0);
   await expect(page.getByText("created", { exact: true })).toBeVisible();

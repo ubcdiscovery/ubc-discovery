@@ -9,7 +9,7 @@ export interface ApiCandidate {
   source_url: string | null;
   source_type: string;
   external_source_id: string;
-  image_reference: string | null;
+  image_urls: string[];
   status: CandidateStatus;
   created_at: string;
   updated_at: string;

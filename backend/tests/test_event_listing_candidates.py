@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from httpx import AsyncClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.api_credential import ApiCredential
@@ -30,7 +30,6 @@ def _payload(
         "source_url": "https://example.com/posts/post-123",
         "source_type": "instagram",
         "external_source_id": external_source_id,
-        "image_reference": "instagram://media/post-123",
     }
 
 
@@ -116,9 +115,29 @@ class TestCandidateIngestionAuthorization:
         assert visitor.status_code == 401
         assert member.status_code == 403
 
+    async def test_candidate_image_presign_requires_its_machine_credential(
+        self, unauthed_client: AsyncClient
+    ):
+        body = {
+            "source_type": "instagram",
+            "external_source_id": "post-presign-auth",
+            "content_types": ["image/jpeg"],
+        }
+        missing = await unauthed_client.post(
+            "/ingestion/event-candidates/images/presign", json=body
+        )
+        wrong_scheme = await unauthed_client.post(
+            "/ingestion/event-candidates/images/presign",
+            headers={"Authorization": "Bearer leftover"},
+            json=body,
+        )
+
+        assert missing.status_code == 401
+        assert wrong_scheme.status_code == 403
+
 
 class TestCandidateIngestion:
-    async def test_ingestion_persists_normalized_fields_metadata_and_audit(
+    async def test_ingestion_persists_source_capture_and_audit(
         self,
         credential_admin_client: AsyncClient,
         db_session: AsyncSession,
@@ -139,7 +158,10 @@ class TestCandidateIngestion:
         candidate = await db_session.get(EventListingCandidate, data["candidate"]["id"])
         assert candidate is not None
         assert candidate.description == "A useful campus event description."
+        assert candidate.image_keys == []
         assert candidate.status == CandidateStatus.PENDING
+        assert "image_keys" not in data["candidate"]
+        assert data["candidate"]["image_urls"] == []
 
         audit = await db_session.get(
             EventListingCandidateIngestionAudit, data["receipt_id"]
@@ -236,7 +258,7 @@ class TestCandidateIngestion:
             headers=_api_key_headers(token),
             json={
                 **_payload("post-extra"),
-                "extraction_metadata": {"model": "leftover"},
+                "image_keys": ["candidates/leftover/00.jpg"],
             },
         )
 
@@ -258,6 +280,139 @@ class TestCandidateIngestion:
         assert response.status_code == 201
         candidate = response.json()["candidate"]
         assert candidate["description"] == "RSVP club@ubc.ca for details."
+
+    async def test_image_presign_requires_an_ingested_candidate(
+        self,
+        credential_admin_client: AsyncClient,
+        db_session: AsyncSession,
+    ):
+        _created, token = await _mint_credential(credential_admin_client)
+        headers = _api_key_headers(token)
+        missing = await credential_admin_client.post(
+            "/ingestion/event-candidates/images/presign",
+            headers=headers,
+            json={
+                "source_type": "instagram",
+                "external_source_id": "carousel-123",
+                "content_types": ["image/jpeg", "image/png"],
+            },
+        )
+
+        assert missing.status_code == 404
+        existing = await db_session.scalar(
+            select(func.count()).select_from(EventListingCandidate)
+        )
+        assert existing == 0
+
+    async def test_image_presign_binds_keys_to_the_candidate_id(
+        self,
+        credential_admin_client: AsyncClient,
+        db_session: AsyncSession,
+    ):
+        _created, token = await _mint_credential(credential_admin_client)
+        headers = _api_key_headers(token)
+        ingested = await credential_admin_client.post(
+            "/ingestion/event-candidates",
+            headers=headers,
+            json=_payload("carousel-123"),
+        )
+        candidate_id = ingested.json()["candidate"]["id"]
+        response = await credential_admin_client.post(
+            "/ingestion/event-candidates/images/presign",
+            headers=headers,
+            json={
+                "source_type": "instagram",
+                "external_source_id": "carousel-123",
+                "content_types": ["image/jpeg", "image/png"],
+            },
+        )
+
+        assert ingested.status_code == 201
+        assert response.status_code == 200
+        uploads = response.json()["uploads"]
+        assert [item["file_key"] for item in uploads] == [
+            f"candidates/{candidate_id}/00.jpg",
+            f"candidates/{candidate_id}/01.png",
+        ]
+        assert {item["upload_url"] for item in uploads} == {
+            "https://s3.example.com/presigned"
+        }
+        assert {item["max_file_size_bytes"] for item in uploads} == {5 * 1024 * 1024}
+
+        candidate = await db_session.get(EventListingCandidate, candidate_id)
+        assert candidate is not None
+        assert candidate.image_keys == [
+            f"candidates/{candidate_id}/00.jpg",
+            f"candidates/{candidate_id}/01.png",
+        ]
+
+        detail = await credential_admin_client.get(f"/admin/candidates/{candidate_id}")
+        assert detail.json()["image_urls"][0].endswith(
+            f"/candidates/{candidate_id}/00.jpg"
+        )
+        assert "image_keys" not in detail.json()
+
+    async def test_image_presign_rejects_counts_outside_the_capture_cap(
+        self, credential_admin_client: AsyncClient
+    ):
+        _created, token = await _mint_credential(credential_admin_client)
+        headers = _api_key_headers(token)
+        empty = await credential_admin_client.post(
+            "/ingestion/event-candidates/images/presign",
+            headers=headers,
+            json={
+                "source_type": "instagram",
+                "external_source_id": "post-empty",
+                "content_types": [],
+            },
+        )
+        too_many = await credential_admin_client.post(
+            "/ingestion/event-candidates/images/presign",
+            headers=headers,
+            json={
+                "source_type": "instagram",
+                "external_source_id": "post-too-many",
+                "content_types": ["image/jpeg"] * 11,
+            },
+        )
+        unsupported_type = await credential_admin_client.post(
+            "/ingestion/event-candidates/images/presign",
+            headers=headers,
+            json={
+                "source_type": "instagram",
+                "external_source_id": "post-gif",
+                "content_types": ["image/gif"],
+            },
+        )
+
+        assert empty.status_code == 422
+        assert too_many.status_code == 422
+        assert unsupported_type.status_code == 422
+
+    async def test_ingestion_accepts_caption_only_and_rejects_image_keys(
+        self, credential_admin_client: AsyncClient
+    ):
+        _created, token = await _mint_credential(credential_admin_client)
+        headers = _api_key_headers(token)
+        caption_only = await credential_admin_client.post(
+            "/ingestion/event-candidates",
+            headers=headers,
+            json=_payload("post-caption-only"),
+        )
+        foreign_keys = await credential_admin_client.post(
+            "/ingestion/event-candidates",
+            headers=headers,
+            json={
+                **_payload("post-cdn"),
+                "image_keys": [
+                    "https://scontent.cdninstagram.com/v/t51.2885-15/poster.jpg"
+                ],
+            },
+        )
+
+        assert caption_only.status_code == 201
+        assert caption_only.json()["candidate"]["image_urls"] == []
+        assert foreign_keys.status_code == 422
 
 
 class TestAdminCandidateQueue:
@@ -304,7 +459,12 @@ class TestAdminCandidateQueue:
         admin_client: AsyncClient,
         db_session: AsyncSession,
     ):
-        candidate = EventListingCandidate(**_model_payload())
+        candidate_id = uuid.uuid4()
+        candidate = EventListingCandidate(
+            id=candidate_id,
+            **_model_payload(),
+            image_keys=[f"candidates/{candidate_id}/00.jpg"],
+        )
         db_session.add(candidate)
         await db_session.flush()
         actor_id = uuid.UUID("11111111-1111-1111-1111-111111111111")
@@ -326,6 +486,8 @@ class TestAdminCandidateQueue:
         data = response.json()
         assert data["id"] == str(candidate.id)
         assert data["description"] == candidate.description
+        assert "image_keys" not in data
+        assert data["image_urls"][0].endswith(f"/candidates/{candidate.id}/00.jpg")
         assert data["ingestion_audits"][0]["outcome"] == "created"
         assert data["ingestion_audits"][0]["actor_type"] == "api_key"
         assert data["ingestion_audits"][0]["actor_id"] == str(actor_id)

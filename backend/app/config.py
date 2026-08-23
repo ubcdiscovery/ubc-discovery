@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     s3_public_base_url: str = ""
     profile_photo_max_bytes: int = 512 * 1024
     event_image_max_bytes: int = 3 * 1024 * 1024
+    candidate_image_max_bytes: int = 5 * 1024 * 1024
 
     firebase_credentials_json: str = ""
     firebase_project_id: str = ""

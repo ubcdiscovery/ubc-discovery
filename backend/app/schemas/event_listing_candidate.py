@@ -8,25 +8,61 @@ from app.models.event_listing_candidate import (
     CandidateIngestionOutcome,
     CandidateStatus,
 )
+from app.schemas.user import PresignedUploadResponse
+from app.services.candidate_images import (
+    CANDIDATE_IMAGE_CONTENT_TYPES,
+    CANDIDATE_IMAGE_MAX_COUNT,
+)
 
 
-class EventListingCandidateIngestionRequest(BaseModel):
+class CandidateSourceIdentity(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
-    description: str = Field(default="", max_length=20_000)
-    source_account: str = Field(min_length=1, max_length=255)
-    source_url: str | None = Field(default=None, max_length=1024)
 
     source_type: str = Field(min_length=1, max_length=50)
     external_source_id: str = Field(min_length=1, max_length=512)
-    image_reference: str | None = Field(default=None, max_length=1024)
+
+    @field_validator("source_type", "external_source_id")
+    @classmethod
+    def strip_source_identity(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("field must contain text")
+        return value
+
+
+class CandidateImagePresignRequest(CandidateSourceIdentity):
+    content_types: list[str] = Field(min_length=1, max_length=CANDIDATE_IMAGE_MAX_COUNT)
+
+    @field_validator("content_types")
+    @classmethod
+    def validate_content_types(cls, value: list[str]) -> list[str]:
+        invalid = [
+            content_type
+            for content_type in value
+            if content_type not in CANDIDATE_IMAGE_CONTENT_TYPES
+        ]
+        if invalid:
+            raise ValueError(
+                "content_types must be image/jpeg, image/png, or image/webp"
+            )
+        return value
+
+
+class CandidateImagePresignResponse(BaseModel):
+    uploads: list[PresignedUploadResponse]
+
+
+class EventListingCandidateIngestionRequest(CandidateSourceIdentity):
+    description: str = Field(default="", max_length=20_000)
+    source_account: str = Field(min_length=1, max_length=255)
+    source_url: str | None = Field(default=None, max_length=1024)
 
     @field_validator("description")
     @classmethod
     def strip_description(cls, value: str) -> str:
         return value.strip()
 
-    @field_validator("source_account", "source_type", "external_source_id")
+    @field_validator("source_account")
     @classmethod
     def strip_required_text(cls, value: str) -> str:
         value = value.strip()
@@ -34,10 +70,7 @@ class EventListingCandidateIngestionRequest(BaseModel):
             raise ValueError("field must contain text")
         return value
 
-    @field_validator(
-        "source_url",
-        "image_reference",
-    )
+    @field_validator("source_url")
     @classmethod
     def strip_optional_text(cls, value: str | None) -> str | None:
         return value.strip() if value is not None else None
@@ -50,7 +83,7 @@ class EventListingCandidateResponse(BaseModel):
     source_url: str | None
     source_type: str
     external_source_id: str
-    image_reference: str | None
+    image_urls: list[str] = Field(default_factory=list)
     status: CandidateStatus
     created_at: datetime
     updated_at: datetime

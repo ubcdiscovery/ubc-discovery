@@ -6,7 +6,7 @@ export type AdminMockCandidate = {
   source_account: string;
   source_type: string;
   external_source_id: string;
-  image_reference: string | null;
+  image_urls: string[];
   status: "pending" | "approved" | "rejected";
   ingestion_audits: Array<{
     id: string;
@@ -28,7 +28,7 @@ export const mockCandidate: AdminMockCandidate = {
   source_url: "https://example.com/workshop",
   source_type: "instagram",
   external_source_id: "post-123",
-  image_reference: "instagram://media/post-123",
+  image_urls: ["https://cdn.example/candidates/candidate-1/00.jpg"],
   status: "pending",
   created_at: "2026-08-08T12:00:00Z",
   updated_at: "2026-08-08T12:00:00Z",

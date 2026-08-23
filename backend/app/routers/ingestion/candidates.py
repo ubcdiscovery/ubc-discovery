@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
 from app.dependencies import (
     CandidateIngestionCredential,
@@ -13,13 +14,57 @@ from app.models.event_listing_candidate import (
     EventListingCandidate,
     EventListingCandidateIngestionAudit,
 )
+from app.presenters.candidate import candidate_to_response
 from app.schemas.event_listing_candidate import (
+    CandidateImagePresignRequest,
+    CandidateImagePresignResponse,
     EventListingCandidateIngestionRequest,
     EventListingCandidateIngestionResponse,
-    EventListingCandidateResponse,
 )
+from app.schemas.user import PresignedUploadResponse
+from app.services import s3
+from app.services.candidate_images import candidate_image_key
 
 router = APIRouter(prefix="/event-candidates", tags=["Candidate Ingestion"])
+
+
+@router.post("/images/presign", response_model=CandidateImagePresignResponse)
+async def presign_candidate_images(
+    body: CandidateImagePresignRequest,
+    _credential: CandidateIngestionCredential = Depends(require_candidate_ingester),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(EventListingCandidate).where(
+            EventListingCandidate.source_type == body.source_type,
+            EventListingCandidate.external_source_id == body.external_source_id,
+        )
+    )
+    candidate = result.scalar_one_or_none()
+    if candidate is None:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    uploads = []
+    image_keys = []
+    for index, content_type in enumerate(body.content_types):
+        file_key = candidate_image_key(candidate.id, index, content_type)
+        url, fields, key = s3.generate_presigned_upload_url(
+            content_type=content_type,
+            file_key=file_key,
+            max_file_size_bytes=settings.candidate_image_max_bytes,
+        )
+        image_keys.append(key)
+        uploads.append(
+            PresignedUploadResponse(
+                upload_url=url,
+                fields=fields,
+                file_key=key,
+                max_file_size_bytes=settings.candidate_image_max_bytes,
+            )
+        )
+    candidate.image_keys = image_keys
+    await db.commit()
+    return CandidateImagePresignResponse(uploads=uploads)
 
 
 @router.post(
@@ -83,5 +128,5 @@ async def ingest_event_listing_candidate(
     return EventListingCandidateIngestionResponse(
         outcome=outcome,
         receipt_id=audit.id,
-        candidate=EventListingCandidateResponse.model_validate(candidate),
+        candidate=candidate_to_response(candidate),
     )

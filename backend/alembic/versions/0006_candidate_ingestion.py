@@ -22,7 +22,12 @@ def upgrade() -> None:
         sa.Column("source_url", sa.String(length=1024), nullable=True),
         sa.Column("source_type", sa.String(length=50), nullable=False),
         sa.Column("external_source_id", sa.String(length=512), nullable=False),
-        sa.Column("image_reference", sa.String(length=1024), nullable=True),
+        sa.Column(
+            "image_keys",
+            sa.JSON(),
+            server_default=sa.text("'[]'::json"),
+            nullable=False,
+        ),
         sa.Column(
             "status",
             sa.String(length=32),
