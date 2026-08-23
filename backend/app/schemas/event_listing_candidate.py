@@ -144,6 +144,27 @@ class EventListingCandidateDetailResponse(EventListingCandidateResponse):
     ingestion_audits: list[EventListingCandidateIngestionAuditResponse]
 
 
+class AdminCandidateListQuery(BaseModel):
+    q: str = ""
+    status: CandidateStatus | None = None
+    source_type: str | None = Field(default=None, min_length=1, max_length=50)
+    skip: int = Field(default=0, ge=0)
+    limit: int = Field(default=25, ge=1, le=100)
+
+    @field_validator("q")
+    @classmethod
+    def strip_search(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("source_type", mode="before")
+    @classmethod
+    def empty_source_as_none(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        stripped = value.strip()
+        return stripped or None
+
+
 class AdminEventListingCandidateListResponse(BaseModel):
     candidates: list[EventListingCandidateResponse]
     total: int
