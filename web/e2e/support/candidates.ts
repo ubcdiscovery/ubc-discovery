@@ -28,7 +28,9 @@ export const mockCandidate: AdminMockCandidate = {
   source_url: "https://example.com/workshop",
   source_type: "instagram",
   external_source_id: "post-123",
-  image_urls: ["https://cdn.example/candidates/candidate-1/00.jpg"],
+  image_urls: [
+    "https://s3.example.com/candidates/candidate-1/00.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=3600&X-Amz-Signature=mock",
+  ],
   status: "pending",
   created_at: "2026-08-08T12:00:00Z",
   updated_at: "2026-08-08T12:00:00Z",

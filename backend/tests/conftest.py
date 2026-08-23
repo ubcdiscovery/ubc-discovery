@@ -45,6 +45,18 @@ from app.models.audit_actor import AuditActorType
 from app.models.event import Event
 from app.models.user import User
 
+
+def _mock_presigned_download_url(
+    _client_method, Params=None, ExpiresIn=3600, HttpMethod=None
+):
+    key = (Params or {}).get("Key", "")
+    return (
+        f"https://s3.example.com/{key}"
+        f"?X-Amz-Algorithm=AWS4-HMAC-SHA256"
+        f"&X-Amz-Expires={ExpiresIn}&X-Amz-Signature=mock"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Engine (module-level singleton)
 # ---------------------------------------------------------------------------
@@ -182,6 +194,7 @@ def _mock_external_services():
                 "x-amz-signature": "mock-signature",
             },
         }
+        s3_client.generate_presigned_url.side_effect = _mock_presigned_download_url
 
         yield
 

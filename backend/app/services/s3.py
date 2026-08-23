@@ -6,6 +6,8 @@ from botocore.config import Config
 
 from app.config import settings
 
+PRESIGNED_DOWNLOAD_EXPIRES_IN = 3600
+
 
 @lru_cache
 def _client():
@@ -42,6 +44,18 @@ def generate_presigned_upload_url(
 
 def delete_object(file_key: str) -> None:
     _client().delete_object(Bucket=settings.s3_bucket_name, Key=file_key)
+
+
+def generate_presigned_download_url(
+    file_key: str,
+    *,
+    expires_in: int = PRESIGNED_DOWNLOAD_EXPIRES_IN,
+) -> str:
+    return _client().generate_presigned_url(
+        "get_object",
+        Params={"Bucket": settings.s3_bucket_name, "Key": file_key},
+        ExpiresIn=expires_in,
+    )
 
 
 def public_url(file_key: str) -> str:

@@ -10,7 +10,7 @@ from app.models.event_listing_candidate import (
     EventListingCandidate,
     EventListingCandidateIngestionAudit,
 )
-from app.presenters.candidate import candidate_to_response
+from app.presenters.candidate import admin_candidate_to_response
 from app.schemas.event_listing_candidate import (
     AdminCandidateListQuery,
     AdminEventListingCandidateListResponse,
@@ -61,7 +61,8 @@ async def list_admin_candidates(
     total = await db.scalar(count_query)
     return AdminEventListingCandidateListResponse(
         candidates=[
-            candidate_to_response(candidate) for candidate in result.scalars().all()
+            admin_candidate_to_response(candidate)
+            for candidate in result.scalars().all()
         ],
         total=total or 0,
     )
@@ -82,6 +83,6 @@ async def get_admin_candidate(
         .order_by(EventListingCandidateIngestionAudit.received_at.desc())
     )
     return EventListingCandidateDetailResponse(
-        **candidate_to_response(candidate).model_dump(),
+        **admin_candidate_to_response(candidate).model_dump(),
         ingestion_audits=audits_result.scalars().all(),
     )

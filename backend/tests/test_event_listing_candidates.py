@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from urllib.parse import parse_qs, urlparse
 
 from httpx import AsyncClient
 from sqlalchemy import func, select
@@ -48,6 +49,14 @@ async def _mint_credential(
 
 def _api_key_headers(token: str) -> dict[str, str]:
     return {"Authorization": f"Api-Key {token}"}
+
+
+def _assert_signed_image_url(url: str, file_key: str) -> None:
+    parsed = urlparse(url)
+    assert file_key in parsed.path
+    query = parse_qs(parsed.query)
+    assert query.get("X-Amz-Signature") == ["mock"]
+    assert query.get("X-Amz-Algorithm") == ["AWS4-HMAC-SHA256"]
 
 
 async def _insert_credential(
@@ -161,7 +170,7 @@ class TestCandidateIngestion:
         assert candidate.image_keys == []
         assert candidate.status == CandidateStatus.PENDING
         assert "image_keys" not in data["candidate"]
-        assert data["candidate"]["image_urls"] == []
+        assert "image_urls" not in data["candidate"]
 
         audit = await db_session.get(
             EventListingCandidateIngestionAudit, data["receipt_id"]
@@ -347,10 +356,20 @@ class TestCandidateIngestion:
         ]
 
         detail = await credential_admin_client.get(f"/admin/candidates/{candidate_id}")
-        assert detail.json()["image_urls"][0].endswith(
-            f"/candidates/{candidate_id}/00.jpg"
+        _assert_signed_image_url(
+            detail.json()["image_urls"][0],
+            f"candidates/{candidate_id}/00.jpg",
         )
         assert "image_keys" not in detail.json()
+
+        replay = await credential_admin_client.post(
+            "/ingestion/event-candidates",
+            headers=headers,
+            json=_payload("carousel-123"),
+        )
+        assert replay.status_code == 200
+        assert "image_urls" not in replay.json()["candidate"]
+        assert "X-Amz-Signature" not in replay.text
 
     async def test_image_presign_rejects_counts_outside_the_capture_cap(
         self, credential_admin_client: AsyncClient
@@ -411,7 +430,7 @@ class TestCandidateIngestion:
         )
 
         assert caption_only.status_code == 201
-        assert caption_only.json()["candidate"]["image_urls"] == []
+        assert "image_urls" not in caption_only.json()["candidate"]
         assert foreign_keys.status_code == 422
 
 
@@ -487,7 +506,10 @@ class TestAdminCandidateQueue:
         assert data["id"] == str(candidate.id)
         assert data["description"] == candidate.description
         assert "image_keys" not in data
-        assert data["image_urls"][0].endswith(f"/candidates/{candidate.id}/00.jpg")
+        _assert_signed_image_url(
+            data["image_urls"][0],
+            f"candidates/{candidate.id}/00.jpg",
+        )
         assert data["ingestion_audits"][0]["outcome"] == "created"
         assert data["ingestion_audits"][0]["actor_type"] == "api_key"
         assert data["ingestion_audits"][0]["actor_id"] == str(actor_id)
