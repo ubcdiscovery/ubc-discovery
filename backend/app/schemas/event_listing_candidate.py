@@ -83,7 +83,13 @@ class EventListingCandidateResponse(BaseModel):
     source_url: str | None
     source_type: str
     external_source_id: str
-    image_urls: list[str] = Field(default_factory=list)
+    image_urls: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Time-limited signed download URLs for ingested source images. "
+            "Empty when no images were uploaded."
+        ),
+    )
     status: CandidateStatus
     created_at: datetime
     updated_at: datetime

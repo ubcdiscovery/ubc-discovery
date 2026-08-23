@@ -83,3 +83,24 @@ def test_generate_presigned_upload_url_supports_candidate_image_key_and_size(
     assert kwargs["Key"] == "candidates/11111111-1111-1111-1111-111111111111/00.jpg"
     assert kwargs["Fields"]["Content-Type"] == "image/jpeg"
     assert ["content-length-range", 1, 5 * 1024 * 1024] in kwargs["Conditions"]
+
+
+def test_generate_presigned_download_url_signs_get_object(monkeypatch):
+    client = MagicMock()
+    client.generate_presigned_url.return_value = (
+        "https://s3.example.com/candidates/11111111-1111-1111-1111-111111111111/00.jpg"
+        "?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=3600&X-Amz-Signature=mock"
+    )
+    monkeypatch.setattr(s3, "_client", lambda: client)
+    monkeypatch.setattr(settings, "s3_bucket_name", "test-bucket")
+
+    file_key = "candidates/11111111-1111-1111-1111-111111111111/00.jpg"
+    url = s3.generate_presigned_download_url(file_key)
+
+    assert "X-Amz-Signature=mock" in url
+    assert file_key in url
+    client.generate_presigned_url.assert_called_once_with(
+        "get_object",
+        Params={"Bucket": "test-bucket", "Key": file_key},
+        ExpiresIn=3600,
+    )
