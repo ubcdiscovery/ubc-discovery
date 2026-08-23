@@ -16,14 +16,14 @@ import {
   validateAdminEventDraft,
   type AdminEventDraft,
 } from "~/lib/admin-events";
-import type { ApiEvent, CreateEventInput, UpdateEventInput } from "~/lib/api";
+import type { AdminApiEvent, CreateEventInput, UpdateEventInput } from "~/lib/api";
 import { SOURCES, VIBES } from "~/lib/constants";
 
 type AdminEventFormProps = {
-  event?: ApiEvent;
-  onSave?: (input: UpdateEventInput) => Promise<ApiEvent>;
-  onCreate?: (input: CreateEventInput) => Promise<ApiEvent>;
-  onUploadImage?: (file: File) => Promise<ApiEvent>;
+  event?: AdminApiEvent;
+  onSave?: (input: UpdateEventInput) => Promise<AdminApiEvent>;
+  onCreate?: (input: CreateEventInput, image?: File) => Promise<AdminApiEvent>;
+  onUploadImage?: (file: File) => Promise<AdminApiEvent>;
 };
 
 export function AdminEventForm({ event, onSave, onCreate, onUploadImage }: AdminEventFormProps) {
@@ -31,6 +31,8 @@ export function AdminEventForm({ event, onSave, onCreate, onUploadImage }: Admin
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const [imageResetKey, setImageResetKey] = useState(0);
 
   function updateDraft(update: Partial<AdminEventDraft>) {
     setDraft((current) => ({ ...current, ...update }));
@@ -48,6 +50,8 @@ export function AdminEventForm({ event, onSave, onCreate, onUploadImage }: Admin
 
   function resetDraft() {
     setDraft(event ? draftFromEvent(event) : emptyAdminEventDraft());
+    setPendingImage(null);
+    setImageResetKey((current) => current + 1);
     setError("");
     setSaved(false);
   }
@@ -66,7 +70,7 @@ export function AdminEventForm({ event, onSave, onCreate, onUploadImage }: Admin
     try {
       const updated = event
         ? await onSave?.(updateInputFromDraft(draft))
-        : await onCreate?.(createInputFromDraft(draft));
+        : await onCreate?.(createInputFromDraft(draft), pendingImage ?? undefined);
       if (!updated) throw new Error("Could not save Event Listing.");
       setDraft(draftFromEvent(updated));
       setSaved(true);
@@ -223,7 +227,7 @@ export function AdminEventForm({ event, onSave, onCreate, onUploadImage }: Admin
               </dl>
             ) : (
               <p className="text-sm text-ink-soft">
-                Save the listing first, then upload an image and manage its lifecycle.
+                This listing will appear in public discovery after you create it.
               </p>
             )}
 
@@ -244,7 +248,13 @@ export function AdminEventForm({ event, onSave, onCreate, onUploadImage }: Admin
           </CardContent>
         </Card>
 
-        {event && onUploadImage && <AdminEventImage event={event} onUpload={onUploadImage} />}
+        <AdminEventImage
+          key={imageResetKey}
+          title={event?.title || draft.title}
+          pictureUrl={event?.event_picture_url}
+          onUpload={onUploadImage}
+          onFileChange={event ? undefined : setPendingImage}
+        />
       </div>
     </form>
   );

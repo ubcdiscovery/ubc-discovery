@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/Table";
-import { api, type AdminEventStatus, type ApiEvent } from "~/lib/api";
+import { api, type AdminApiEvent, type AdminEventStatus } from "~/lib/api";
 import { SOURCES } from "~/lib/constants";
 
 const PAGE_SIZE = 25;
@@ -35,7 +35,7 @@ function formatEventDate(value: string | null) {
   });
 }
 
-function EventTable({ events }: { events: ApiEvent[] }) {
+function EventTable({ events }: { events: AdminApiEvent[] }) {
   return (
     <Table className="mt-4 border border-ink bg-surface text-left">
       <TableCaption className="sr-only">Canonical Event Listings</TableCaption>

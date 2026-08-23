@@ -8,15 +8,15 @@ from app.config import settings
 from app.database import get_db
 from app.dependencies import AdminActor, require_admin
 from app.models.event import Event
-from app.models.event_audit import EventAuditLog
-from app.presenters.event import event_image_key, event_to_response
+from app.models.event_audit import EventAuditAction, EventAuditLog
+from app.presenters.event import admin_event_to_response, event_image_key
 from app.schemas.event import (
     AdminEventListResponse,
+    AdminEventResponse,
     CreateEventRequest,
     EventAdminStatus,
     EventAuditListResponse,
     EventAuditResponse,
-    EventResponse,
     UpdateEventRequest,
 )
 from app.schemas.user import PresignedUploadResponse
@@ -45,7 +45,7 @@ def _event_snapshot(event: Event) -> dict:
         ),
         "is_archived": event.is_archived,
         "archived_at": event.archived_at.isoformat() if event.archived_at else None,
-        "archived_by": event.archived_by,
+        "archived_by": str(event.archived_by) if event.archived_by else None,
     }
 
 
@@ -53,14 +53,14 @@ def _add_audit(
     db: AsyncSession,
     event: Event,
     actor: AdminActor,
-    action: str,
+    action: EventAuditAction,
     snapshots: tuple[dict | None, dict | None],
 ) -> None:
     db.add(
         EventAuditLog(
             event_id=event.id,
             actor_type=actor.actor_type,
-            actor_id=str(actor.actor_id),
+            actor_id=actor.actor_id,
             action=action,
             before=snapshots[0],
             after=snapshots[1],
@@ -115,7 +115,7 @@ async def list_admin_events(
     )
     total = await db.scalar(count_query)
     return AdminEventListResponse(
-        events=[event_to_response(event) for event in result.scalars().all()],
+        events=[admin_event_to_response(event) for event in result.scalars().all()],
         total=total or 0,
     )
 
@@ -136,31 +136,21 @@ async def list_event_audit(
     )
     return EventAuditListResponse(
         entries=[
-            EventAuditResponse(
-                id=str(entry.id),
-                event_id=entry.event_id,
-                actor_type=entry.actor_type,
-                actor_id=entry.actor_id,
-                action=entry.action,
-                before=entry.before,
-                after=entry.after,
-                created_at=entry.created_at,
-            )
-            for entry in result.scalars().all()
+            EventAuditResponse.model_validate(entry) for entry in result.scalars().all()
         ]
     )
 
 
-@router.get("/{event_id}", response_model=EventResponse)
+@router.get("/{event_id}", response_model=AdminEventResponse)
 async def get_admin_event(event_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Event).where(Event.id == event_id))
     event = result.scalar_one_or_none()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-    return event_to_response(event)
+    return admin_event_to_response(event)
 
 
-@router.post("", response_model=EventResponse)
+@router.post("", response_model=AdminEventResponse)
 async def create_event(
     body: CreateEventRequest,
     db: AsyncSession = Depends(get_db),
@@ -170,13 +160,15 @@ async def create_event(
     db.add(event)
     await db.flush()
     await _update_embedding(event)
-    _add_audit(db, event, actor, "create", (None, _event_snapshot(event)))
+    _add_audit(
+        db, event, actor, EventAuditAction.CREATE, (None, _event_snapshot(event))
+    )
     await db.commit()
     await db.refresh(event)
-    return event_to_response(event)
+    return admin_event_to_response(event)
 
 
-@router.put("/{event_id}", response_model=EventResponse)
+@router.put("/{event_id}", response_model=AdminEventResponse)
 async def update_event(
     event_id: str,
     body: UpdateEventRequest,
@@ -218,11 +210,13 @@ async def update_event(
         await _update_embedding(event)
 
     if changes:
-        _add_audit(db, event, actor, "update", (before, _event_snapshot(event)))
+        _add_audit(
+            db, event, actor, EventAuditAction.UPDATE, (before, _event_snapshot(event))
+        )
     await db.commit()
     await db.refresh(event)
 
-    return event_to_response(event)
+    return admin_event_to_response(event)
 
 
 async def _set_archive_state(
@@ -237,12 +231,12 @@ async def _set_archive_state(
     before = _event_snapshot(event)
     event.is_archived = is_archived
     event.archived_at = datetime.now(UTC) if is_archived else None
-    event.archived_by = str(actor.actor_id) if is_archived else None
+    event.archived_by = actor.actor_id if is_archived else None
     _add_audit(
         db,
         event,
         actor,
-        "archive" if is_archived else "restore",
+        EventAuditAction.ARCHIVE if is_archived else EventAuditAction.RESTORE,
         (before, _event_snapshot(event)),
     )
     await db.commit()
@@ -250,7 +244,7 @@ async def _set_archive_state(
     return event
 
 
-@router.post("/{event_id}/archive", response_model=EventResponse)
+@router.post("/{event_id}/archive", response_model=AdminEventResponse)
 async def archive_event(
     event_id: str,
     db: AsyncSession = Depends(get_db),
@@ -260,10 +254,10 @@ async def archive_event(
     event = result.scalar_one_or_none()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-    return event_to_response(await _set_archive_state(event, db, actor, True))
+    return admin_event_to_response(await _set_archive_state(event, db, actor, True))
 
 
-@router.post("/{event_id}/restore", response_model=EventResponse)
+@router.post("/{event_id}/restore", response_model=AdminEventResponse)
 async def restore_event(
     event_id: str,
     db: AsyncSession = Depends(get_db),
@@ -273,7 +267,7 @@ async def restore_event(
     event = result.scalar_one_or_none()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-    return event_to_response(await _set_archive_state(event, db, actor, False))
+    return admin_event_to_response(await _set_archive_state(event, db, actor, False))
 
 
 @router.delete("/{event_id}", status_code=204)
@@ -314,8 +308,8 @@ async def get_event_presigned_upload(
         db,
         event,
         actor,
-        "image_upload",
-        ({"event_picture_key": file_key}, {"event_picture_key": file_key}),
+        EventAuditAction.IMAGE_UPLOAD,
+        (None, {"event_picture_key": file_key}),
     )
     await db.commit()
     return PresignedUploadResponse(

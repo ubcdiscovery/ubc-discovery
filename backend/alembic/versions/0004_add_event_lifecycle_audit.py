@@ -29,7 +29,7 @@ def upgrade() -> None:
     )
     op.add_column(
         "events",
-        sa.Column("archived_by", sa.String(length=255), nullable=True),
+        sa.Column("archived_by", postgresql.UUID(as_uuid=True), nullable=True),
     )
 
     op.create_table(
@@ -37,11 +37,9 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("event_id", sa.String(length=8), nullable=False),
         sa.Column("actor_type", sa.String(length=50), nullable=False),
-        sa.Column("actor_id", sa.String(length=255), nullable=True),
+        sa.Column("actor_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("action", sa.String(length=50), nullable=False),
-        sa.Column(
-            "before", postgresql.JSONB(astext_type=sa.Text()), nullable=True
-        ),
+        sa.Column("before", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("after", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column(
             "created_at",
@@ -49,15 +47,25 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["event_id"], ["events.id"], ondelete="CASCADE"),
+        sa.CheckConstraint(
+            "actor_type IN ('member', 'api_key')",
+            name="ck_event_audit_actor_type",
+        ),
+        sa.CheckConstraint(
+            "action IN ('create', 'update', 'image_upload', 'archive', 'restore')",
+            name="ck_event_audit_action",
+        ),
+        sa.ForeignKeyConstraint(["event_id"], ["events.id"], ondelete="RESTRICT"),
         sa.PrimaryKeyConstraint("id"),
     )
+    op.create_index("ix_event_audit_logs_event_id", "event_audit_logs", ["event_id"])
     op.create_index(
-        "ix_event_audit_logs_event_id", "event_audit_logs", ["event_id"]
+        "ix_event_audit_logs_created_at", "event_audit_logs", ["created_at"]
     )
 
 
 def downgrade() -> None:
+    op.drop_index("ix_event_audit_logs_created_at", table_name="event_audit_logs")
     op.drop_index("ix_event_audit_logs_event_id", table_name="event_audit_logs")
     op.drop_table("event_audit_logs")
     op.drop_column("events", "archived_by")

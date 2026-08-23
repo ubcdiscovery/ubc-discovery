@@ -61,6 +61,9 @@ class TestGetEvent:
         assert data["event_picture_url"].endswith(f"/event-pictures/{event.id}.webp")
         assert data["event_date"] is not None
         assert data["event_end_date"] is not None
+        assert "is_archived" not in data
+        assert "archived_at" not in data
+        assert "archived_by" not in data
 
     async def test_get_event_not_found(self, unauthed_client: AsyncClient):
         resp = await unauthed_client.get("/events/notfound")

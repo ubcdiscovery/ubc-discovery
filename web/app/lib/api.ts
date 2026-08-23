@@ -28,6 +28,9 @@ export interface ApiEvent {
   event_date: string | null;
   event_end_date: string | null;
   created_at: string;
+}
+
+export interface AdminApiEvent extends ApiEvent {
   is_archived: boolean;
   archived_at: string | null;
   archived_by: string | null;
@@ -35,10 +38,6 @@ export interface ApiEvent {
 
 export interface EventListResponse {
   events: ApiEvent[];
-}
-
-export interface AdminEventListResponse extends EventListResponse {
-  total: number;
 }
 
 export interface CreateEventInput {
@@ -70,17 +69,6 @@ export interface UpdateEventInput {
 }
 
 export type AdminEventStatus = "all" | "active" | "archived";
-
-export interface EventAuditEntry {
-  id: string;
-  event_id: string;
-  actor_type: string;
-  actor_id: string | null;
-  action: string;
-  before: Record<string, unknown> | null;
-  after: Record<string, unknown> | null;
-  created_at: string;
-}
 
 export interface UserResponse {
   id: string;
@@ -230,15 +218,42 @@ export const api = {
   admin: {
     events: {
       list: (q = "", skip = 0, limit = 25, status: AdminEventStatus = "all") =>
-        authenticatedApiFetch<AdminEventListResponse>(
+        authenticatedApiFetch<{ events: AdminApiEvent[]; total: number }>(
           `/admin/events?q=${encodeURIComponent(q)}&skip=${skip}&limit=${limit}&status=${status}`
         ),
-      get: (id: string) => authenticatedApiFetch<ApiEvent>(`/admin/events/${encodeURIComponent(id)}`),
-      create: (data: CreateEventInput) => authenticatedApiFetch<ApiEvent>("/admin/events", { method: "POST", body: JSON.stringify(data) }),
-      update: (id: string, data: UpdateEventInput) => authenticatedApiFetch<ApiEvent>(`/admin/events/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(data) }),
-      archive: (id: string) => authenticatedApiFetch<ApiEvent>(`/admin/events/${encodeURIComponent(id)}/archive`, { method: "POST" }),
-      restore: (id: string) => authenticatedApiFetch<ApiEvent>(`/admin/events/${encodeURIComponent(id)}/restore`, { method: "POST" }),
-      audit: (id: string) => authenticatedApiFetch<{ entries: EventAuditEntry[] }>(`/admin/events/${encodeURIComponent(id)}/audit`),
+      get: (id: string) =>
+        authenticatedApiFetch<AdminApiEvent>(`/admin/events/${encodeURIComponent(id)}`),
+      create: (data: CreateEventInput) =>
+        authenticatedApiFetch<AdminApiEvent>("/admin/events", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
+      update: (id: string, data: UpdateEventInput) =>
+        authenticatedApiFetch<AdminApiEvent>(`/admin/events/${encodeURIComponent(id)}`, {
+          method: "PUT",
+          body: JSON.stringify(data),
+        }),
+      archive: (id: string) =>
+        authenticatedApiFetch<AdminApiEvent>(`/admin/events/${encodeURIComponent(id)}/archive`, {
+          method: "POST",
+        }),
+      restore: (id: string) =>
+        authenticatedApiFetch<AdminApiEvent>(`/admin/events/${encodeURIComponent(id)}/restore`, {
+          method: "POST",
+        }),
+      audit: (id: string) =>
+        authenticatedApiFetch<{
+          entries: Array<{
+            id: string;
+            event_id: string;
+            actor_type: "member" | "api_key";
+            actor_id: string;
+            action: "create" | "update" | "image_upload" | "archive" | "restore";
+            before: Record<string, unknown> | null;
+            after: Record<string, unknown> | null;
+            created_at: string;
+          }>;
+        }>(`/admin/events/${encodeURIComponent(id)}/audit`),
       presignedUpload: (id: string) =>
         authenticatedApiFetch<PresignedUploadResponse>(
           `/admin/events/${encodeURIComponent(id)}/presigned-upload`,

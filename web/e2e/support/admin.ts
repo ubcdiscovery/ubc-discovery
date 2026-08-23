@@ -20,17 +20,23 @@ export function createAdminApiMock(options: {
 }) {
   let events = options.events;
   const auditEntries: Record<string, Array<Record<string, unknown>>> = {};
+  const adminActorId = "00000000-0000-0000-0000-000000000002";
 
-  function addAudit(eventId: string, action: string) {
+  function addAudit(
+    eventId: string,
+    action: string,
+    before: Record<string, unknown> | null = null,
+    after: Record<string, unknown> | null = null
+  ) {
     auditEntries[eventId] ??= [];
     auditEntries[eventId].push({
       id: `${eventId}-${auditEntries[eventId].length + 1}`,
       event_id: eventId,
       actor_type: "member",
-      actor_id: "admin-1",
+      actor_id: adminActorId,
       action,
-      before: null,
-      after: null,
+      before,
+      after,
       created_at: "2026-01-01T00:00:00Z",
     });
   }
@@ -75,7 +81,7 @@ export function createAdminApiMock(options: {
         archived_by: null,
       };
       events = [...events, event];
-      addAudit(event.id, "create");
+      addAudit(event.id, "create", null, { title: event.title, location_name: event.location_name });
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(event) });
       return true;
     }
@@ -113,7 +119,9 @@ export function createAdminApiMock(options: {
           ? { ...candidate, event_picture_url: `http://images.test/${eventId}.webp` }
           : candidate
       );
-      addAudit(eventId, "image_upload");
+      addAudit(eventId, "image_upload", null, {
+        event_picture_key: `event-pictures/${eventId}.webp`,
+      });
       await route.fulfill({ status: 204 });
       return true;
     }
@@ -139,8 +147,14 @@ export function createAdminApiMock(options: {
         return true;
       }
       options.onArchive?.(archived);
-      events = events.map((candidate) => candidate.id === eventId ? { ...candidate, is_archived: archived, archived_at: archived ? "2026-01-01T00:00:00Z" : null } : candidate);
-      addAudit(eventId, archived ? "archive" : "restore");
+      const previous = event;
+      events = events.map((candidate) => candidate.id === eventId ? { ...candidate, is_archived: archived, archived_at: archived ? "2026-01-01T00:00:00Z" : null, archived_by: archived ? adminActorId : null } : candidate);
+      addAudit(
+        eventId,
+        archived ? "archive" : "restore",
+        { is_archived: Boolean(previous.is_archived) },
+        { is_archived: archived }
+      );
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(events.find((candidate) => candidate.id === eventId)) });
       return true;
     }
@@ -169,7 +183,12 @@ export function createAdminApiMock(options: {
     const updated = event ? { ...event, ...body } : null;
     if (updated) {
       events = events.map((candidate) => candidate.id === eventId ? updated : candidate);
-      addAudit(eventId, "update");
+      addAudit(
+        eventId,
+        "update",
+        event ? { title: event.title, location_name: event.location_name } : null,
+        { title: updated.title, location_name: updated.location_name }
+      );
     }
     await route.fulfill({
       status: updated ? 200 : 404,

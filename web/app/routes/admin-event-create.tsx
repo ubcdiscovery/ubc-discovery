@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router";
 import { AdminEventForm } from "~/components/admin/AdminEventForm";
+import { uploadAdminEventImage } from "~/lib/admin-event-image";
 import { api, type CreateEventInput } from "~/lib/api";
 
 export function meta() {
@@ -9,8 +10,15 @@ export function meta() {
 export default function AdminEventCreate() {
   const navigate = useNavigate();
 
-  async function createEvent(input: CreateEventInput) {
+  async function createEvent(input: CreateEventInput, image?: File) {
     const created = await api.admin.events.create(input);
+    if (image) {
+      try {
+        await uploadAdminEventImage(created.id, image);
+      } catch {
+        /* Listing exists; image can be retried on the edit page. */
+      }
+    }
     await navigate(`/admin/events/${created.id}`);
     return created;
   }

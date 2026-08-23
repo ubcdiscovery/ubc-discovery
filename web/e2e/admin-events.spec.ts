@@ -134,6 +134,9 @@ test("administrator edits a canonical Event Listing", async ({ page }) => {
     club_name: null,
     vibes: ["social", "academic"],
   });
+  await expect(
+    page.getByRole("definition").filter({ hasText: /Campus Welcome\s*→\s*Updated Campus Welcome/ })
+  ).toBeVisible();
 });
 
 test("administrator uploads an Event Listing image", async ({ page }) => {
@@ -160,22 +163,33 @@ test("administrator uploads an Event Listing image", async ({ page }) => {
 
 test("administrator creates an Event Listing", async ({ page }) => {
   let created: Record<string, unknown> | undefined;
+  let uploads = 0;
   await mockApi(page, {
     profile: adminProfile,
     onAdminCreate: (body) => {
       created = body;
     },
+    onAdminImageUpload: () => uploads++,
   });
   await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
   await page.goto("/admin/events/new");
 
+  await expect(page.getByLabel("Choose image")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Upload image" })).toHaveCount(0);
+
   await page.getByLabel("Title").fill("New Campus Workshop");
   await page.getByLabel("Location text").fill("The Nest");
+  await page.getByLabel("Choose image").setInputFiles({
+    name: "poster.png",
+    mimeType: "image/png",
+    buffer: onePixelPng,
+  });
   await page.getByRole("button", { name: "Create Event Listing" }).click();
 
   await expect(page).toHaveURL("/admin/events/created-event");
   await expect(page.getByRole("heading", { name: "New Campus Workshop" })).toBeVisible();
   expect(created).toMatchObject({ title: "New Campus Workshop", location_name: "The Nest" });
+  expect(uploads).toBe(1);
 });
 
 test("administrator archives and restores an Event Listing", async ({ page }) => {
@@ -197,4 +211,25 @@ test("administrator archives and restores an Event Listing", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "Active Event Listing" })).toBeVisible();
   await expect(page.getByText("restore", { exact: true })).toBeVisible();
   expect(archiveStates).toEqual([true, false]);
+});
+
+test("administrator filters archived Event Listings", async ({ page }) => {
+  await mockApi(page, {
+    profile: adminProfile,
+    adminEvents: [
+      { ...mockEvent, title: "Active Mixer" },
+      { ...mockEvent, id: "event-2", title: "Old Mixer", is_archived: true },
+    ],
+  });
+  await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
+  await page.goto("/admin/events");
+
+  await expect(page.getByRole("link", { name: "Active Mixer" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Old Mixer" })).toBeVisible();
+
+  await page.getByRole("link", { name: "archived records" }).click();
+
+  await expect(page).toHaveURL(/status=archived/);
+  await expect(page.getByRole("link", { name: "Old Mixer" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Active Mixer" })).toHaveCount(0);
 });

@@ -1,10 +1,10 @@
-import { api, type ApiEvent } from "~/lib/api";
+import { api, type AdminApiEvent } from "~/lib/api";
 import { resizeImage } from "~/lib/image";
 
 const EVENT_IMAGE_MAX_SIZE_PX = 1600;
 const EVENT_IMAGE_QUALITY = 0.88;
 
-export async function uploadAdminEventImage(eventId: string, file: File): Promise<ApiEvent> {
+export async function uploadAdminEventImage(eventId: string, file: File): Promise<AdminApiEvent> {
   let image: Blob;
   try {
     image = await resizeImage(file, EVENT_IMAGE_MAX_SIZE_PX, EVENT_IMAGE_QUALITY);

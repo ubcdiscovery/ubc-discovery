@@ -1,7 +1,11 @@
+import uuid
 from datetime import datetime
 from typing import Any, Literal, Self
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.models.audit_actor import AuditActorType
+from app.models.event_audit import EventAuditAction
 
 EVENT_SOURCE_LABELS = ("ubc_official", "ams_club", "campus_community")
 EVENT_VIBES = (
@@ -33,11 +37,14 @@ class EventResponse(BaseModel):
     event_date: datetime | None
     event_end_date: datetime | None
     created_at: datetime
-    is_archived: bool
-    archived_at: datetime | None
-    archived_by: str | None
 
     model_config = {"from_attributes": True}
+
+
+class AdminEventResponse(EventResponse):
+    is_archived: bool
+    archived_at: datetime | None
+    archived_by: uuid.UUID | None
 
 
 class CreateEventRequest(BaseModel):
@@ -154,19 +161,21 @@ class EventListResponse(BaseModel):
 
 
 class AdminEventListResponse(BaseModel):
-    events: list[EventResponse]
+    events: list[AdminEventResponse]
     total: int
 
 
 class EventAuditResponse(BaseModel):
-    id: str
+    id: uuid.UUID
     event_id: str
-    actor_type: str
-    actor_id: str | None
-    action: str
+    actor_type: AuditActorType
+    actor_id: uuid.UUID
+    action: EventAuditAction
     before: dict[str, Any] | None
     after: dict[str, Any] | None
     created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EventAuditListResponse(BaseModel):

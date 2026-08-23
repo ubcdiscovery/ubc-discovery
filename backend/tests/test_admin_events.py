@@ -2,16 +2,21 @@
 
 from datetime import datetime, timedelta
 from unittest.mock import patch
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
+import pytest
 from httpx import AsyncClient
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.constants import EVENT_EMBEDDING_DIMENSIONS
 from app.models.event import Event
+from app.models.event_audit import EventAuditLog
 from app.models.user import User
 
 ADMIN_HEADERS = {"Authorization": "Bearer test-token"}
+ADMIN_ACTOR_ID = "00000000-0000-0000-0000-000000000002"
 
 
 def _test_embedding(first_value: float = 0.0) -> list[float]:
@@ -246,6 +251,17 @@ class TestCreateAdminEvent:
         assert data["source"] == "manual"
         assert data["source_label"] == "ams_club"
         assert data["vibes"] == ["career", "social"]
+        assert data["is_archived"] is False
+        assert data["archived_by"] is None
+
+        audit = await admin_client.get(f"/admin/events/{data['id']}/audit")
+        assert audit.status_code == 200
+        entry = audit.json()["entries"][0]
+        assert entry["action"] == "create"
+        assert entry["actor_type"] == "member"
+        assert entry["actor_id"] == ADMIN_ACTOR_ID
+        assert entry["before"] is None
+        assert entry["after"]["title"] == "My New Event"
 
     async def test_create_event_writes_json_and_vector_embeddings(
         self, admin_client: AsyncClient, db_session: AsyncSession
@@ -419,10 +435,17 @@ class TestArchiveAdminEvent:
         await db_session.refresh(event)
         assert event.is_archived is True
         assert event.archived_at is not None
+        assert event.archived_by == UUID(ADMIN_ACTOR_ID)
 
         public_resp = await admin_client.get(f"/admin/events/{event_id}/audit")
         assert public_resp.status_code == 200
-        assert public_resp.json()["entries"][-1]["action"] == "archive"
+        entry = public_resp.json()["entries"][-1]
+        assert entry["action"] == "archive"
+        assert entry["actor_type"] == "member"
+        assert entry["actor_id"] == ADMIN_ACTOR_ID
+        assert entry["before"]["is_archived"] is False
+        assert entry["after"]["is_archived"] is True
+        assert entry["after"]["archived_by"] == ADMIN_ACTOR_ID
 
     async def test_archive_and_restore_are_explicit_and_audited(
         self, admin_client: AsyncClient, sample_events: list[Event]
@@ -432,17 +455,37 @@ class TestArchiveAdminEvent:
         archived = await admin_client.post(f"/admin/events/{event.id}/archive")
         assert archived.status_code == 200
         assert archived.json()["is_archived"] is True
+        assert archived.json()["archived_by"] == ADMIN_ACTOR_ID
 
         restored = await admin_client.post(f"/admin/events/{event.id}/restore")
         assert restored.status_code == 200
         assert restored.json()["is_archived"] is False
+        assert restored.json()["archived_by"] is None
 
         audit = await admin_client.get(f"/admin/events/{event.id}/audit")
         assert audit.status_code == 200
-        assert [entry["action"] for entry in audit.json()["entries"][-2:]] == [
-            "archive",
-            "restore",
-        ]
+        entries = audit.json()["entries"][-2:]
+        assert [entry["action"] for entry in entries] == ["archive", "restore"]
+        assert all(entry["actor_id"] == ADMIN_ACTOR_ID for entry in entries)
+        assert entries[1]["before"]["is_archived"] is True
+        assert entries[1]["after"]["is_archived"] is False
+
+    async def test_audit_action_check_rejects_unknown_values(
+        self, db_session: AsyncSession, sample_events: list[Event]
+    ):
+        with pytest.raises(IntegrityError):
+            async with db_session.begin_nested():
+                db_session.add(
+                    EventAuditLog(
+                        event_id=sample_events[0].id,
+                        actor_type="member",
+                        actor_id=UUID(ADMIN_ACTOR_ID),
+                        action="unknown",
+                    )
+                )
+                await db_session.flush()
+
+
 class TestAdminEventPresignedUpload:
     async def test_get_event_presigned_upload_url(
         self, admin_client: AsyncClient, sample_events: list[Event]
@@ -456,7 +499,14 @@ class TestAdminEventPresignedUpload:
         assert data["max_file_size_bytes"] == 3 * 1024 * 1024
 
         audit = await admin_client.get(f"/admin/events/{event.id}/audit")
-        assert audit.json()["entries"][-1]["action"] == "image_upload"
+        entry = audit.json()["entries"][-1]
+        assert entry["action"] == "image_upload"
+        assert entry["actor_type"] == "member"
+        assert entry["actor_id"] == ADMIN_ACTOR_ID
+        assert entry["before"] is None
+        assert entry["after"] == {
+            "event_picture_key": f"event-pictures/{event.id}.webp"
+        }
 
     async def test_event_presigned_upload_not_found(self, admin_client: AsyncClient):
         resp = await admin_client.post("/admin/events/notfound/presigned-upload")

@@ -261,9 +261,7 @@ class TestForYou:
         archived.is_archived = True
         await db_session.flush()
 
-        response = await client.get(
-            "/recommendations/events/for-you", params={"n": 5}
-        )
+        response = await client.get("/recommendations/events/for-you", params={"n": 5})
 
         assert response.status_code == 200
         assert archived.id not in {item["id"] for item in response.json()["events"]}

@@ -99,9 +99,7 @@ async def get_for_you(
         if taste:
             candidates_result = await db.execute(
                 select(Event)
-                .where(
-                    Event.id.notin_(saved_event_ids), Event.is_archived.is_(False)
-                )
+                .where(Event.id.notin_(saved_event_ids), Event.is_archived.is_(False))
                 .order_by(Event.event_date.desc().nullslast())
                 .limit(200)
             )

@@ -3,6 +3,7 @@ import { useParams } from "react-router";
 import { AdminEventForm } from "~/components/admin/AdminEventForm";
 import { Alert } from "~/components/ui/Alert";
 import { Button } from "~/components/ui/Button";
+import { auditFieldChanges } from "~/lib/admin-events";
 import { api, type UpdateEventInput } from "~/lib/api";
 import { uploadAdminEventImage } from "~/lib/admin-event-image";
 
@@ -30,6 +31,7 @@ export default function AdminEventEdit() {
     const updated = await api.admin.events.update(id, input);
     queryClient.setQueryData(["admin-event", id], updated);
     await queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+    await queryClient.invalidateQueries({ queryKey: ["admin-event-audit", id] });
     return updated;
   }
 
@@ -37,6 +39,7 @@ export default function AdminEventEdit() {
     const updated = await uploadAdminEventImage(id, file);
     queryClient.setQueryData(["admin-event", id], updated);
     await queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+    await queryClient.invalidateQueries({ queryKey: ["admin-event-audit", id] });
     return updated;
   }
 
@@ -100,15 +103,38 @@ export default function AdminEventEdit() {
                   <p className="mt-4 text-sm text-muted">Loading history…</p>
                 ) : auditQuery.data?.entries.length ? (
                   <ol className="mt-4 grid gap-3">
-                    {auditQuery.data.entries.map((entry) => (
-                      <li key={entry.id} className="border-b border-rule-soft pb-3 text-sm">
-                        <div className="flex justify-between gap-3 font-mono text-xs uppercase tracking-wide">
-                          <span className="font-bold text-ink">{entry.action.replaceAll("_", " ")}</span>
-                          <time dateTime={entry.created_at} className="text-muted">{new Date(entry.created_at).toLocaleString()}</time>
-                        </div>
-                        <p className="mt-1 text-ink-soft">Actor: {entry.actor_type}{entry.actor_id ? ` · ${entry.actor_id}` : ""}</p>
-                      </li>
-                    ))}
+                    {auditQuery.data.entries.map((entry) => {
+                      const changes = auditFieldChanges(entry.before, entry.after);
+                      return (
+                        <li key={entry.id} className="border-b border-rule-soft pb-3 text-sm">
+                          <div className="flex justify-between gap-3 font-mono text-xs uppercase tracking-wide">
+                            <span className="font-bold text-ink">{entry.action.replaceAll("_", " ")}</span>
+                            <time dateTime={entry.created_at} className="text-muted">
+                              {new Date(entry.created_at).toLocaleString()}
+                            </time>
+                          </div>
+                          <p className="mt-1 text-ink-soft">
+                            Actor: {entry.actor_type} · {entry.actor_id}
+                          </p>
+                          {changes.length > 0 ? (
+                            <dl className="mt-2 grid gap-1">
+                              {changes.map((change) => (
+                                <div key={`${entry.id}-${change.field}`}>
+                                  <dt className="font-mono text-2xs uppercase tracking-wide text-muted">
+                                    {change.field}
+                                  </dt>
+                                  <dd className="text-ink-soft">
+                                    <span>{change.from}</span>
+                                    <span className="mx-1 text-muted"> → </span>
+                                    <span>{change.to}</span>
+                                  </dd>
+                                </div>
+                              ))}
+                            </dl>
+                          ) : null}
+                        </li>
+                      );
+                    })}
                   </ol>
                 ) : (
                   <p className="mt-4 text-sm text-muted">No recorded changes yet.</p>

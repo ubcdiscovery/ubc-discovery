@@ -85,3 +85,39 @@ export function updateInputFromDraft(draft: AdminEventDraft): UpdateEventInput {
 export function createInputFromDraft(draft: AdminEventDraft): CreateEventInput {
   return updateInputFromDraft(draft) as CreateEventInput;
 }
+
+export type AuditFieldChange = {
+  field: string;
+  from: string;
+  to: string;
+};
+
+function formatAuditValue(value: unknown): string {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "boolean") return value ? "yes" : "no";
+  if (typeof value === "string") return value || "—";
+  if (typeof value === "number") return String(value);
+  if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
+    return value.length ? value.join(", ") : "—";
+  }
+  return JSON.stringify(value);
+}
+
+export function auditFieldChanges(
+  before: Record<string, unknown> | null,
+  after: Record<string, unknown> | null
+): AuditFieldChange[] {
+  const keys = [...new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})])];
+  return keys.flatMap((field) => {
+    const fromValue = before?.[field];
+    const toValue = after?.[field];
+    if (JSON.stringify(fromValue) === JSON.stringify(toValue)) return [];
+    return [
+      {
+        field: field.replaceAll("_", " "),
+        from: formatAuditValue(fromValue),
+        to: formatAuditValue(toValue),
+      },
+    ];
+  });
+}
