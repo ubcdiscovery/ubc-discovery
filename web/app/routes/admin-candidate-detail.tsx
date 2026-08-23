@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 import { Alert } from "~/components/ui/Alert";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/Card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/Table";
@@ -139,8 +139,6 @@ export default function AdminCandidateDetail() {
           </Table>
         </CardContent>
       </Card>
-
-      <Link to="/admin/candidates" className="mt-6 inline-block font-mono text-xs font-bold uppercase tracking-wide text-accent underline">Candidate queue</Link>
     </div>
   );
 }

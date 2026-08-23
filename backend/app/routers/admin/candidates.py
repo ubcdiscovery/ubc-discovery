@@ -23,7 +23,7 @@ router = APIRouter(
 
 
 @router.get("", response_model=AdminEventListingCandidateListResponse)
-async def list_admin_candidates(  # noqa: PLR0913
+async def list_admin_candidates(
     q: str = Query(default=""),
     status: CandidateStatus | None = Query(default=None),
     source_type: str | None = Query(default=None, min_length=1, max_length=50),
@@ -49,14 +49,14 @@ async def list_admin_candidates(  # noqa: PLR0913
     if source_type is not None:
         conditions.append(EventListingCandidate.source_type == source_type)
 
-    events_query = select(EventListingCandidate)
+    candidates_query = select(EventListingCandidate)
     count_query = select(func.count()).select_from(EventListingCandidate)
     if conditions:
-        events_query = events_query.where(*conditions)
+        candidates_query = candidates_query.where(*conditions)
         count_query = count_query.where(*conditions)
 
     result = await db.execute(
-        events_query.order_by(
+        candidates_query.order_by(
             EventListingCandidate.created_at.desc(),
             EventListingCandidate.id.desc(),
         )

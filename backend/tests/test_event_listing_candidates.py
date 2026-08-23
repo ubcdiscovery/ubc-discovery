@@ -94,7 +94,7 @@ class TestCandidateIngestionAuthorization:
         )
         wrong_scheme = await unauthed_client.post(
             "/ingestion/event-candidates",
-            headers={"Authorization": "Candidate-Key leftover-env-key"},
+            headers={"Authorization": "Bearer leftover"},
             json=_payload("post-wrong-scheme"),
         )
         malformed = await unauthed_client.post(
