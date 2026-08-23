@@ -15,8 +15,13 @@ export default function AdminEventCreate() {
     if (image) {
       try {
         await uploadAdminEventImage(created.id, image);
-      } catch {
-        /* Listing exists; image can be retried on the edit page. */
+      } catch (cause) {
+        const message =
+          cause instanceof Error ? cause.message : "Could not upload event image.";
+        await navigate(`/admin/events/${created.id}`, {
+          state: { imageUploadError: message },
+        });
+        return created;
       }
     }
     await navigate(`/admin/events/${created.id}`);

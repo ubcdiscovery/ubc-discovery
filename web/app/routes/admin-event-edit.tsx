@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "react-router";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { AdminEventForm } from "~/components/admin/AdminEventForm";
 import { Alert } from "~/components/ui/Alert";
 import { Button } from "~/components/ui/Button";
@@ -11,9 +12,20 @@ export function meta() {
   return [{ title: "Edit Event Listing — UBC Discovery Admin" }];
 }
 
+function readImageUploadError(value: unknown): string | null {
+  if (typeof value !== "object" || value === null || !("imageUploadError" in value)) {
+    return null;
+  }
+  const message = value.imageUploadError;
+  return typeof message === "string" && message.length > 0 ? message : null;
+}
+
 export default function AdminEventEdit() {
   const { id = "" } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const eventQuery = useQuery({
     queryKey: ["admin-event", id],
     queryFn: () => api.admin.events.get(id),
@@ -26,6 +38,14 @@ export default function AdminEventEdit() {
     enabled: Boolean(id),
     retry: false,
   });
+
+  useEffect(() => {
+    const message = readImageUploadError(location.state);
+    if (!message) return;
+
+    setImageUploadError(message);
+    void navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+  }, [location.pathname, location.search, location.state, navigate]);
 
   async function saveEvent(input: UpdateEventInput) {
     const updated = await api.admin.events.update(id, input);
@@ -40,6 +60,7 @@ export default function AdminEventEdit() {
     queryClient.setQueryData(["admin-event", id], updated);
     await queryClient.invalidateQueries({ queryKey: ["admin-events"] });
     await queryClient.invalidateQueries({ queryKey: ["admin-event-audit", id] });
+    setImageUploadError(null);
     return updated;
   }
 
@@ -74,6 +95,12 @@ export default function AdminEventEdit() {
             </h1>
           </div>
           <div className="mt-6">
+            {imageUploadError ? (
+              <Alert variant="error" className="mb-6">
+                Event Listing created, but the image could not be uploaded: {imageUploadError} Choose
+                an image below and try again.
+              </Alert>
+            ) : null}
             <AdminEventForm
               key={eventQuery.data.id}
               event={eventQuery.data}

@@ -17,6 +17,7 @@ export function createAdminApiMock(options: {
   onUpdate?: (body: Record<string, unknown>) => void;
   onImageUpload?: () => void;
   updateError?: { status: number; detail: string };
+  imageUploadError?: { status: number; detail: string };
 }) {
   let events = options.events;
   const auditEntries: Record<string, Array<Record<string, unknown>>> = {};
@@ -90,6 +91,14 @@ export function createAdminApiMock(options: {
     if (presignedPath && route.request().method() === "POST") {
       const eventId = decodeURIComponent(presignedPath[1]);
       const event = events.find((candidate) => candidate.id === eventId);
+      if (options.imageUploadError) {
+        await route.fulfill({
+          status: options.imageUploadError.status,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: options.imageUploadError.detail }),
+        });
+        return true;
+      }
       await route.fulfill({
         status: event ? 200 : 404,
         contentType: "application/json",

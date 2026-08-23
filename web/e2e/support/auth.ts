@@ -77,6 +77,7 @@ export async function mockApi(
     onAdminArchive?: (archived: boolean) => void;
     onAdminUpdate?: (body: Record<string, unknown>) => void;
     onAdminImageUpload?: () => void;
+    adminImageUploadError?: { status: number; detail: string };
     adminUpdateError?: { status: number; detail: string };
     adminApiKeys?: AdminMockApiCredential[];
     onApiKeyCreate?: (body: Record<string, unknown>) => void;
@@ -94,6 +95,7 @@ export async function mockApi(
     onUpdate: options.onAdminUpdate,
     onImageUpload: options.onAdminImageUpload,
     updateError: options.adminUpdateError,
+    imageUploadError: options.adminImageUploadError,
   });
   const handleApiKeys = createApiKeysMock({
     apiKeys: options.adminApiKeys,

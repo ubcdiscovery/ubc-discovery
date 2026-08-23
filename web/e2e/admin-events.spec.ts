@@ -192,6 +192,30 @@ test("administrator creates an Event Listing", async ({ page }) => {
   expect(uploads).toBe(1);
 });
 
+test("administrator sees image upload failure after creating an Event Listing", async ({ page }) => {
+  await mockApi(page, {
+    profile: adminProfile,
+    adminImageUploadError: { status: 500, detail: "Upload failed" },
+  });
+  await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
+  await page.goto("/admin/events/new");
+
+  await page.getByLabel("Title").fill("Poster Pending Workshop");
+  await page.getByLabel("Location text").fill("The Nest");
+  await page.getByLabel("Choose image").setInputFiles({
+    name: "poster.png",
+    mimeType: "image/png",
+    buffer: onePixelPng,
+  });
+  await page.getByRole("button", { name: "Create Event Listing" }).click();
+
+  await expect(page).toHaveURL("/admin/events/created-event");
+  await expect(page.getByRole("alert")).toContainText(
+    "Event Listing created, but the image could not be uploaded"
+  );
+  await expect(page.getByLabel("Choose image")).toBeVisible();
+});
+
 test("administrator archives and restores an Event Listing", async ({ page }) => {
   const events = [{ ...mockEvent, is_archived: false }];
   const archiveStates: boolean[] = [];
