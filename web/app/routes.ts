@@ -27,5 +27,7 @@ export default [
     route("api-keys", "routes/admin-api-keys.tsx"),
     route("events/new", "routes/admin-event-create.tsx"),
     route("events/:id", "routes/admin-event-edit.tsx"),
+    route("candidates", "routes/admin-candidates.tsx"),
+    route("candidates/:id", "routes/admin-candidate-detail.tsx"),
   ]),
 ] satisfies RouteConfig;

@@ -204,9 +204,3 @@ Domain expert: "No, not in the current product model. For You is a signed-in mod
 
 Dev: "Can Members review events?"
 Domain expert: "Members can rate events, but in v1 ratings are framed as recommendation input, not public reviews. The data is collected for future public display on recurring events."
-
-Dev: "Should V1 include the native mobile app?"
-Domain expert: "No. V1 is web-first using React Router 7 with SSR. Native app adds install friction and delays launch."
-
-Dev: "How does event content get onto the platform?"
-Domain expert: "Instagram scraping with LLM extraction into structured Event Listings. High-confidence extractions auto-publish; low-confidence ones go to an admin review queue."

@@ -13,6 +13,21 @@ shown only in the generation response and page state. Copy it immediately into
 the integration's secret store. The credential list never returns the raw token
 or its hash.
 
+Submit Candidate source captures with that token, then upload still images:
+
+    curl -X POST \
+      -H 'Authorization: Api-Key ubc_live_<credential-id>.<random-secret>' \
+      -H 'Content-Type: application/json' \
+      https://api.example/ingestion/event-candidates
+
+    curl -X POST \
+      -H 'Authorization: Api-Key ubc_live_<credential-id>.<random-secret>' \
+      -H 'Content-Type: application/json' \
+      -d '{"source_type":"instagram","external_source_id":"post-123","content_types":["image/jpeg","image/png"]}' \
+      https://api.example/ingestion/event-candidates/images/presign
+
+POST each returned target to S3 using the matching `image/jpeg`, `image/png`, or `image/webp` content type (5MB maximum). Object keys are bound to the Candidate id.
+
 ## Rotation and revocation
 
 Generate a new credential before changing the integration, verify that the
