@@ -181,15 +181,16 @@ class TestCandidateExtraction:
         self, db_session: AsyncSession, monkeypatch
     ):
         monkeypatch.setattr(settings, "extraction_quiet_seconds", 10_000)
+        pack = settings.extraction_batch_size
         now = datetime.now(UTC)
-        for _ in range(5):
+        for _ in range(pack):
             candidate = await _insert_candidate(db_session)
             await enqueue_extraction_job(
                 db_session, candidate.id, delay_seconds=0, now=now
             )
-        assert await jobs_to_claim_count(db_session, now=now) == 5
-        jobs = await claim_jobs(db_session, 5, now=now)
-        assert len(jobs) == 5
+        assert await jobs_to_claim_count(db_session, now=now) == pack
+        jobs = await claim_jobs(db_session, pack, now=now)
+        assert len(jobs) == pack
 
     async def test_leftover_pack_waits_for_quiet(
         self, db_session: AsyncSession, monkeypatch
