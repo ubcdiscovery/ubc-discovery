@@ -56,6 +56,7 @@ class EventListingCandidateIngestionRequest(CandidateSourceIdentity):
     description: str = Field(default="", max_length=20_000)
     source_account: str = Field(min_length=1, max_length=255)
     source_url: str | None = Field(default=None, max_length=1024)
+    posted_at: datetime | None = None
 
     @field_validator("description")
     @classmethod
@@ -98,6 +99,18 @@ class EventListingCandidateAdminResponse(EventListingCandidateResponse):
             "Empty when no images were uploaded."
         ),
     )
+    posted_at: datetime | None = None
+    is_event: bool | None = None
+    title: str | None = None
+    location_name: str | None = None
+    event_date: datetime | None = None
+    event_end_date: datetime | None = None
+    club_name: str | None = None
+    vibes: list[str] = Field(default_factory=list)
+    source_label: str | None = None
+    extracted_original: dict | list | None = None
+    extraction_model: str | None = None
+    extracted_at: datetime | None = None
 
 
 class EventListingCandidateIngestionAuditResponse(BaseModel):

@@ -209,10 +209,11 @@ class TestCandidateIngestion:
             "A useful campus event description."
         )
 
+        candidate_id = first.json()["candidate"]["id"]
         audits = await db_session.scalars(
-            select(EventListingCandidateIngestionAudit).order_by(
-                EventListingCandidateIngestionAudit.received_at
-            )
+            select(EventListingCandidateIngestionAudit)
+            .where(EventListingCandidateIngestionAudit.candidate_id == candidate_id)
+            .order_by(EventListingCandidateIngestionAudit.received_at)
         )
         assert [audit.outcome for audit in audits.all()] == [
             CandidateIngestionOutcome.CREATED,
@@ -309,7 +310,9 @@ class TestCandidateIngestion:
 
         assert missing.status_code == 404
         existing = await db_session.scalar(
-            select(func.count()).select_from(EventListingCandidate)
+            select(func.count())
+            .select_from(EventListingCandidate)
+            .where(EventListingCandidate.external_source_id == "carousel-123")
         )
         assert existing == 0
 
@@ -444,7 +447,7 @@ class TestAdminCandidateQueue:
             EventListingCandidate(
                 description=f"Queue Candidate {index}",
                 source_account="ubcams",
-                source_type="instagram" if index < 2 else "calendar",
+                source_type="instagram-queue" if index < 2 else "calendar-queue",
                 external_source_id=f"queue-{index}",
                 status=(
                     CandidateStatus.PENDING if index < 2 else CandidateStatus.REJECTED
@@ -461,7 +464,7 @@ class TestAdminCandidateQueue:
             "/admin/candidates",
             params={
                 "status": "pending",
-                "source_type": "instagram",
+                "source_type": "instagram-queue",
                 "skip": 1,
                 "limit": 1,
             },
@@ -471,7 +474,7 @@ class TestAdminCandidateQueue:
         data = response.json()
         assert data["total"] == 2
         assert len(data["candidates"]) == 1
-        assert data["candidates"][0]["source_type"] == "instagram"
+        assert data["candidates"][0]["source_type"] == "instagram-queue"
 
     async def test_admin_can_inspect_candidate_and_audit_history(
         self,

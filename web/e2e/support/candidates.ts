@@ -48,6 +48,24 @@ export const mockCandidate: AdminMockCandidate = {
   ],
 };
 
+export const mockExtractedCandidate: AdminMockCandidate = {
+  ...mockCandidate,
+  id: "candidate-extracted",
+  source_account: "extractedclub",
+  external_source_id: "post-extracted",
+  is_event: true,
+  title: "Club Night",
+  location_name: "The Nest",
+  event_date: "2026-09-04T20:00:00Z",
+  event_end_date: null,
+  club_name: "UBC AMS",
+  vibes: ["social"],
+  source_label: "ams_club",
+  extracted_original: { is_event: true, title: "Club Night" },
+  extraction_model: "gpt-5.6-luna",
+  extracted_at: "2026-08-08T12:05:00Z",
+};
+
 export function createCandidatesMock(options: {
   candidates?: AdminMockCandidate[];
   onList?: (filters: { q: string; status: string; sourceType: string }) => void;

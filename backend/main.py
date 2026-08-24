@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -19,6 +20,7 @@ from app.routers import (
     saved_events,
     users,
 )
+from app.services.extraction.worker import run_extraction_worker
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +38,15 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("FIREBASE_CREDENTIALS_JSON not set — Firebase auth disabled")
 
+    stop = asyncio.Event()
+    worker_task = None
+    if settings.extraction_enabled:
+        worker_task = asyncio.create_task(run_extraction_worker(stop))
+        logger.info("Candidate extraction worker scheduled")
     yield
+    stop.set()
+    if worker_task is not None:
+        await worker_task
     await engine.dispose()
 
 

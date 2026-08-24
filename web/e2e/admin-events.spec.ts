@@ -6,7 +6,7 @@ import {
   mockEvent,
   setAuthenticatedUser,
 } from "./support/auth";
-import { mockCandidate } from "./support/candidates";
+import { mockCandidate, mockExtractedCandidate } from "./support/candidates";
 
 const onePixelPng = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
@@ -288,8 +288,29 @@ test("administrator filters and inspects an Event Listing Candidate", async ({ p
   await expect(
     page.getByRole("img", { name: `Source image 1 for ${mockCandidate.source_account}` })
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Extraction output" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Classification" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Extracted original" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Current draft" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Extraction metadata" })).toHaveCount(0);
   await expect(page.getByText("created", { exact: true })).toBeVisible();
   await expect(page.getByText("Campus importer", { exact: true })).toBeVisible();
+});
+
+test("administrator inspects extracted Candidate draft fields", async ({ page }) => {
+  await mockApi(page, {
+    profile: adminProfile,
+    adminCandidates: [mockExtractedCandidate],
+  });
+  await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
+
+  await page.goto("/admin/candidates");
+  await expect(page.getByText("event", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: mockExtractedCandidate.source_account }).click();
+
+  await expect(page.getByRole("heading", { name: "Classification" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Extracted original" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Current draft" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Extraction metadata" })).toBeVisible();
+  await expect(page.getByText("Club Night", { exact: true })).toBeVisible();
+  await expect(page.getByText("gpt-5.6-luna", { exact: true })).toBeVisible();
 });

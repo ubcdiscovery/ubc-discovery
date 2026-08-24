@@ -24,6 +24,7 @@ from app.schemas.event_listing_candidate import (
 from app.schemas.user import PresignedUploadResponse
 from app.services import s3
 from app.services.candidate_images import candidate_image_key
+from app.services.extraction.jobs import enqueue_extraction_job
 
 router = APIRouter(prefix="/event-candidates", tags=["Candidate Ingestion"])
 
@@ -63,6 +64,11 @@ async def presign_candidate_images(
             )
         )
     candidate.image_keys = image_keys
+    await enqueue_extraction_job(
+        db,
+        candidate.id,
+        delay_seconds=settings.extraction_image_settle_seconds,
+    )
     await db.commit()
     return CandidateImagePresignResponse(uploads=uploads)
 
@@ -121,6 +127,13 @@ async def ingest_event_listing_candidate(
         credential_label=credential.name,
     )
     db.add(audit)
+    await enqueue_extraction_job(
+        db,
+        candidate.id,
+        delay_seconds=(
+            settings.extraction_image_settle_seconds if candidate.image_keys else 0
+        ),
+    )
     await db.commit()
     await db.refresh(candidate)
     await db.refresh(audit)

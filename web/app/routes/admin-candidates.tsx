@@ -35,6 +35,14 @@ function statusLabel(status: CandidateStatus) {
   return status.replaceAll("_", " ");
 }
 
+function extractionLabel(candidate: ApiCandidate) {
+  if (candidate.extracted_at == null) return "awaiting extraction";
+  if (candidate.is_event === true) return "event";
+  if (candidate.is_event === false) return "not an event";
+  return "extracted";
+}
+
+
 function captionPreview(description: string) {
   const line = description.trim().split("\n")[0] ?? "";
   if (!line) return "No caption supplied.";
@@ -49,6 +57,7 @@ function CandidateTable({ candidates }: { candidates: ApiCandidate[] }) {
         <TableRow className="hover:bg-accent-soft">
           <TableHead scope="col">Candidate</TableHead>
           <TableHead scope="col">Status</TableHead>
+          <TableHead scope="col">Extraction</TableHead>
           <TableHead scope="col">Source</TableHead>
           <TableHead scope="col" className="whitespace-nowrap">
             Received
@@ -76,6 +85,9 @@ function CandidateTable({ candidates }: { candidates: ApiCandidate[] }) {
             </TableCell>
             <TableCell className="font-mono text-xs font-bold uppercase tracking-wide text-accent">
               {statusLabel(candidate.status)}
+            </TableCell>
+            <TableCell className="font-mono text-xs font-bold uppercase tracking-wide text-ink-soft">
+              {extractionLabel(candidate)}
             </TableCell>
             <TableCell className="font-mono text-xs text-ink-soft">
               {candidate.source_type}
