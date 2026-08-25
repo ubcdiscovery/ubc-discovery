@@ -66,8 +66,8 @@ export function SaveEventButton({ eventId, event, variant, className = "" }: Sav
         : pending
           ? "SAVING..."
           : saved
-            ? "♥ SAVED TO SHORTLIST"
-            : "♡ SAVE TO SHORTLIST";
+            ? "♥ SAVED"
+            : "♡ SAVE";
 
   return (
     <button

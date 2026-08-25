@@ -18,15 +18,15 @@ export function TopNav({
 
   return (
     <header
-      className="sticky top-0 z-50 hidden h-14 items-center justify-between border-b-2 border-ink bg-bg px-8 lg:flex"
+      className="sticky top-0 z-50 hidden items-center justify-between border-b-2 border-ink bg-surface px-8 py-2 lg:flex"
       data-testid="desktop-header"
     >
       <div className="flex items-center gap-6">
-        <Link to="/" className="flex items-center gap-2.5">
+        <Link to="/" className="flex items-center gap-2.5 pb-1">
           <div className="size-7.5 bg-ink text-bg flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
             UBC
           </div>
-          <span className="font-display font-extrabold text-xl tracking-tight">
+          <span className="font-display font-extrabold text-lg tracking-tight">
             DISCOVERY
           </span>
         </Link>

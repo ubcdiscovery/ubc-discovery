@@ -14,7 +14,7 @@ function VisitorSaved() {
   return (
     <div>
       <div className="border-b border-rule-soft px-4.5 py-3.5 md:hidden">
-        <div className="font-mono text-xs tracking-wider text-muted uppercase">Your shortlist</div>
+        <div className="font-mono text-xs tracking-wider text-muted uppercase">Your saved events</div>
         <h1 className="mt-1 font-display text-4xl leading-none font-extrabold tracking-tight text-ink">
           Saved
         </h1>
@@ -26,7 +26,7 @@ function VisitorSaved() {
             Member feature
           </div>
           <h2 className="mt-2 font-display text-3xl leading-none font-extrabold tracking-tight text-ink md:mt-3 md:text-6xl/display md:tracking-tighter">
-            Build a shortlist.
+            Save events.
           </h2>
           <p className="mt-3 max-w-135 text-sm/relaxed text-ink-soft md:mt-3.5 md:text-base/relaxed">
             Keep events you&rsquo;re thinking about in one place. Saving also nudges your{" "}
@@ -50,7 +50,7 @@ function EmptySavedState({ tab }: { tab: SavedTab }) {
   return (
     <div className="py-10 text-center md:py-16 md:text-left">
       <h3 className="font-display text-3xl leading-none font-extrabold tracking-tight text-ink md:text-4xl">
-        {upcoming ? "Your shortlist is empty." : "No past saved events yet."}
+        {upcoming ? "No upcoming saved events." : "No past saved events yet."}
       </h3>
       <p className="mt-2.5 text-sm/relaxed text-ink-soft md:max-w-130 md:text-base/relaxed md:text-muted">
         {upcoming ? (
@@ -102,7 +102,7 @@ function SavedTabs({
 
   return (
     <div
-      className="flex items-stretch border-b-2 border-ink md:px-8"
+      className="flex items-stretch"
       role="tablist"
       aria-label="Saved events"
     >
@@ -116,10 +116,10 @@ function SavedTabs({
             aria-controls="saved-events-panel"
             aria-selected={active}
             onClick={() => onSelect(tab.id)}
-            className={`flex flex-1 cursor-pointer items-center justify-center gap-2 border-0 px-2 py-3 font-mono text-xs font-bold tracking-wide uppercase first:border-r first:border-r-ink md:-mb-0.5 md:flex-none md:border-b-2 md:px-5 md:py-3.5 md:font-display md:text-lg md:normal-case md:tracking-tight md:first:border-r-0 ${
+            className={`flex cursor-pointer items-center gap-2 border-0 border-b-2 px-4 py-3 font-mono text-xs font-bold tracking-wide uppercase -mb-0.5 ${
               active
-                ? "bg-ink text-bg md:border-b-accent md:bg-transparent md:text-ink"
-                : "bg-bg text-ink md:border-b-transparent md:bg-transparent md:text-muted"
+                ? "border-b-accent text-ink"
+                : "border-b-transparent text-muted"
             }`}
           >
             <span>{tab.label}</span>
@@ -172,23 +172,19 @@ function MemberSaved() {
 
   return (
     <div>
-      <div className="border-b border-rule-soft px-4.5 py-3.5 md:border-ink md:px-8 md:pt-6 md:pb-4">
-        <div className="font-mono text-xs tracking-wider text-muted uppercase md:mb-1.5">
-          Your shortlist &amp; history
-        </div>
-        <h1 className="mt-1 font-display text-4xl leading-none font-extrabold tracking-tight text-ink md:mt-0 md:text-5xl/display">
+      <div className="flex items-center gap-6 border-b border-ink px-4.5 md:px-8">
+        <h1 className="font-display text-2xl font-extrabold tracking-tight text-ink py-3">
           Saved.
         </h1>
+        <SavedTabs
+          counts={{
+            upcoming: partitionedEvents.upcoming.length,
+            past: partitionedEvents.past.length,
+          }}
+          selected={tab}
+          onSelect={selectTab}
+        />
       </div>
-
-      <SavedTabs
-        counts={{
-          upcoming: partitionedEvents.upcoming.length,
-          past: partitionedEvents.past.length,
-        }}
-        selected={tab}
-        onSelect={selectTab}
-      />
 
       <div id="saved-events-panel" role="tabpanel" className="px-4.5 py-4 md:px-8 md:pt-6 md:pb-14">
         {isLoading ? (

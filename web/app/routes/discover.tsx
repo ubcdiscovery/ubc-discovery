@@ -5,6 +5,7 @@ import { VIBES, SOURCES, type VibeId, type SourceId } from "~/lib/constants";
 import { VibeTag } from "~/components/VibeTag";
 import { RouteErrorState } from "~/components/RouteErrorState";
 import { EventPosterFeed } from "~/components/EventPosterFeed";
+import { EventCard } from "~/components/EventCard";
 
 export function meta() {
   return [
@@ -115,6 +116,7 @@ export default function Discover() {
   const [activeVibe, setActiveVibe] = useState<VibeId | null>(null);
   const [activeSource, setActiveSource] = useState<SourceId>("all");
   const [sortBy, setSortBy] = useState<SortMode>("upcoming");
+  const [display, setDisplay] = useState<"poster" | "list">("poster");
 
   const events = useMemo(() => {
     let filtered: ApiEvent[] = data?.events ?? [];
@@ -186,7 +188,7 @@ export default function Discover() {
       </div>
 
       <div className="flex flex-1">
-        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-56 shrink-0 self-start overflow-y-auto border-r border-ink px-6 py-7 md:block">
+        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-64 shrink-0 self-start overflow-y-auto border-r border-ink px-6 py-4 md:block">
           <div>
             <FilterBlock label="Source">
               {SOURCES.map((s) => (
@@ -227,12 +229,40 @@ export default function Discover() {
                 />
               ))}
             </FilterBlock>
+            <div className="mb-6">
+              <div className="font-mono text-xs text-ink tracking-wider uppercase mb-2.5 pb-1 border-b border-ink">Display</div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setDisplay("poster")}
+                  title="Poster grid"
+                  className={`cursor-pointer border p-2 transition-colors ${display === "poster" ? "border-accent text-ink" : "border-rule-soft text-muted hover:border-ink hover:text-ink"}`}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="1" width="6" height="6" fill="currentColor"/>
+                    <rect x="9" y="1" width="6" height="6" fill="currentColor"/>
+                    <rect x="1" y="9" width="6" height="6" fill="currentColor"/>
+                    <rect x="9" y="9" width="6" height="6" fill="currentColor"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setDisplay("list")}
+                  title="List"
+                  className={`cursor-pointer border p-2 transition-colors ${display === "list" ? "border-accent text-ink" : "border-rule-soft text-muted hover:border-ink hover:text-ink"}`}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="2" width="14" height="2" fill="currentColor"/>
+                    <rect x="1" y="7" width="14" height="2" fill="currentColor"/>
+                    <rect x="1" y="12" width="14" height="2" fill="currentColor"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </aside>
 
         <section
           aria-label="Discover events"
-          className="min-w-0 flex-1 px-4.5 pb-32 pt-4 sm:px-6 md:px-8 md:pt-7 lg:px-7"
+          className={`min-w-0 flex-1 px-4.5 pb-32 sm:px-6 md:px-8 lg:px-7 ${display === "poster" ? "pt-5 md:pt-6" : "pt-4 md:pt-6"}`}
         >
           <h1 className="sr-only">Discover events</h1>
           {events.length === 0 ? (
@@ -253,8 +283,14 @@ export default function Discover() {
                 Clear filters
               </button>
             </div>
-          ) : (
+          ) : display === "poster" ? (
             <EventPosterFeed events={events} />
+          ) : (
+            <div>
+              {events.map((e) => (
+                <EventCard key={e.id} event={e} />
+              ))}
+            </div>
           )}
         </section>
       </div>

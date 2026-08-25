@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import type { ApiEvent } from "~/lib/api";
 import { fmtDate02, fmtMonth, fmtTime } from "~/lib/date";
@@ -24,16 +25,22 @@ function Poster({
   priority: boolean;
   className: string;
 }) {
+  const [imgFailed, setImgFailed] = useState(false);
   return (
     <div
-      className={`relative isolate flex aspect-square items-center justify-center overflow-hidden bg-accent-soft ${className}`}
+      className={`relative isolate flex aspect-square items-center justify-center overflow-hidden ${className}`}
+      style={{
+        background:
+          "light-dark(linear-gradient(135deg,#6870e8 0%,#4f55c4 100%), linear-gradient(135deg,#1a1d5c 0%,#0f1138 100%))",
+      }}
     >
-      {event.event_picture_url ? (
+      {event.event_picture_url && !imgFailed ? (
         <>
           <img
             src={event.event_picture_url}
             alt=""
             aria-hidden="true"
+            onError={() => setImgFailed(true)}
             className="absolute inset-0 size-full scale-110 object-cover opacity-15 blur-xl"
           />
           <img
@@ -41,23 +48,33 @@ function Poster({
             alt=""
             loading={priority ? "eager" : "lazy"}
             decoding="async"
+            onError={() => setImgFailed(true)}
             className="relative z-10 size-full object-contain"
           />
         </>
       ) : (
         <div
           aria-hidden="true"
-          className="flex size-full flex-col justify-between bg-accent p-[9%] text-on-color"
+          className="relative flex size-full flex-col items-center justify-center gap-4 p-[9%] text-white"
+          style={{
+            background:
+              "light-dark(linear-gradient(135deg,#6870e8 0%,#4f55c4 100%), linear-gradient(135deg,#1a1d5c 0%,#0f1138 100%))",
+          }}
         >
-          <span className="font-mono text-xs font-bold tracking-brand uppercase">
-            UBC Discovery
+          <span className="absolute top-[9%] left-[9%] font-mono text-xs font-bold tracking-widest uppercase opacity-80">
+            {event.club_name ?? "UBC Discovery"}
           </span>
-          <strong className="max-w-[13ch] font-display text-3xl leading-none tracking-tight">
+          <strong
+            className={`font-display leading-none tracking-tight text-center ${
+              event.title.length > 30
+                ? "text-3xl"
+                : event.title.length > 18
+                  ? "text-4xl"
+                  : "text-5xl"
+            }`}
+          >
             {event.title}
           </strong>
-          <span className="font-mono text-xs font-bold tracking-wider uppercase">
-            <EventDate event={event} />
-          </span>
         </div>
       )}
       <div className="absolute bottom-0 left-0 z-20 bg-hi px-3 py-2 font-mono text-xs font-extrabold tracking-wider text-on-hi uppercase">
