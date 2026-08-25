@@ -31,6 +31,7 @@ def _payload(external_source_id: str, **overrides) -> dict:
         "source_url": "https://example.com/posts/post-123",
         "source_type": "instagram",
         "external_source_id": external_source_id,
+        "image_content_types": [],
     }
     data.update(overrides)
     return data
@@ -143,31 +144,34 @@ class TestCandidateExtraction:
         assert job.status == ExtractionJobStatus.PENDING
         assert job.available_at <= datetime.now(UTC) + timedelta(seconds=1)
 
-    async def test_image_presign_delays_the_job_until_the_upload_can_settle(
+    async def test_ingestion_reserves_images_and_early_claims_wait_for_upload(
         self,
         credential_admin_client: AsyncClient,
         db_session: AsyncSession,
+        monkeypatch,
     ):
+        monkeypatch.setattr(
+            "app.services.extraction.evidence.s3.object_exists", lambda _key: False
+        )
         token = await _mint_credential(credential_admin_client)
         headers = _api_key_headers(token)
         ingested = await credential_admin_client.post(
             "/ingestion/event-candidates",
             headers=headers,
-            json=_payload("extract-presign-settle"),
+            json=_payload(
+                "extract-upload-wait",
+                image_content_types=["image/jpeg"],
+            ),
         )
         assert ingested.status_code == 201
-        before = datetime.now(UTC)
-        presign = await credential_admin_client.post(
-            "/ingestion/event-candidates/images/presign",
-            headers=headers,
-            json={
-                "source_type": "instagram",
-                "external_source_id": "extract-presign-settle",
-                "content_types": ["image/jpeg"],
-            },
-        )
-        assert presign.status_code == 200
         candidate_id = ingested.json()["candidate"]["id"]
+        assert ingested.json()["uploads"][0]["file_key"] == (
+            f"candidates/{candidate_id}/00.jpg"
+        )
+        candidate = await db_session.get(EventListingCandidate, candidate_id)
+        assert candidate is not None
+        assert candidate.image_keys == [f"candidates/{candidate_id}/00.jpg"]
+
         job = (
             await db_session.execute(
                 select(CandidateExtractionJob).where(
@@ -175,7 +179,20 @@ class TestCandidateExtraction:
                 )
             )
         ).scalar_one()
-        assert job.available_at > before
+        assert job.status == ExtractionJobStatus.PENDING
+
+        now = datetime.now(UTC)
+        candidate.created_at = now
+        await db_session.flush()
+        claimed = await claim_jobs(db_session, 1, now=now)
+        assert [item.candidate_id for item in claimed] == [uuid.UUID(candidate_id)]
+        extractor = RecordingExtractor(lambda item: _result_for(item.candidate_id))
+        await process_claimed_jobs(db_session, claimed, extractor, now=now)
+        assert extractor.calls == []
+        await db_session.flush()
+        await db_session.refresh(job)
+        assert job.status == ExtractionJobStatus.PENDING
+        assert job.last_error == "source image not uploaded yet"
 
     async def test_full_pack_is_claimed_without_waiting_for_quiet(
         self, db_session: AsyncSession, monkeypatch

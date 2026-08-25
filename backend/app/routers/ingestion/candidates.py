@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -16,8 +18,6 @@ from app.models.event_listing_candidate import (
 )
 from app.presenters.candidate import candidate_to_response
 from app.schemas.event_listing_candidate import (
-    CandidateImagePresignRequest,
-    CandidateImagePresignResponse,
     EventListingCandidateIngestionRequest,
     EventListingCandidateIngestionResponse,
 )
@@ -29,32 +29,17 @@ from app.services.extraction.jobs import enqueue_extraction_job
 router = APIRouter(prefix="/event-candidates", tags=["Candidate Ingestion"])
 
 
-@router.post("/images/presign", response_model=CandidateImagePresignResponse)
-async def presign_candidate_images(
-    body: CandidateImagePresignRequest,
-    _credential: CandidateIngestionCredential = Depends(require_candidate_ingester),
-    db: AsyncSession = Depends(get_db),
-):
-    result = await db.execute(
-        select(EventListingCandidate).where(
-            EventListingCandidate.source_type == body.source_type,
-            EventListingCandidate.external_source_id == body.external_source_id,
-        )
-    )
-    candidate = result.scalar_one_or_none()
-    if candidate is None:
-        raise HTTPException(status_code=404, detail="Candidate not found")
-
+def _presigned_uploads(
+    candidate_id: uuid.UUID, content_types: list[str]
+) -> list[PresignedUploadResponse]:
     uploads = []
-    image_keys = []
-    for index, content_type in enumerate(body.content_types):
-        file_key = candidate_image_key(candidate.id, index, content_type)
+    for index, content_type in enumerate(content_types):
+        file_key = candidate_image_key(candidate_id, index, content_type)
         url, fields, key = s3.generate_presigned_upload_url(
             content_type=content_type,
             file_key=file_key,
             max_file_size_bytes=settings.candidate_image_max_bytes,
         )
-        image_keys.append(key)
         uploads.append(
             PresignedUploadResponse(
                 upload_url=url,
@@ -63,14 +48,7 @@ async def presign_candidate_images(
                 max_file_size_bytes=settings.candidate_image_max_bytes,
             )
         )
-    candidate.image_keys = image_keys
-    await enqueue_extraction_job(
-        db,
-        candidate.id,
-        delay_seconds=settings.extraction_image_settle_seconds,
-    )
-    await db.commit()
-    return CandidateImagePresignResponse(uploads=uploads)
+    return uploads
 
 
 @router.post(
@@ -84,7 +62,7 @@ async def ingest_event_listing_candidate(
     credential: CandidateIngestionCredential = Depends(require_candidate_ingester),
     db: AsyncSession = Depends(get_db),
 ):
-    values = body.model_dump()
+    values = body.model_dump(exclude={"image_content_types"})
     inserted = await db.execute(
         insert(EventListingCandidate)
         .values(values)
@@ -117,6 +95,25 @@ async def ingest_event_listing_candidate(
         if candidate is None:
             raise RuntimeError("Candidate was inserted but could not be reloaded")
 
+    requested_keys = [
+        candidate_image_key(candidate.id, index, content_type)
+        for index, content_type in enumerate(body.image_content_types)
+    ]
+    if outcome is CandidateIngestionOutcome.EXISTING:
+        if candidate.image_keys != requested_keys:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Candidate image content types conflict with existing capture",
+            )
+    else:
+        candidate.image_keys = requested_keys
+
+    uploads = (
+        []
+        if candidate.extracted_at is not None
+        else _presigned_uploads(candidate.id, body.image_content_types)
+    )
+
     audit = EventListingCandidateIngestionAudit(
         candidate_id=candidate.id,
         source_type=body.source_type,
@@ -127,13 +124,7 @@ async def ingest_event_listing_candidate(
         credential_label=credential.name,
     )
     db.add(audit)
-    await enqueue_extraction_job(
-        db,
-        candidate.id,
-        delay_seconds=(
-            settings.extraction_image_settle_seconds if candidate.image_keys else 0
-        ),
-    )
+    await enqueue_extraction_job(db, candidate.id, delay_seconds=0)
     await db.commit()
     await db.refresh(candidate)
     await db.refresh(audit)
@@ -142,4 +133,5 @@ async def ingest_event_listing_candidate(
         outcome=outcome,
         receipt_id=audit.id,
         candidate=candidate_to_response(candidate),
+        uploads=uploads,
     )

@@ -30,12 +30,16 @@ class CandidateSourceIdentity(BaseModel):
         return value
 
 
-class CandidateImagePresignRequest(CandidateSourceIdentity):
-    content_types: list[str] = Field(min_length=1, max_length=CANDIDATE_IMAGE_MAX_COUNT)
+class EventListingCandidateIngestionRequest(CandidateSourceIdentity):
+    description: str = Field(default="", max_length=20_000)
+    source_account: str = Field(min_length=1, max_length=255)
+    source_url: str | None = Field(default=None, max_length=1024)
+    posted_at: datetime | None = None
+    image_content_types: list[str] = Field(max_length=CANDIDATE_IMAGE_MAX_COUNT)
 
-    @field_validator("content_types")
+    @field_validator("image_content_types")
     @classmethod
-    def validate_content_types(cls, value: list[str]) -> list[str]:
+    def validate_image_content_types(cls, value: list[str]) -> list[str]:
         invalid = [
             content_type
             for content_type in value
@@ -43,20 +47,10 @@ class CandidateImagePresignRequest(CandidateSourceIdentity):
         ]
         if invalid:
             raise ValueError(
-                "content_types must be image/jpeg, image/png, or image/webp"
+                "image_content_types must contain only "
+                "image/jpeg, image/png, or image/webp"
             )
         return value
-
-
-class CandidateImagePresignResponse(BaseModel):
-    uploads: list[PresignedUploadResponse]
-
-
-class EventListingCandidateIngestionRequest(CandidateSourceIdentity):
-    description: str = Field(default="", max_length=20_000)
-    source_account: str = Field(min_length=1, max_length=255)
-    source_url: str | None = Field(default=None, max_length=1024)
-    posted_at: datetime | None = None
 
     @field_validator("description")
     @classmethod
@@ -160,3 +154,4 @@ class EventListingCandidateIngestionResponse(BaseModel):
     outcome: CandidateIngestionOutcome
     receipt_id: uuid.UUID
     candidate: EventListingCandidateResponse
+    uploads: list[PresignedUploadResponse]

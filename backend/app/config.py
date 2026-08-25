@@ -37,7 +37,6 @@ class Settings(BaseSettings):
     extraction_batch_size: int = 10
     extraction_quiet_seconds: int = 120
     extraction_image_wait_seconds: int = 300
-    extraction_image_settle_seconds: int = 30
     extraction_image_retry_seconds: int = 15
     extraction_poll_seconds: float = 5
     extraction_idle_seconds: float = 20

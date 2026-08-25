@@ -8,6 +8,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -139,6 +140,11 @@ class CandidateExtractionJob(Base):
             "status IN ('pending', 'claimed', 'succeeded', 'failed')",
             name="ck_candidate_extraction_job_status",
         ),
+        Index(
+            "ix_candidate_extraction_jobs_status_available_at",
+            "status",
+            "available_at",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -147,7 +153,6 @@ class CandidateExtractionJob(Base):
     candidate_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("event_listing_candidates.id", ondelete="RESTRICT"),
-        index=True,
     )
     status: Mapped[ExtractionJobStatus] = mapped_column(
         String(32),
@@ -155,7 +160,7 @@ class CandidateExtractionJob(Base):
         server_default=ExtractionJobStatus.PENDING.value,
     )
     available_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), index=True
+        DateTime(timezone=True), server_default=func.now()
     )
     attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     last_error: Mapped[str | None] = mapped_column(Text)
