@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import type { ApiEvent } from "~/lib/api";
+import type { ApiEvent, ApiPastEvent } from "~/lib/api";
 import { fmtDate02, fmtMonth, fmtTime } from "~/lib/date";
 import { SaveEventButton } from "./SaveEventButton";
 import { SourceBadge } from "./SourceBadge";
@@ -84,7 +84,8 @@ function Poster({
   );
 }
 
-function CardDetails({ event }: { event: ApiEvent }) {
+function CardDetails({ event }: { event: ApiEvent | ApiPastEvent }) {
+  const pastEvent = "average_rating" in event ? (event as ApiPastEvent) : null;
   return (
     <div className="min-w-0">
       <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
@@ -99,6 +100,18 @@ function CardDetails({ event }: { event: ApiEvent }) {
           <VibeTag key={vibe} vibe={vibe} />
         ))}
       </div>
+      {pastEvent && (
+        <div className="mt-2 font-mono text-xs text-muted">
+          {pastEvent.average_rating === null || pastEvent.rating_count === null ? (
+            "No ratings yet"
+          ) : (
+            <>
+              <span className="text-hi">{"★".repeat(Math.round(pastEvent.average_rating))}{"☆".repeat(5 - Math.round(pastEvent.average_rating))}</span>
+              {" "}{pastEvent.average_rating.toFixed(1)} · {pastEvent.rating_count} {pastEvent.rating_count === 1 ? "rating" : "ratings"}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

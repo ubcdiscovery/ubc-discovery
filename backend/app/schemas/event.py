@@ -178,5 +178,11 @@ class EventAuditResponse(BaseModel):
 class EventAuditListResponse(BaseModel):
     entries: list[EventAuditResponse]
 
+class PastEventResponse(EventResponse):
+    average_rating: float | None
+    rating_count: int | None
+
+class PastEventListResponse(BaseModel):
+    events: list[PastEventResponse]
 
 EventAdminStatus = Literal["all", "active", "archived"]

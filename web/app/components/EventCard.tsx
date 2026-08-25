@@ -1,12 +1,24 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import type { ApiEvent } from "~/lib/api";
+import type { ApiEvent, ApiPastEvent } from "~/lib/api";
 import { fmtMonth, fmtDate02, fmtTime } from "~/lib/date";
 import { SaveEventButton } from "./SaveEventButton";
 import { SourceBadge } from "./SourceBadge";
 import { VibeTag } from "./VibeTag";
 
-export function EventCard({ event }: { event: ApiEvent }) {
+function RatingDisplay({ event }: { event: ApiPastEvent }) {
+  if (event.average_rating === null || event.rating_count === null) {
+    return <span className="font-mono text-xs text-muted">No ratings yet</span>;
+  }
+  const stars = "★".repeat(Math.round(event.average_rating)) + "☆".repeat(5 - Math.round(event.average_rating));
+  return (
+    <span className="font-mono text-xs text-muted">
+      <span className="text-hi">{stars}</span> {event.average_rating.toFixed(1)} · {event.rating_count} {event.rating_count === 1 ? "rating" : "ratings"}
+    </span>
+  );
+}
+
+export function EventCard({ event }: { event: ApiEvent | ApiPastEvent }) {
   const d = event.event_date ? new Date(event.event_date) : null;
   const [imgFailed, setImgFailed] = useState(false);
   return (
@@ -67,6 +79,11 @@ export function EventCard({ event }: { event: ApiEvent }) {
                 <VibeTag key={v} vibe={v} />
               ))}
             </div>
+            {"average_rating" in event && (
+              <div className="mt-2">
+                <RatingDisplay event={event as ApiPastEvent} />
+              </div>
+            )}
           </div>
         </article>
       </Link>

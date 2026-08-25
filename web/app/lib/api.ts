@@ -35,8 +35,17 @@ export interface AdminApiEvent extends ApiEvent {
   archived_by: string | null;
 }
 
+export interface ApiPastEvent extends ApiEvent {
+  average_rating: number | null;
+  rating_count: number | null;
+}
+
 export interface EventListResponse {
   events: ApiEvent[];
+}
+
+export interface PastEventListResponse {
+  events: ApiPastEvent[];
 }
 
 export interface CreateEventInput {
@@ -156,6 +165,8 @@ export const api = {
   events: {
     list: (skip: number, limit: number) =>
       apiFetch<EventListResponse>(`/events?skip=${skip}&limit=${limit}`),
+    listPast: (skip = 0, limit = 100) =>
+      apiFetch<PastEventListResponse>(`/events/past?skip=${skip}&limit=${limit}`),
     get: (id: string) => apiFetch<ApiEvent>(`/events/${id}`),
     search: (q: string, limit = 10) =>
       apiFetch<EventListResponse>(
