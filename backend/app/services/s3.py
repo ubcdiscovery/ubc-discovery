@@ -3,6 +3,7 @@ from urllib.parse import quote
 
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 from app.config import settings
 
@@ -60,3 +61,19 @@ def generate_presigned_download_url(
 
 def public_url(file_key: str) -> str:
     return f"{settings.s3_public_base_url.rstrip('/')}/{quote(file_key, safe='/')}"
+
+
+def object_exists(file_key: str) -> bool:
+    try:
+        _client().head_object(Bucket=settings.s3_bucket_name, Key=file_key)
+    except ClientError as exc:
+        code = str(exc.response.get("Error", {}).get("Code", ""))
+        if code in {"404", "NoSuchKey", "NotFound"}:
+            return False
+        raise
+    return True
+
+
+def get_object_bytes(file_key: str) -> bytes:
+    response = _client().get_object(Bucket=settings.s3_bucket_name, Key=file_key)
+    return response["Body"].read()

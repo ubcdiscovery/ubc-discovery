@@ -13,20 +13,29 @@ shown only in the generation response and page state. Copy it immediately into
 the integration's secret store. The credential list never returns the raw token
 or its hash.
 
-Submit Candidate source captures with that token, then upload still images:
+Submit each Candidate source capture and its complete still-image intent in one
+request. UBC Discovery binds the image object keys to the Candidate id and returns
+the S3 upload targets in the same response:
 
     curl -X POST \
       -H 'Authorization: Api-Key ubc_live_<credential-id>.<random-secret>' \
       -H 'Content-Type: application/json' \
+      -d '{
+        "source_type":"instagram",
+        "external_source_id":"post-123",
+        "description":"Club night at the Nest",
+        "source_account":"ubcams",
+        "image_content_types":["image/jpeg","image/png"]
+      }' \
       https://api.example/ingestion/event-candidates
 
-    curl -X POST \
-      -H 'Authorization: Api-Key ubc_live_<credential-id>.<random-secret>' \
-      -H 'Content-Type: application/json' \
-      -d '{"source_type":"instagram","external_source_id":"post-123","content_types":["image/jpeg","image/png"]}' \
-      https://api.example/ingestion/event-candidates/images/presign
-
-POST each returned target to S3 using the matching `image/jpeg`, `image/png`, or `image/webp` content type (5MB maximum). Object keys are bound to the Candidate id.
+POST each returned target to S3 using the matching `image/jpeg`, `image/png`, or
+`image/webp` content type (5MB maximum). Upload targets expire after 300 seconds.
+Use an empty `image_content_types` array for caption-only captures. Repeated
+submissions use the same source identity and identical image content types;
+conflicting image intent is rejected. If extraction has already completed, an
+idempotent retry returns the existing Candidate with no upload targets because
+late evidence cannot replace the retained original extraction.
 
 ## Rotation and revocation
 

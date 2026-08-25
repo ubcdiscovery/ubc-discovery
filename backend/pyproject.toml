@@ -18,6 +18,7 @@ dependencies = [
     "pydantic[email]>=2.0.0",
     "types-boto3[essential,s3]>=1.43.8",
     "nanoid>=2.0.0",
+    "openai>=3.3.1",
 ]
 
 [dependency-groups]

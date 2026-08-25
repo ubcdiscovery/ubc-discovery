@@ -3,10 +3,12 @@ from app.models.audit_actor import AuditActorType
 from app.models.event import Event
 from app.models.event_audit import EventAuditAction, EventAuditLog
 from app.models.event_listing_candidate import (
+    CandidateExtractionJob,
     CandidateIngestionOutcome,
     CandidateStatus,
     EventListingCandidate,
     EventListingCandidateIngestionAudit,
+    ExtractionJobStatus,
 )
 from app.models.event_rating import EventRating
 from app.models.otp_code import OTPCode
@@ -17,6 +19,7 @@ __all__ = [
     "ApiCredential",
     "ApiCredentialAuditLog",
     "AuditActorType",
+    "CandidateExtractionJob",
     "CandidateIngestionOutcome",
     "CandidateStatus",
     "Event",
@@ -25,6 +28,7 @@ __all__ = [
     "EventListingCandidate",
     "EventListingCandidateIngestionAudit",
     "EventRating",
+    "ExtractionJobStatus",
     "OTPCode",
     "SavedEvent",
     "User",

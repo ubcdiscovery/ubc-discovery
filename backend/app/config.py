@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings
 
 
@@ -24,6 +26,22 @@ class Settings(BaseSettings):
         "http://localhost:5173",  # React Router web dev server
     ]
     cors_allowed_origin_regex: str | None = None
+
+    openai_api_key: str = ""
+    extraction_enabled: bool = False
+    extraction_model: str = "gpt-5.6-luna"
+    extraction_reasoning_effort: Literal[
+        "none", "minimal", "low", "medium", "high", "xhigh", "max"
+    ] = "none"
+    extraction_image_detail: Literal["auto", "low", "high"] = "high"
+    extraction_batch_size: int = 10
+    extraction_quiet_seconds: int = 120
+    extraction_image_wait_seconds: int = 300
+    extraction_image_retry_seconds: int = 15
+    extraction_poll_seconds: float = 5
+    extraction_idle_seconds: float = 20
+    extraction_claim_timeout_seconds: int = 300
+    extraction_max_attempts: int = 5
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

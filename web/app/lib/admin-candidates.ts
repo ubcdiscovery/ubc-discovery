@@ -13,6 +13,18 @@ export interface ApiCandidate {
   status: CandidateStatus;
   created_at: string;
   updated_at: string;
+  posted_at?: string | null;
+  is_event?: boolean | null;
+  title?: string | null;
+  location_name?: string | null;
+  event_date?: string | null;
+  event_end_date?: string | null;
+  club_name?: string | null;
+  vibes?: string[];
+  source_label?: string | null;
+  extracted_original?: Record<string, unknown> | unknown[] | null;
+  extraction_model?: string | null;
+  extracted_at?: string | null;
 }
 
 interface ApiCandidateAudit {

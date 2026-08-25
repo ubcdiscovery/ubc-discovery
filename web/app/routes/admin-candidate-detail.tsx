@@ -82,6 +82,62 @@ export default function AdminCandidateDetail() {
               )}
             </CardContent>
           </Card>
+
+          {candidate.extracted_at ? (
+            <>
+            <Card>
+              <CardHeader><CardTitle>Classification</CardTitle></CardHeader>
+              <CardContent>
+                <p className="font-mono text-xs font-bold uppercase text-accent">
+                  {candidate.is_event ? "event" : "not an event"}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Extracted original</CardTitle></CardHeader>
+              <CardContent>
+                <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-2xs text-ink-soft">
+                  {JSON.stringify(candidate.extracted_original, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Current draft</CardTitle></CardHeader>
+              <CardContent>
+                <dl className="grid gap-3 font-mono text-xs">
+                  <div>
+                    <dt className="uppercase tracking-wide text-muted">Title</dt>
+                    <dd className="mt-1 font-bold text-ink">{candidate.title || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="uppercase tracking-wide text-muted">Location</dt>
+                    <dd className="mt-1 font-bold text-ink">{candidate.location_name || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="uppercase tracking-wide text-muted">Start</dt>
+                    <dd className="mt-1 font-bold text-ink">{formatDate(candidate.event_date ?? null)}</dd>
+                  </div>
+                  <div>
+                    <dt className="uppercase tracking-wide text-muted">End</dt>
+                    <dd className="mt-1 font-bold text-ink">{formatDate(candidate.event_end_date ?? null)}</dd>
+                  </div>
+                  <div>
+                    <dt className="uppercase tracking-wide text-muted">Organizer</dt>
+                    <dd className="mt-1 font-bold text-ink">{candidate.club_name || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="uppercase tracking-wide text-muted">Vibes</dt>
+                    <dd className="mt-1 font-bold text-ink">{(candidate.vibes ?? []).join(", ") || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="uppercase tracking-wide text-muted">Source label</dt>
+                    <dd className="mt-1 font-bold text-ink">{candidate.source_label || "—"}</dd>
+                  </div>
+                </dl>
+              </CardContent>
+            </Card>
+            </>
+          ) : null}
         </div>
 
         <div className="grid content-start gap-5">
@@ -94,7 +150,20 @@ export default function AdminCandidateDetail() {
                 <div><dt className="uppercase tracking-wide text-muted">Source account</dt><dd className="mt-1 font-bold text-ink">{candidate.source_account}</dd></div>
                 <div><dt className="uppercase tracking-wide text-muted">External source ID</dt><dd className="mt-1 break-all font-bold text-ink">{candidate.external_source_id}</dd></div>
                 <div><dt className="uppercase tracking-wide text-muted">Received</dt><dd className="mt-1 font-bold text-ink">{formatDate(candidate.created_at)}</dd></div>
+                <div>
+                  <dt className="uppercase tracking-wide text-muted">Extraction</dt>
+                  <dd className="mt-1 font-bold text-ink">
+                    {candidate.extracted_at ? "complete" : "awaiting extraction"}
+                  </dd>
+                </div>
               </dl>
+              {candidate.extracted_at ? (
+                <div className="mt-5">
+                  <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-accent">Extraction metadata</h2>
+                  <p className="mt-2 font-mono text-xs text-ink-soft">{candidate.extraction_model}</p>
+                  <p className="mt-1 font-mono text-xs text-ink-soft">{formatDate(candidate.extracted_at)}</p>
+                </div>
+              ) : null}
               {candidate.source_url && (
                 <a href={candidate.source_url} target="_blank" rel="noreferrer" className="mt-5 block break-all text-sm text-accent underline">Open source URL</a>
               )}
