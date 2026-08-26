@@ -41,21 +41,19 @@ export function CandidateDecisionDialog({
       }}
     >
       <AlertDialogContent>
-        <p className="font-mono text-xs font-bold uppercase tracking-wider text-accent">
-          {candidate.source_account}
-        </p>
-        <AlertDialogTitle className="mt-2">
+        <AlertDialogTitle>
           {approving ? "Approve this Candidate?" : "Reject this Candidate?"}
         </AlertDialogTitle>
         <AlertDialogDescription className="mt-4">
-          <span className="line-clamp-2 wrap-break-word">
+          <span className="block font-mono text-xs font-bold uppercase tracking-wider text-accent">
+            {candidate.source_account}
+          </span>
+          <span className="mt-1 line-clamp-2 wrap-break-word">
             {candidate.description || "No caption supplied."}
           </span>
-          <span className="mt-3 block">
-            {approving
-              ? "This creates the public Event Listing."
-              : "The source evidence will be retained."}
-          </span>
+          {approving ? (
+            <span className="mt-3 block">This creates the public Event Listing.</span>
+          ) : null}
         </AlertDialogDescription>
         {error ? (
           <Alert variant="error" className="mt-4">
