@@ -14,8 +14,10 @@ export function meta() {
   ];
 }
 
+const PAGE_SIZE = 50;
+
 export async function clientLoader() {
-  const data = await api.events.list(0, 100);
+  const data = await api.events.list(0, PAGE_SIZE);
   return data;
 }
 
@@ -122,6 +124,9 @@ export default function Discover() {
   const [display, setDisplay] = useState<"poster" | "list">("poster");
   const [pastEvents, setPastEvents] = useState<ApiPastEvent[] | null>(null);
   const [pastLoading, setPastLoading] = useState(false);
+  const [extraEvents, setExtraEvents] = useState<ApiEvent[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState((data?.events.length ?? 0) === PAGE_SIZE);
 
   useEffect(() => {
     if (sortBy === "past" && pastEvents === null && !pastLoading) {
@@ -136,13 +141,29 @@ export default function Discover() {
     }
   }, [sortBy, pastEvents, pastLoading]);
 
+  const allUpcoming = useMemo(
+    () => [...(data?.events ?? []), ...extraEvents],
+    [data, extraEvents]
+  );
+
   const events = useMemo(() => {
-    const pool: ApiEvent[] = sortBy === "past" ? (pastEvents ?? []) : (data?.events ?? []);
+    const pool: ApiEvent[] = sortBy === "past" ? (pastEvents ?? []) : allUpcoming;
     let filtered = [...pool];
     if (activeVibe) filtered = filtered.filter((e) => e.vibes.includes(activeVibe));
     if (activeSource !== "all") filtered = filtered.filter((e) => e.source_label === activeSource);
     return sortEvents(filtered, sortBy);
-  }, [data, pastEvents, activeVibe, activeSource, sortBy]);
+  }, [allUpcoming, pastEvents, activeVibe, activeSource, sortBy]);
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const res = await api.events.list(allUpcoming.length, PAGE_SIZE);
+      setExtraEvents((prev) => [...prev, ...res.events]);
+      setHasMore(res.events.length === PAGE_SIZE);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   return (
     <div className="flex flex-1 flex-col">
@@ -307,13 +328,39 @@ export default function Discover() {
               </button>
             </div>
           ) : display === "poster" ? (
-            <EventPosterFeed events={events} />
+            <>
+              <EventPosterFeed events={events} />
+              {sortBy !== "past" && hasMore && (
+                <div className="mt-8 flex justify-center">
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="border border-ink px-6 py-2.5 font-mono text-xs font-bold tracking-wider uppercase cursor-pointer bg-transparent text-ink disabled:opacity-50"
+                  >
+                    {loadingMore ? "Loading…" : "Show more"}
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
-            <div>
-              {events.map((e) => (
-                <EventCard key={e.id} event={e} />
-              ))}
-            </div>
+            <>
+              <div>
+                {events.map((e) => (
+                  <EventCard key={e.id} event={e} />
+                ))}
+              </div>
+              {sortBy !== "past" && hasMore && (
+                <div className="mt-6 flex justify-center">
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="border border-ink px-6 py-2.5 font-mono text-xs font-bold tracking-wider uppercase cursor-pointer bg-transparent text-ink disabled:opacity-50"
+                  >
+                    {loadingMore ? "Loading…" : "Show more"}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </section>
       </div>
