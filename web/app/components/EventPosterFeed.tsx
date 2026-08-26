@@ -106,7 +106,7 @@ function CardDetails({ event }: { event: ApiEvent | ApiPastEvent }) {
             "No ratings yet"
           ) : (
             <>
-              <span className="text-hi">{"★".repeat(Math.round(pastEvent.average_rating))}{"☆".repeat(5 - Math.round(pastEvent.average_rating))}</span>
+              <span style={{ color: "#FFAD00" }}>{"★".repeat(Math.round(pastEvent.average_rating))}{"☆".repeat(5 - Math.round(pastEvent.average_rating))}</span>
               {" "}{pastEvent.average_rating.toFixed(1)} · {pastEvent.rating_count} {pastEvent.rating_count === 1 ? "rating" : "ratings"}
             </>
           )}

@@ -356,27 +356,33 @@ function Stars({ count, total = 5 }: { count: number; total?: number }) {
   );
 }
 
-function RatingCard({ rating, mine }: { rating: EventRatingResponse; mine?: boolean }) {
+function RatingRow({ rating, mine }: { rating: EventRatingResponse; mine?: boolean }) {
   return (
-    <div className={`border p-3 ${mine ? "border-ink" : "border-rule-soft"}`}>
-      <div className="font-mono text-xs flex items-center gap-2">
+    <div className={`py-3 border-b border-rule-soft ${mine ? "opacity-100" : "opacity-80"}`}>
+      <div className="flex items-center gap-2 mb-1">
         <Stars count={rating.stars} />
-        {mine && <span className="text-muted tracking-wide">YOUR RATING</span>}
-        <span className="ml-auto text-muted">{new Date(rating.created_at).toLocaleDateString()}</span>
+        {mine && (
+          <span className="font-mono text-[10px] tracking-widest uppercase text-muted border border-rule-soft px-1.5 py-0.5 leading-none">
+            You
+          </span>
+        )}
+        <span className="ml-auto font-mono text-[11px] text-muted">
+          {new Date(rating.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+        </span>
       </div>
       {rating.note && (
-        <p className="mt-1.5 text-sm/relaxed text-ink-soft">{rating.note}</p>
+        <p className="text-sm/relaxed text-ink-soft mt-0.5">{rating.note}</p>
       )}
       {rating.strong_vibes.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="mt-1.5 flex flex-wrap gap-1">
           {rating.strong_vibes.map((v) => {
             const meta = VIBES.find((x) => x.id === v);
             return (
-              <span key={v} className="font-mono text-xs border border-rule-soft px-2 py-0.5 text-muted">
+              <span key={v} className="font-mono text-[10px] tracking-wide uppercase text-muted">
                 {meta?.label ?? v}
               </span>
             );
-          })}
+          }).reduce<React.ReactNode[]>((acc, el, i) => i === 0 ? [el] : [...acc, <span key={`sep-${i}`} className="text-muted font-mono text-[10px]">·</span>, el], [])}
         </div>
       )}
     </div>
@@ -402,28 +408,41 @@ function RatingsSection({
     : allRatings;
 
   return (
-    <div className="mt-7">
-      <div className="font-mono text-xs text-muted tracking-wider uppercase mb-3 pb-1.5 border-b border-ink flex items-baseline gap-3">
-        <span>Ratings</span>
-        {avg !== null && (
-          <span className="text-ink">
-            <Stars count={Math.round(avg)} /> {avg.toFixed(1)}
+    <div className="mt-7 border-t border-ink pt-5">
+      <div className="font-mono text-xs text-muted tracking-widest uppercase mb-4">Ratings</div>
+
+      {avg !== null ? (
+        <div className="flex items-end gap-3 mb-5">
+          <span className="font-display font-extrabold text-6xl leading-none tracking-tight text-ink">
+            {avg.toFixed(1)}
           </span>
-        )}
-      </div>
+          <div className="pb-1">
+            <Stars count={Math.round(avg)} />
+            <div className="font-mono text-xs text-muted mt-0.5">
+              {allRatings.length} {allRatings.length === 1 ? "rating" : "ratings"}
+            </div>
+          </div>
+        </div>
+      ) : myRating === null ? (
+        <div className="mb-4">
+          <div className="font-mono text-xs text-muted mb-2">Be the first to rate this event</div>
+          <StarPicker onPick={onStarClick} size="2xl" />
+        </div>
+      ) : null}
 
-      {allRatings.length === 0 && myRating === null && (
-        <span className="font-mono text-xs text-muted">No ratings yet</span>
-      )}
-
-      <div className="flex flex-col gap-2">
-        {myRating && <RatingCard rating={myRating} mine />}
+      <div>
+        {myRating && <RatingRow rating={myRating} mine />}
         {others.map((r) => (
-          <RatingCard key={r.id} rating={r} />
+          <RatingRow key={r.id} rating={r} />
         ))}
       </div>
 
-      {myRating === null && <StarPicker onPick={onStarClick} />}
+      {myRating === null && avg !== null && (
+        <div className="mt-4">
+          <div className="font-mono text-xs text-muted mb-2">Rate this event</div>
+          <StarPicker onPick={onStarClick} size="2xl" />
+        </div>
+      )}
     </div>
   );
 }

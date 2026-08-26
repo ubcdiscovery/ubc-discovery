@@ -13,7 +13,7 @@ function RatingDisplay({ event }: { event: ApiPastEvent }) {
   const stars = "★".repeat(Math.round(event.average_rating)) + "☆".repeat(5 - Math.round(event.average_rating));
   return (
     <span className="font-mono text-xs text-muted">
-      <span className="text-hi">{stars}</span> {event.average_rating.toFixed(1)} · {event.rating_count} {event.rating_count === 1 ? "rating" : "ratings"}
+      <span style={{ color: "#FFAD00" }}>{stars}</span> {event.average_rating.toFixed(1)} · {event.rating_count} {event.rating_count === 1 ? "rating" : "ratings"}
     </span>
   );
 }
