@@ -46,7 +46,7 @@ async def list_ratings(
     )
 
 
-@router.post("/{event_id}", response_model=EventRatingResponse)
+@router.post("/mine/{event_id}", response_model=EventRatingResponse)
 async def rate_event(
     event_id: str,
     body: CreateRatingRequest,
@@ -58,7 +58,7 @@ async def rate_event(
         select(Event).where(Event.id == event_id, Event.is_archived.is_(False))
     )
     if not event_result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise HTTPException(status_code=400, detail="Event with give id NOT found")
 
     # Upsert: update if already rated
     existing_result = await db.execute(
@@ -89,7 +89,7 @@ async def rate_event(
     return EventRatingResponse.model_validate(rating)
 
 
-@router.get("/{event_id}", response_model=EventRatingResponse)
+@router.get("/mine/{event_id}", response_model=EventRatingResponse)
 async def get_rating(
     event_id: str,
     user: User = Depends(get_current_user),
@@ -110,3 +110,22 @@ async def get_rating(
     if not rating:
         raise HTTPException(status_code=404, detail="Rating not found")
     return EventRatingResponse.model_validate(rating)
+
+@router.get("/{event_id}", response_model=list[EventRatingResponse])
+async def get_event_ratings(
+    event_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(EventRating)
+        .join(Event, Event.id == EventRating.event_id)
+        .where(
+            and_(
+                EventRating.event_id == event_id,
+                Event.is_archived.is_(False),
+            )
+        )
+        .order_by(EventRating.created_at.desc())
+    )
+    ratings = result.scalars().all()
+    return [EventRatingResponse.model_validate(r) for r in ratings]

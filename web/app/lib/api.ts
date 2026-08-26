@@ -294,15 +294,17 @@ export const api = {
         "/ratings",
         {}
       ),
+    getAll: (eventId: string) =>
+      apiFetch<EventRatingResponse[]>(`/ratings/${eventId}`),
+    get: (eventId: string) =>
+      authenticatedApiFetch<EventRatingResponse>(`/ratings/mine/${eventId}`),
     rate: (
       eventId: string,
       data: { stars: number; strong_vibes?: string[]; note?: string }
     ) =>
       authenticatedApiFetch<EventRatingResponse>(
-        `/ratings/${eventId}`,
+        `/ratings/mine/${eventId}`,
         { method: "POST", body: JSON.stringify(data) }
       ),
-    get: (eventId: string) =>
-      authenticatedApiFetch<EventRatingResponse>(`/ratings/${eventId}`),
   },
 };
