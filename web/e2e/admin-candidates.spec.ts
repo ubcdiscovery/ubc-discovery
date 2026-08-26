@@ -67,15 +67,15 @@ test("administrator quick-reviews a pending Candidate from the queue", async ({ 
   await page
     .getByRole("button", { name: `Reject ${mockExtractedCandidate.source_account}` })
     .click();
-  await expect(page.getByRole("dialog")).toContainText("Reject this Candidate?");
+  await expect(page.getByRole("alertdialog")).toContainText("Reject this Candidate?");
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
   expect(decision).toBe("");
 
   await page
     .getByRole("button", { name: `Approve ${mockExtractedCandidate.source_account}` })
     .click();
-  await expect(page.getByRole("dialog")).toContainText("Approve this Candidate?");
+  await expect(page.getByRole("alertdialog")).toContainText("Approve this Candidate?");
   await page.getByRole("button", { name: "Confirm approve" }).click();
   await expect.poll(() => decision).toBe("approve");
   await expect(page.getByText("No matching Candidates.")).toBeVisible();
@@ -143,8 +143,18 @@ test("administrator can follow Candidate hold links and keeps a failed draft", a
   const heldCandidate = {
     ...mockExtractedCandidate,
     same_club_same_day_matches: [
-      { kind: "event" as const, id: "event-held", title: "Held Event", event_date: "2026-09-04T20:00:00Z" },
-      { kind: "candidate" as const, id: "candidate-held", title: "Held Candidate", event_date: "2026-09-04T21:00:00Z" },
+      {
+        kind: "event" as const,
+        id: "event-held",
+        title: "Held Event",
+        event_date: "2026-09-04T20:00:00Z",
+      },
+      {
+        kind: "candidate" as const,
+        id: "candidate-held",
+        title: "Held Candidate",
+        event_date: "2026-09-04T21:00:00Z",
+      },
     ],
   };
   await mockApi(page, {
