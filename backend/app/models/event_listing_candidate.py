@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
+from nanoid import generate
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -20,6 +21,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 from app.models.audit_actor import AuditActorType
+from app.models.event import EventSourceLabel, EventVibe
 
 
 class CandidateStatus(StrEnum):
@@ -31,6 +33,11 @@ class CandidateStatus(StrEnum):
 class CandidateIngestionOutcome(StrEnum):
     CREATED = "created"
     EXISTING = "existing"
+
+
+class CandidateMatchKind(StrEnum):
+    CANDIDATE = "candidate"
+    EVENT = "event"
 
 
 class ExtractionJobStatus(StrEnum):
@@ -59,8 +66,8 @@ class EventListingCandidate(Base):
         ),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    id: Mapped[str] = mapped_column(
+        String(8), primary_key=True, default=lambda: generate(size=8)
     )
     description: Mapped[str] = mapped_column(Text, default="")
     source_account: Mapped[str] = mapped_column(String(255))
@@ -77,8 +84,8 @@ class EventListingCandidate(Base):
     event_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     event_end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     club_name: Mapped[str | None] = mapped_column(String(255))
-    vibes: Mapped[list[str]] = mapped_column(JSON, default=list)
-    source_label: Mapped[str | None] = mapped_column(String(50))
+    vibes: Mapped[list[EventVibe]] = mapped_column(JSON, default=list)
+    source_label: Mapped[EventSourceLabel | None] = mapped_column(String(50))
     extracted_original: Mapped[dict | list | None] = mapped_column(JSON)
     extraction_model: Mapped[str | None] = mapped_column(String(100))
     extracted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -113,8 +120,8 @@ class EventListingCandidateIngestionAudit(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    candidate_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    candidate_id: Mapped[str] = mapped_column(
+        String(8),
         ForeignKey("event_listing_candidates.id", ondelete="RESTRICT"),
         index=True,
     )
@@ -150,8 +157,8 @@ class CandidateExtractionJob(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    candidate_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    candidate_id: Mapped[str] = mapped_column(
+        String(8),
         ForeignKey("event_listing_candidates.id", ondelete="RESTRICT"),
     )
     status: Mapped[ExtractionJobStatus] = mapped_column(

@@ -38,9 +38,26 @@ interface ApiCandidateAudit {
   received_at: string;
 }
 
-interface ApiCandidateDetail extends ApiCandidate {
+export interface ApiCandidateDetail extends ApiCandidate {
   ingestion_audits: ApiCandidateAudit[];
+  same_club_same_day_matches: Array<{
+    kind: "candidate" | "event";
+    id: string;
+    title: string;
+    event_date: string;
+  }>;
 }
+
+export type CorrectCandidateInput = {
+  is_event?: boolean | null;
+  title?: string | null;
+  location_name?: string | null;
+  event_date?: string | null;
+  event_end_date?: string | null;
+  club_name?: string | null;
+  vibes?: string[] | null;
+  source_label?: string | null;
+};
 
 interface AdminCandidateListResponse {
   candidates: ApiCandidate[];
@@ -48,23 +65,35 @@ interface AdminCandidateListResponse {
 }
 
 export const adminCandidatesApi = {
-  list: (
-    q = "",
-    status = "",
-    sourceType = "",
-    skip = 0,
-    limit = 25
-  ) => {
+  list: (q = "", status = "", sourceType = "", skip = 0, limit = 25) => {
     const params = new URLSearchParams({ skip: String(skip), limit: String(limit) });
     if (q) params.set("q", q);
     if (status) params.set("status", status);
     if (sourceType) params.set("source_type", sourceType);
     return authenticatedApiFetch<AdminCandidateListResponse>(
-      `/admin/candidates?${params.toString()}`
+      `/admin/candidates?${params.toString()}`,
     );
   },
   get: (id: string) =>
+    authenticatedApiFetch<ApiCandidateDetail>(`/admin/candidates/${encodeURIComponent(id)}`),
+  correct: (id: string, data: CorrectCandidateInput) =>
+    authenticatedApiFetch<ApiCandidateDetail>(`/admin/candidates/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  approve: (id: string) =>
     authenticatedApiFetch<ApiCandidateDetail>(
-      `/admin/candidates/${encodeURIComponent(id)}`
-  ),
+      `/admin/candidates/${encodeURIComponent(id)}/approve`,
+      { method: "POST" },
+    ),
+  reject: (id: string) =>
+    authenticatedApiFetch<ApiCandidateDetail>(
+      `/admin/candidates/${encodeURIComponent(id)}/reject`,
+      { method: "POST" },
+    ),
+  returnToReview: (id: string) =>
+    authenticatedApiFetch<ApiCandidateDetail>(
+      `/admin/candidates/${encodeURIComponent(id)}/return-to-review`,
+      { method: "POST" },
+    ),
 };

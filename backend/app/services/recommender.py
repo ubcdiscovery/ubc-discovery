@@ -1,6 +1,7 @@
 import json
 import logging
 import math
+from collections.abc import Sequence
 from functools import lru_cache
 from typing import TypeGuard
 
@@ -56,7 +57,7 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
-def vibe_jaccard(vibes_a: list[str], vibes_b: list[str]) -> float:
+def vibe_jaccard(vibes_a: Sequence[str], vibes_b: Sequence[str]) -> float:
     if not vibes_a or not vibes_b:
         return 0.0
     set_a = set(vibes_a)
@@ -69,8 +70,8 @@ def vibe_jaccard(vibes_a: list[str], vibes_b: list[str]) -> float:
 def hybrid_score(
     emb_a: list[float],
     emb_b: list[float],
-    vibes_a: list[str],
-    vibes_b: list[str],
+    vibes_a: Sequence[str],
+    vibes_b: Sequence[str],
     vibe_weight: float = VIBE_WEIGHT_DEFAULT,
 ) -> float:
     text_score = cosine_similarity(emb_a, emb_b)

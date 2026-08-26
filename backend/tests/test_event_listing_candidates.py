@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.api_credential import ApiCredential
 from app.models.audit_actor import AuditActorType
+from app.models.event import Event
 from app.models.event_listing_candidate import (
     CandidateIngestionOutcome,
     CandidateStatus,
@@ -376,6 +377,114 @@ class TestCandidateIngestion:
         assert first.status_code == 201
         assert conflict.status_code == 409
 
+    async def test_retry_reuses_legacy_uuid_shaped_keys_exactly(
+        self,
+        credential_admin_client: AsyncClient,
+        db_session: AsyncSession,
+        monkeypatch,
+    ):
+        _created, token = await _mint_credential(credential_admin_client)
+        legacy_key = "candidates/11111111-1111-1111-1111-111111111111/00.jpg"
+        candidate = EventListingCandidate(
+            id="legacy01",
+            **_model_payload("legacy-image-retry"),
+            image_keys=[legacy_key],
+        )
+        db_session.add(candidate)
+        await db_session.flush()
+        calls: list[tuple[str, str]] = []
+
+        def presign(*, content_type, file_key, max_file_size_bytes):
+            calls.append((content_type, file_key))
+            return "https://s3.example.com/legacy", {}, file_key
+
+        monkeypatch.setattr(
+            "app.routers.ingestion.candidates.s3.generate_presigned_upload_url",
+            presign,
+        )
+        response = await credential_admin_client.post(
+            "/ingestion/event-candidates",
+            headers=_api_key_headers(token),
+            json=_payload("legacy-image-retry", image_content_types=["image/jpeg"]),
+        )
+        assert response.status_code == 200, response.text
+        assert calls == [("image/jpeg", legacy_key)]
+        assert response.json()["uploads"][0]["file_key"] == legacy_key
+
+    async def test_ingestion_retries_candidate_id_collision_and_exhausts(
+        self,
+        credential_admin_client: AsyncClient,
+        db_session: AsyncSession,
+        monkeypatch,
+    ):
+        _created, token = await _mint_credential(credential_admin_client)
+        db_session.add(
+            EventListingCandidate(
+                id="event001",
+                **_model_payload("occupied-candidate-id"),
+            )
+        )
+        await db_session.flush()
+        assert await db_session.get(EventListingCandidate, "event001") is not None
+        generated = iter(["event001", "new00001"])
+
+        async def next_generated(_session):
+            return next(generated)
+
+        monkeypatch.setattr(
+            "app.routers.ingestion.candidates.generate_unique_id", next_generated
+        )
+        retry_source = f"collision-retry-{uuid.uuid4().hex}"
+        response = await credential_admin_client.post(
+            "/ingestion/event-candidates",
+            headers=_api_key_headers(token),
+            json=_payload(retry_source),
+        )
+        assert response.status_code == 201, response.text
+        assert response.json()["candidate"]["id"] == "new00001"
+
+        async def repeat_existing(_session):
+            return "event001"
+
+        monkeypatch.setattr(
+            "app.routers.ingestion.candidates.generate_unique_id", repeat_existing
+        )
+        exhausted = await credential_admin_client.post(
+            "/ingestion/event-candidates",
+            headers=_api_key_headers(token),
+            json=_payload(f"collision-exhausted-{uuid.uuid4().hex}"),
+        )
+        assert exhausted.status_code == 409
+        assert exhausted.json()["detail"] == "Could not allocate a unique Candidate id"
+
+    async def test_shared_id_generator_skips_event_and_candidate_ids(
+        self,
+        db_session: AsyncSession,
+        monkeypatch,
+    ):
+        db_session.add_all(
+            [
+                Event(
+                    id="event002",
+                    title="Existing Event",
+                    source="manual",
+                    source_label="campus_community",
+                    location_name="Nest",
+                    event_date=datetime(2026, 9, 1, 10, tzinfo=UTC),
+                ),
+                EventListingCandidate(
+                    id="cand0002",
+                    **_model_payload("occupied-candidate"),
+                ),
+            ]
+        )
+        await db_session.flush()
+        generated = iter(["event002", "cand0002", "free0001"])
+        monkeypatch.setattr("app.services.ids.generate", lambda size: next(generated))
+        from app.services.ids import generate_unique_id
+
+        assert await generate_unique_id(db_session) == "free0001"
+
     async def test_ingestion_validates_image_content_types(
         self, credential_admin_client: AsyncClient
     ):
@@ -482,7 +591,7 @@ class TestAdminCandidateQueue:
         admin_client: AsyncClient,
         db_session: AsyncSession,
     ):
-        candidate_id = uuid.uuid4()
+        candidate_id = "legacy01"
         candidate = EventListingCandidate(
             id=candidate_id,
             **_model_payload(),

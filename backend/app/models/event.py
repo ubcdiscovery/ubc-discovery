@@ -1,9 +1,19 @@
 import uuid
 from datetime import datetime
+from enum import StrEnum
 
 from nanoid import generate
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, Boolean, DateTime, String, Text, false, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    String,
+    Text,
+    false,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -11,8 +21,33 @@ from app.constants import EVENT_EMBEDDING_DIMENSIONS
 from app.database import Base
 
 
+class EventSourceLabel(StrEnum):
+    UBC_OFFICIAL = "ubc_official"
+    AMS_CLUB = "ams_club"
+    CAMPUS_COMMUNITY = "campus_community"
+
+
+class EventVibe(StrEnum):
+    SOCIAL = "social"
+    CAREER = "career"
+    ACADEMIC = "academic"
+    ARTS = "arts"
+    CULTURE = "culture"
+    OUTDOORS = "outdoors"
+    SPORTS = "sports"
+    FOOD = "food"
+    WELLNESS = "wellness"
+    VOLUNTEERING = "volunteering"
+
+
 class Event(Base):
     __tablename__ = "events"
+    __table_args__ = (
+        CheckConstraint(
+            "source_label IN ('ubc_official', 'ams_club', 'campus_community')",
+            name="ck_event_source_label",
+        ),
+    )
 
     id: Mapped[str] = mapped_column(
         String(8), primary_key=True, default=lambda: generate(size=8)
@@ -20,10 +55,12 @@ class Event(Base):
     title: Mapped[str] = mapped_column(String(500))
     description: Mapped[str] = mapped_column(Text, default="")
     source: Mapped[str] = mapped_column(String(50))  # "instagram", "manual"
-    source_label: Mapped[str] = mapped_column(String(50), default="campus_community")
+    source_label: Mapped[EventSourceLabel] = mapped_column(
+        String(50), default=EventSourceLabel.CAMPUS_COMMUNITY
+    )
     source_url: Mapped[str | None] = mapped_column(String(1024))
     club_name: Mapped[str | None] = mapped_column(String(255))
-    vibes: Mapped[list[str]] = mapped_column(JSON, default=list)
+    vibes: Mapped[list[EventVibe]] = mapped_column(JSON, default=list)
 
     location_name: Mapped[str] = mapped_column(String(255), nullable=False)
 

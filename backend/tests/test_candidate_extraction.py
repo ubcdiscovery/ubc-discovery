@@ -88,7 +88,7 @@ def _result_for(candidate_id, *, is_event: bool = True) -> ExtractionResult:
 class RecordingExtractor:
     def __init__(self, factory) -> None:
         self.factory = factory
-        self.calls: list[list[uuid.UUID]] = []
+        self.calls: list[list[str]] = []
 
     async def extract_many(
         self, items: list[ExtractionEvidence]
@@ -185,7 +185,7 @@ class TestCandidateExtraction:
         candidate.created_at = now
         await db_session.flush()
         claimed = await claim_jobs(db_session, 1, now=now)
-        assert [item.candidate_id for item in claimed] == [uuid.UUID(candidate_id)]
+        assert [item.candidate_id for item in claimed] == [candidate_id]
         extractor = RecordingExtractor(lambda item: _result_for(item.candidate_id))
         await process_claimed_jobs(db_session, claimed, extractor, now=now)
         assert extractor.calls == []

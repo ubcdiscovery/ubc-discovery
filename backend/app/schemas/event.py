@@ -5,21 +5,11 @@ from typing import Any, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.audit_actor import AuditActorType
+from app.models.event import EventSourceLabel, EventVibe
 from app.models.event_audit import EventAuditAction
 
-EVENT_SOURCE_LABELS = ("ubc_official", "ams_club", "campus_community")
-EVENT_VIBES = (
-    "social",
-    "career",
-    "academic",
-    "arts",
-    "culture",
-    "outdoors",
-    "sports",
-    "food",
-    "wellness",
-    "volunteering",
-)
+EVENT_SOURCE_LABELS = tuple(label.value for label in EventSourceLabel)
+EVENT_VIBES = tuple(vibe.value for vibe in EventVibe)
 
 
 class EventResponse(BaseModel):
@@ -27,11 +17,11 @@ class EventResponse(BaseModel):
     title: str
     description: str
     source: str
-    source_label: str
+    source_label: EventSourceLabel
     source_url: str | None
     club_name: str | None
     event_picture_url: str | None = None
-    vibes: list[str]
+    vibes: list[EventVibe]
     location_name: str
     event_date: datetime | None
     event_end_date: datetime | None
@@ -51,9 +41,9 @@ class CreateEventRequest(BaseModel):
     description: str = ""
     source: str = Field(default="manual", min_length=1, max_length=50)
     club_name: str | None = None
-    source_label: str = "campus_community"
+    source_label: EventSourceLabel = EventSourceLabel.CAMPUS_COMMUNITY
     source_url: str | None = None
-    vibes: list[str] = Field(default_factory=list)
+    vibes: list[EventVibe] = Field(default_factory=list)
     location_name: str = Field(min_length=1)
     event_date: datetime
     event_end_date: datetime | None = None
@@ -63,23 +53,6 @@ class CreateEventRequest(BaseModel):
         if self.event_end_date and self.event_end_date < self.event_date:
             raise ValueError("event_end_date must not be before event_date")
         return self
-
-    @field_validator("source_label")
-    @classmethod
-    def validate_source_label(cls, value: str) -> str:
-        if value not in EVENT_SOURCE_LABELS:
-            raise ValueError(
-                "source_label must be one of the fixed event source labels"
-            )
-        return value
-
-    @field_validator("vibes")
-    @classmethod
-    def validate_vibes(cls, value: list[str]) -> list[str]:
-        invalid = [vibe for vibe in value if vibe not in EVENT_VIBES]
-        if invalid:
-            raise ValueError("vibes must use the fixed event vibe taxonomy")
-        return value
 
     @field_validator("location_name")
     @classmethod
@@ -94,9 +67,9 @@ class UpdateEventRequest(BaseModel):
     description: str | None = None
     source: str | None = Field(default=None, min_length=1, max_length=50)
     club_name: str | None = None
-    source_label: str | None = None
+    source_label: EventSourceLabel | None = None
     source_url: str | None = None
-    vibes: list[str] | None = None
+    vibes: list[EventVibe] | None = None
     location_name: str | None = Field(default=None, min_length=1)
     event_date: datetime | None = None
     event_end_date: datetime | None = None
@@ -125,25 +98,6 @@ class UpdateEventRequest(BaseModel):
         ):
             raise ValueError("event_end_date must not be before event_date")
         return self
-
-    @field_validator("source_label")
-    @classmethod
-    def validate_source_label(cls, value: str | None) -> str | None:
-        if value is not None and value not in EVENT_SOURCE_LABELS:
-            raise ValueError(
-                "source_label must be one of the fixed event source labels"
-            )
-        return value
-
-    @field_validator("vibes")
-    @classmethod
-    def validate_vibes(cls, value: list[str] | None) -> list[str] | None:
-        if value is None:
-            return value
-        invalid = [vibe for vibe in value if vibe not in EVENT_VIBES]
-        if invalid:
-            raise ValueError("vibes must use the fixed event vibe taxonomy")
-        return value
 
     @field_validator("location_name")
     @classmethod

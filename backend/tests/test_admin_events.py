@@ -267,7 +267,7 @@ class TestCreateAdminEvent:
     ):
         embedding = _test_embedding(0.1)
         with patch(
-            "app.routers.admin.events.recommender.generate_event_embedding",
+            "app.services.event_administration.recommender.generate_event_embedding",
             return_value=embedding,
         ):
             resp = await admin_client.post(
@@ -338,7 +338,7 @@ class TestUpdateAdminEvent:
     ):
         event = sample_events[0]
         with patch(
-            "app.routers.admin.events.recommender.generate_event_embedding"
+            "app.services.event_administration.recommender.generate_event_embedding"
         ) as mock_embedding:
             mock_embedding.return_value = _test_embedding(0.1)
             resp = await admin_client.put(
@@ -355,7 +355,7 @@ class TestUpdateAdminEvent:
         self, admin_client: AsyncClient, sample_events: list[Event]
     ):
         with patch(
-            "app.routers.admin.events.recommender.generate_event_embedding"
+            "app.services.event_administration.recommender.generate_event_embedding"
         ) as mock_embedding:
             resp = await admin_client.put(
                 f"/admin/events/{sample_events[0].id}",
@@ -381,7 +381,7 @@ class TestUpdateAdminEvent:
             "vibes": event.vibes,
         }
         with patch(
-            "app.routers.admin.events.recommender.generate_event_embedding"
+            "app.services.event_administration.recommender.generate_event_embedding"
         ) as mock_embedding:
             resp = await admin_client.put(
                 f"/admin/events/{event.id}",

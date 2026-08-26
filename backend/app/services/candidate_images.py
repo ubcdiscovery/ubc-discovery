@@ -1,5 +1,3 @@
-import uuid
-
 CANDIDATE_IMAGE_MAX_COUNT = 10
 CANDIDATE_IMAGE_CONTENT_TYPES = {
     "image/jpeg": "jpg",
@@ -8,7 +6,7 @@ CANDIDATE_IMAGE_CONTENT_TYPES = {
 }
 
 
-def candidate_image_key(candidate_id: uuid.UUID, index: int, content_type: str) -> str:
+def candidate_image_key(candidate_id: str, index: int, content_type: str) -> str:
     extension = CANDIDATE_IMAGE_CONTENT_TYPES.get(content_type)
     if extension is None:
         raise ValueError("content type must be image/jpeg, image/png, or image/webp")

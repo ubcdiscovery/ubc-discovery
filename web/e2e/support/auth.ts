@@ -78,6 +78,9 @@ export async function mockApi(
     adminCandidates?: AdminMockCandidate[];
     onAdminList?: (q: string) => void;
     onCandidateList?: (filters: { q: string; status: string; sourceType: string }) => void;
+    onCandidateCorrect?: (body: Record<string, unknown>) => void;
+    onCandidateDecision?: (action: "approve" | "reject" | "return") => void;
+    candidateMutationError?: { status: number; detail: string };
     onAdminCreate?: (body: Record<string, unknown>) => void;
     onAdminArchive?: (archived: boolean) => void;
     onAdminUpdate?: (body: Record<string, unknown>) => void;
@@ -105,13 +108,15 @@ export async function mockApi(
   const handleCandidates = createCandidatesMock({
     candidates: options.adminCandidates,
     onList: options.onCandidateList,
+    onCorrect: options.onCandidateCorrect,
+    onDecision: options.onCandidateDecision,
+    mutationError: options.candidateMutationError,
   });
   const handleApiKeys = createApiKeysMock({
     apiKeys: options.adminApiKeys,
     onCreate: options.onApiKeyCreate,
     onRevoke: options.onApiKeyRevoke,
   });
-
   await page.route("http://api.test/**", async (route) => {
     const url = new URL(route.request().url());
     if (
@@ -280,7 +285,6 @@ export async function mockApi(
     });
   });
 }
-
 export async function setAuthenticatedUser(
   page: Page,
   user = { uid: "existing-uid", email: "member@example.com" }
