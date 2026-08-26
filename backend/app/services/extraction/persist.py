@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from app.models.event import EventSourceLabel, EventVibe
 from app.models.event_listing_candidate import EventListingCandidate
 from app.schemas.event import EVENT_SOURCE_LABELS, EVENT_VIBES
 from app.services.extraction.types import ExtractionResult
@@ -42,9 +43,11 @@ def persist_extraction(
         candidate.source_label = None
         return
 
-    vibes = [vibe for vibe in result.vibes if vibe in EVENT_VIBES]
+    vibes = [EventVibe(vibe) for vibe in result.vibes if vibe in EVENT_VIBES]
     source_label = (
-        result.source_label if result.source_label in EVENT_SOURCE_LABELS else None
+        EventSourceLabel(result.source_label)
+        if result.source_label in EVENT_SOURCE_LABELS
+        else None
     )
     candidate.title = result.title
     candidate.location_name = result.location_name

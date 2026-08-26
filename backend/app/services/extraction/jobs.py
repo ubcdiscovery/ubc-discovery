@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
 
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
@@ -17,7 +16,7 @@ from app.models.event_listing_candidate import (
 
 async def enqueue_extraction_job(
     session: AsyncSession,
-    candidate_id: UUID,
+    candidate_id: str,
     *,
     delay_seconds: int,
     now: datetime | None = None,

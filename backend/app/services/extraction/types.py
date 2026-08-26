@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Protocol
-from uuid import UUID
 
 
 @dataclass(frozen=True)
@@ -15,7 +14,7 @@ class EvidenceImage:
 
 @dataclass(frozen=True)
 class ExtractionEvidence:
-    candidate_id: UUID
+    candidate_id: str
     caption: str
     source_account: str
     source_type: str
@@ -27,7 +26,7 @@ class ExtractionEvidence:
 
 @dataclass(frozen=True)
 class ExtractionResult:
-    candidate_id: UUID
+    candidate_id: str
     is_event: bool
     title: str | None = None
     event_date: datetime | None = None

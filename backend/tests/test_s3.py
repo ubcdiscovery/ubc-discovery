@@ -1,4 +1,3 @@
-import uuid
 from unittest.mock import MagicMock
 
 from app.config import settings
@@ -63,12 +62,12 @@ def test_generate_presigned_upload_url_supports_candidate_image_key_and_size(
     client = MagicMock()
     client.generate_presigned_post.return_value = {
         "url": "https://s3.example.com/presigned",
-        "fields": {"key": "candidates/11111111-1111-1111-1111-111111111111/00.jpg"},
+        "fields": {"key": "candidates/abc12345/00.jpg"},
     }
     monkeypatch.setattr(s3, "_client", lambda: client)
     monkeypatch.setattr(settings, "s3_bucket_name", "test-bucket")
 
-    candidate_id = uuid.UUID("11111111-1111-1111-1111-111111111111")
+    candidate_id = "abc12345"
     file_key = candidate_image_key(candidate_id, 0, "image/jpeg")
     upload_url, fields, returned_key = s3.generate_presigned_upload_url(
         content_type="image/jpeg",
@@ -77,10 +76,10 @@ def test_generate_presigned_upload_url_supports_candidate_image_key_and_size(
     )
 
     assert upload_url == "https://s3.example.com/presigned"
-    assert fields == {"key": "candidates/11111111-1111-1111-1111-111111111111/00.jpg"}
-    assert returned_key == "candidates/11111111-1111-1111-1111-111111111111/00.jpg"
+    assert fields == {"key": "candidates/abc12345/00.jpg"}
+    assert returned_key == "candidates/abc12345/00.jpg"
     kwargs = client.generate_presigned_post.call_args.kwargs
-    assert kwargs["Key"] == "candidates/11111111-1111-1111-1111-111111111111/00.jpg"
+    assert kwargs["Key"] == "candidates/abc12345/00.jpg"
     assert kwargs["Fields"]["Content-Type"] == "image/jpeg"
     assert ["content-length-range", 1, 5 * 1024 * 1024] in kwargs["Conditions"]
 

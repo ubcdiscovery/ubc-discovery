@@ -1,11 +1,13 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.audit_actor import AuditActorType
+from app.models.event import EventSourceLabel, EventVibe
 from app.models.event_listing_candidate import (
     CandidateIngestionOutcome,
+    CandidateMatchKind,
     CandidateStatus,
 )
 from app.schemas.user import PresignedUploadResponse
@@ -72,7 +74,7 @@ class EventListingCandidateIngestionRequest(CandidateSourceIdentity):
 
 
 class EventListingCandidateResponse(BaseModel):
-    id: uuid.UUID
+    id: str
     description: str
     source_account: str
     source_url: str | None
@@ -100,8 +102,8 @@ class EventListingCandidateAdminResponse(EventListingCandidateResponse):
     event_date: datetime | None = None
     event_end_date: datetime | None = None
     club_name: str | None = None
-    vibes: list[str] = Field(default_factory=list)
-    source_label: str | None = None
+    vibes: list[EventVibe] = Field(default_factory=list)
+    source_label: EventSourceLabel | None = None
     extracted_original: dict | list | None = None
     extraction_model: str | None = None
     extracted_at: datetime | None = None
@@ -120,8 +122,49 @@ class EventListingCandidateIngestionAuditResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class CandidateMatchResponse(BaseModel):
+    kind: CandidateMatchKind
+    id: str
+    title: str
+    event_date: datetime
+
+
 class EventListingCandidateDetailResponse(EventListingCandidateAdminResponse):
     ingestion_audits: list[EventListingCandidateIngestionAuditResponse]
+    same_club_same_day_matches: list[CandidateMatchResponse] = Field(
+        default_factory=list
+    )
+
+
+class CorrectCandidateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    is_event: bool | None = None
+    title: str | None = Field(default=None, max_length=500)
+    location_name: str | None = Field(default=None, max_length=255)
+    event_date: datetime | None = None
+    event_end_date: datetime | None = None
+    club_name: str | None = Field(default=None, max_length=255)
+    vibes: list[EventVibe] | None = None
+    source_label: EventSourceLabel | None = Field(default=None, max_length=50)
+
+    @field_validator("title", "location_name", "club_name", mode="before")
+    @classmethod
+    def strip_optional_text(cls, value: object) -> object:
+        if isinstance(value, str):
+            stripped = value.strip()
+            return stripped or None
+        return value
+
+    @model_validator(mode="after")
+    def validate_end_after_start(self) -> CorrectCandidateRequest:
+        if (
+            self.event_end_date
+            and self.event_date
+            and self.event_end_date < self.event_date
+        ):
+            raise ValueError("event_end_date must not be before event_date")
+        return self
 
 
 class AdminCandidateListQuery(BaseModel):

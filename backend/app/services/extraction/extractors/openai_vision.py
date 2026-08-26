@@ -3,7 +3,6 @@ from __future__ import annotations
 import base64
 import json
 from datetime import datetime
-from uuid import UUID
 
 from openai import AsyncOpenAI
 from openai.types.chat import (
@@ -69,7 +68,7 @@ def _result_from_payload(payload: dict) -> ExtractionResult:
     if source_label not in EVENT_SOURCE_LABELS:
         source_label = None
     return ExtractionResult(
-        candidate_id=UUID(str(payload["candidate_id"])),
+        candidate_id=str(payload["candidate_id"]),
         is_event=bool(payload.get("is_event")),
         title=payload.get("title") or None,
         event_date=_parse_datetime(payload.get("event_date")),

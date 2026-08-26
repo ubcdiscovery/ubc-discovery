@@ -1,67 +1,140 @@
-import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router";
+import { CandidateDraftForm, draftFromCandidate, draftInput, type CandidateDraft } from "~/components/admin/CandidateDraftForm";
+import { CandidateIngestionReceipts } from "~/components/admin/CandidateIngestionReceipts";
+import { ReviewDecisionCard } from "~/components/admin/ReviewDecisionCard";
 import { Alert } from "~/components/ui/Alert";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/Card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/Table";
-import { adminCandidatesApi } from "~/lib/admin-candidates";
+import {
+  adminCandidatesApi,
+} from "~/lib/admin-candidates";
 
 export function meta() {
-  return [{ title: "Inspect Candidate — UBC Discovery Admin" }];
+  return [{ title: "Review Candidate — UBC Discovery Admin" }];
 }
 
-function formatDate(value: string | null) {
+function formatDate(value: string | null | undefined) {
   if (!value) return "Unknown";
   return new Date(value).toLocaleString("en", { dateStyle: "medium", timeStyle: "short" });
 }
 
 export default function AdminCandidateDetail() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const candidateQuery = useQuery({
     queryKey: ["admin-candidate", id],
     queryFn: () => adminCandidatesApi.get(id),
     enabled: Boolean(id),
     retry: false,
   });
+  const [draft, setDraft] = useState<CandidateDraft | null>(null);
+  const [decision, setDecision] = useState<"approve" | "reject" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  if (candidateQuery.isPending) {
-    return <p className="px-4.5 py-8 font-mono text-xs uppercase tracking-wide text-muted md:px-8">Loading candidate…</p>;
-  }
+  useEffect(() => {
+    if (candidateQuery.data) setDraft(draftFromCandidate(candidateQuery.data));
+  }, [candidateQuery.data]);
 
-  if (candidateQuery.isError || !candidateQuery.data) {
+  if (candidateQuery.isPending)
+    return (
+      <p className="px-4.5 py-8 font-mono text-xs uppercase tracking-wide text-muted md:px-8">
+        Loading candidate…
+      </p>
+    );
+  if (candidateQuery.isError || !candidateQuery.data || !draft) {
     return (
       <div className="px-4.5 py-6 md:px-8 md:py-10">
         <Alert variant="error" className="mt-6 bg-surface p-6">
-          <p className="font-mono text-xs font-bold uppercase tracking-wider text-danger">Candidate unavailable</p>
-          <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight">Could not inspect this Candidate.</h1>
-          <p className="mt-2 text-sm text-ink-soft">It may have been removed, or your administrator access may have changed.</p>
+          <p className="font-mono text-xs font-bold uppercase tracking-wider text-danger">
+            Candidate unavailable
+          </p>
+          <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight">
+            Could not inspect this Candidate.
+          </h1>
         </Alert>
       </div>
     );
   }
 
   const candidate = candidateQuery.data;
+  const matches = candidate.same_club_same_day_matches ?? [];
+  const canEdit = candidate.status === "pending";
+  async function mutate(action: "approve" | "reject" | "return") {
+    setError(null);
+    setSaving(true);
+    try {
+      const updated =
+        action === "approve"
+          ? await adminCandidatesApi.approve(id)
+          : action === "reject"
+            ? await adminCandidatesApi.reject(id)
+            : await adminCandidatesApi.returnToReview(id);
+      queryClient.setQueryData(["admin-candidate", id], updated);
+      await queryClient.invalidateQueries({ queryKey: ["admin-candidates"] });
+      setDecision(null);
+      if (action === "approve") await navigate(`/admin/events/${id}`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The Candidate could not be updated.");
+    } finally {
+      setSaving(false);
+    }
+  }
+  async function saveChanges() {
+    if (!draft || !canEdit) return;
+    setError(null);
+    setSaving(true);
+    try {
+      const updated = await adminCandidatesApi.correct(id, draftInput(draft));
+      queryClient.setQueryData(["admin-candidate", id], updated);
+      await queryClient.invalidateQueries({ queryKey: ["admin-candidates"] });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Changes could not be saved.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="px-4.5 py-6 md:px-8 md:py-10">
       <div className="border-b-2 border-ink pb-5">
-        <p className="font-mono text-xs font-bold uppercase tracking-wider text-accent">Candidate evidence</p>
-        <h1 className="mt-1 text-balance font-display text-4xl font-extrabold tracking-tighter md:text-6xl">{candidate.source_account}</h1>
+        <p className="font-mono text-xs font-bold uppercase tracking-wider text-accent">
+          Candidate evidence
+        </p>
+        <h1 className="mt-1 text-balance font-display text-4xl font-extrabold tracking-tighter md:text-6xl">
+          {candidate.source_account}
+        </h1>
         <p className="mt-3 font-mono text-xs uppercase tracking-wide text-muted">{candidate.id}</p>
       </div>
-
+      {error ? (
+        <Alert variant="error" className="mt-5">
+          {error}
+        </Alert>
+      ) : null}
+      {candidate.title ? <span className="sr-only">{candidate.title}</span> : null}
       <div className="mt-6 grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
         <div className="grid gap-5">
           <Card>
-            <CardHeader><CardTitle>Source text</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Source text</CardTitle>
+            </CardHeader>
             <CardContent>
-              <p className="whitespace-pre-wrap text-sm/relaxed text-ink-soft">{candidate.description || "No caption supplied."}</p>
+              <p className="whitespace-pre-wrap text-sm/relaxed text-ink-soft">
+                {candidate.description || "No caption supplied."}
+              </p>
             </CardContent>
           </Card>
-
           <Card>
-            <CardHeader><CardTitle>Source images</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Source images</CardTitle>
+            </CardHeader>
             <CardContent>
               {candidate.image_urls.length === 0 ? (
-                <p className="font-mono text-xs uppercase tracking-wide text-muted">No source images supplied.</p>
+                <p className="font-mono text-xs uppercase tracking-wide text-muted">
+                  No source images supplied.
+                </p>
               ) : (
                 <ol className="grid gap-3 sm:grid-cols-2">
                   {candidate.image_urls.map((url, index) => (
@@ -82,27 +155,55 @@ export default function AdminCandidateDetail() {
               )}
             </CardContent>
           </Card>
-
           {candidate.extracted_at ? (
             <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Classification</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="font-mono text-xs font-bold uppercase text-accent">
+                    {candidate.is_event ? "event" : "not an event"}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Extracted original</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-2xs text-ink-soft">
+                    {JSON.stringify(candidate.extracted_original, null, 2)}
+                  </pre>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Extraction metadata</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="font-mono text-xs text-ink-soft">
+                    {candidate.extraction_model || "Unknown model"}
+                  </p>
+                  <p className="mt-1 font-mono text-xs text-ink-soft">
+                    {formatDate(candidate.extracted_at)}
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          ) : null}
+          {candidate.extracted_at && canEdit ? (
+            <CandidateDraftForm
+              draft={draft}
+              saving={saving}
+              onChange={(update) => setDraft({ ...draft, ...update })}
+              onSave={() => void saveChanges()}
+            />
+          ) : candidate.extracted_at ? (
             <Card>
-              <CardHeader><CardTitle>Classification</CardTitle></CardHeader>
-              <CardContent>
-                <p className="font-mono text-xs font-bold uppercase text-accent">
-                  {candidate.is_event ? "event" : "not an event"}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle>Extracted original</CardTitle></CardHeader>
-              <CardContent>
-                <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-2xs text-ink-soft">
-                  {JSON.stringify(candidate.extracted_original, null, 2)}
-                </pre>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle>Current draft</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Current draft</CardTitle>
+              </CardHeader>
               <CardContent>
                 <dl className="grid gap-3 font-mono text-xs">
                   <div>
@@ -115,41 +216,49 @@ export default function AdminCandidateDetail() {
                   </div>
                   <div>
                     <dt className="uppercase tracking-wide text-muted">Start</dt>
-                    <dd className="mt-1 font-bold text-ink">{formatDate(candidate.event_date ?? null)}</dd>
-                  </div>
-                  <div>
-                    <dt className="uppercase tracking-wide text-muted">End</dt>
-                    <dd className="mt-1 font-bold text-ink">{formatDate(candidate.event_end_date ?? null)}</dd>
-                  </div>
-                  <div>
-                    <dt className="uppercase tracking-wide text-muted">Organizer</dt>
-                    <dd className="mt-1 font-bold text-ink">{candidate.club_name || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="uppercase tracking-wide text-muted">Vibes</dt>
-                    <dd className="mt-1 font-bold text-ink">{(candidate.vibes ?? []).join(", ") || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt className="uppercase tracking-wide text-muted">Source label</dt>
-                    <dd className="mt-1 font-bold text-ink">{candidate.source_label || "—"}</dd>
+                    <dd className="mt-1 font-bold text-ink">{formatDate(candidate.event_date)}</dd>
                   </div>
                 </dl>
               </CardContent>
             </Card>
-            </>
           ) : null}
         </div>
-
-        <div className="grid content-start gap-5">
-          <Card className="border-2">
-            <CardHeader><CardTitle>Provenance</CardTitle></CardHeader>
+        <aside className="grid content-start gap-5 self-start lg:sticky lg:top-4">
+          <ReviewDecisionCard
+            candidate={candidate}
+            matches={matches}
+            decision={decision}
+            saving={saving}
+            onDecisionChange={setDecision}
+            onMutate={(action) => void mutate(action)}
+            formatDate={formatDate}
+          />
+          <Card>
+            <CardHeader>
+              <CardTitle>Provenance</CardTitle>
+            </CardHeader>
             <CardContent>
               <dl className="grid gap-3 font-mono text-xs">
-                <div><dt className="uppercase tracking-wide text-muted">Status</dt><dd className="mt-1 font-bold uppercase text-accent">{candidate.status}</dd></div>
-                <div><dt className="uppercase tracking-wide text-muted">Source type</dt><dd className="mt-1 font-bold text-ink">{candidate.source_type}</dd></div>
-                <div><dt className="uppercase tracking-wide text-muted">Source account</dt><dd className="mt-1 font-bold text-ink">{candidate.source_account}</dd></div>
-                <div><dt className="uppercase tracking-wide text-muted">External source ID</dt><dd className="mt-1 break-all font-bold text-ink">{candidate.external_source_id}</dd></div>
-                <div><dt className="uppercase tracking-wide text-muted">Received</dt><dd className="mt-1 font-bold text-ink">{formatDate(candidate.created_at)}</dd></div>
+                <div>
+                  <dt className="uppercase tracking-wide text-muted">Status</dt>
+                  <dd className="mt-1 font-bold uppercase text-accent">{candidate.status}</dd>
+                </div>
+                <div>
+                  <dt className="uppercase tracking-wide text-muted">Source type</dt>
+                  <dd className="mt-1 font-bold text-ink">{candidate.source_type}</dd>
+                </div>
+                <div>
+                  <dt className="uppercase tracking-wide text-muted">Source account</dt>
+                  <dd className="mt-1 font-bold text-ink">{candidate.source_account}</dd>
+                </div>
+                <div>
+                  <dt className="uppercase tracking-wide text-muted">External source ID</dt>
+                  <dd className="mt-1 font-bold text-ink">{candidate.external_source_id}</dd>
+                </div>
+                <div>
+                  <dt className="uppercase tracking-wide text-muted">Received</dt>
+                  <dd className="mt-1 font-bold text-ink">{formatDate(candidate.created_at)}</dd>
+                </div>
                 <div>
                   <dt className="uppercase tracking-wide text-muted">Extraction</dt>
                   <dd className="mt-1 font-bold text-ink">
@@ -157,44 +266,21 @@ export default function AdminCandidateDetail() {
                   </dd>
                 </div>
               </dl>
-              {candidate.extracted_at ? (
-                <div className="mt-5">
-                  <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-accent">Extraction metadata</h2>
-                  <p className="mt-2 font-mono text-xs text-ink-soft">{candidate.extraction_model}</p>
-                  <p className="mt-1 font-mono text-xs text-ink-soft">{formatDate(candidate.extracted_at)}</p>
-                </div>
+              {candidate.source_url ? (
+                <a
+                  href={candidate.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-5 block break-all text-sm text-accent underline"
+                >
+                  Open source URL
+                </a>
               ) : null}
-              {candidate.source_url && (
-                <a href={candidate.source_url} target="_blank" rel="noreferrer" className="mt-5 block break-all text-sm text-accent underline">Open source URL</a>
-              )}
             </CardContent>
           </Card>
-        </div>
+        </aside>
       </div>
-
-      <Card className="mt-5">
-        <CardHeader><CardTitle>Ingestion receipts</CardTitle></CardHeader>
-        <CardContent>
-          <Table className="text-left">
-            <TableHeader><TableRow><TableHead scope="col">Outcome</TableHead><TableHead scope="col">Credential</TableHead><TableHead scope="col">Received</TableHead><TableHead scope="col">Receipt</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {candidate.ingestion_audits.map((audit) => (
-                <TableRow key={audit.id}>
-                  <TableCell className="font-mono text-xs font-bold uppercase text-accent">{audit.outcome}</TableCell>
-                  <TableCell className="font-mono text-xs text-ink-soft">
-                    <span className="block">{audit.credential_label}</span>
-                    <span className="mt-1 block text-muted">
-                      {audit.actor_type} · {audit.actor_id}
-                    </span>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs text-ink-soft">{formatDate(audit.received_at)}</TableCell>
-                  <TableCell className="break-all font-mono text-xs text-muted">{audit.id}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <CandidateIngestionReceipts audits={candidate.ingestion_audits} formatDate={formatDate} />
     </div>
   );
 }

@@ -18,6 +18,12 @@ export type AdminMockCandidate = {
     credential_label: string;
     received_at: string;
   }>;
+  same_club_same_day_matches?: Array<{
+    kind: "candidate" | "event";
+    id: string;
+    title: string;
+    event_date: string;
+  }>;
   [key: string]: unknown;
 };
 
@@ -46,6 +52,7 @@ export const mockCandidate: AdminMockCandidate = {
       received_at: "2026-08-08T12:00:00Z",
     },
   ],
+  same_club_same_day_matches: [],
 };
 
 export const mockExtractedCandidate: AdminMockCandidate = {
@@ -69,6 +76,9 @@ export const mockExtractedCandidate: AdminMockCandidate = {
 export function createCandidatesMock(options: {
   candidates?: AdminMockCandidate[];
   onList?: (filters: { q: string; status: string; sourceType: string }) => void;
+  onCorrect?: (body: Record<string, unknown>) => void;
+  onDecision?: (action: "approve" | "reject" | "return") => void;
+  mutationError?: { status: number; detail: string };
 }) {
   const candidates = options.candidates ?? [];
 
@@ -98,9 +108,7 @@ export function createCandidatesMock(options: {
       const requestedLimit = Number.parseInt(url.searchParams.get("limit") ?? "25", 10);
       const skip = Number.isFinite(requestedSkip) && requestedSkip >= 0 ? requestedSkip : 0;
       const limit =
-        Number.isFinite(requestedLimit) && requestedLimit > 0
-          ? requestedLimit
-          : matches.length;
+        Number.isFinite(requestedLimit) && requestedLimit > 0 ? requestedLimit : matches.length;
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -113,14 +121,58 @@ export function createCandidatesMock(options: {
     }
 
     if (url.pathname.startsWith("/admin/candidates/") && route.request().method() === "GET") {
-      const candidateId = decodeURIComponent(
-        url.pathname.slice("/admin/candidates/".length)
-      );
+      const candidateId = decodeURIComponent(url.pathname.slice("/admin/candidates/".length));
       const candidate = candidates.find((item) => item.id === candidateId);
       await route.fulfill({
         status: candidate ? 200 : 404,
         contentType: "application/json",
         body: JSON.stringify(candidate ?? { detail: "Candidate not found" }),
+      });
+      return true;
+    }
+
+    if (url.pathname.startsWith("/admin/candidates/") && route.request().method() !== "GET") {
+      const remainder = url.pathname.slice("/admin/candidates/".length);
+      const parts = remainder.split("/");
+      const candidateId = decodeURIComponent(parts[0]);
+      const candidate = candidates.find((item) => item.id === candidateId);
+      if (!candidate) {
+        await route.fulfill({
+          status: 404,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: "Candidate not found" }),
+        });
+        return true;
+      }
+      const method = route.request().method();
+      if (options.mutationError) {
+        await route.fulfill({
+          status: options.mutationError.status,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: options.mutationError.detail }),
+        });
+        return true;
+      }
+      if (method === "PUT") {
+        const body = route.request().postDataJSON() as Record<string, unknown>;
+        options.onCorrect?.(body);
+        Object.assign(candidate, body);
+      } else if (method === "POST" && parts[1] === "approve") {
+        candidate.status = "approved";
+        options.onDecision?.("approve");
+      } else if (method === "POST" && parts[1] === "reject") {
+        candidate.status = "rejected";
+        options.onDecision?.("reject");
+      } else if (method === "POST" && parts[1] === "return-to-review") {
+        candidate.status = "pending";
+        options.onDecision?.("return");
+      } else {
+        return false;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(candidate),
       });
       return true;
     }

@@ -20,60 +20,18 @@ from app.schemas.event import (
     UpdateEventRequest,
 )
 from app.schemas.user import PresignedUploadResponse
-from app.services import recommender, s3
+from app.services import s3
+from app.services.event_administration import (
+    add_event_audit,
+    create_canonical_event_listing,
+    event_snapshot,
+    update_event_embedding,
+)
 
 router = APIRouter(
     prefix="/events",
     tags=["Admin Events"],
 )
-
-
-def _event_snapshot(event: Event) -> dict:
-    return {
-        "title": event.title,
-        "description": event.description,
-        "source": event.source,
-        "source_label": event.source_label,
-        "source_url": event.source_url,
-        "club_name": event.club_name,
-        "vibes": event.vibes or [],
-        "location_name": event.location_name,
-        "event_date": event.event_date.isoformat() if event.event_date else None,
-        "event_end_date": (
-            event.event_end_date.isoformat() if event.event_end_date else None
-        ),
-        "is_archived": event.is_archived,
-        "archived_at": event.archived_at.isoformat() if event.archived_at else None,
-        "archived_by": str(event.archived_by) if event.archived_by else None,
-    }
-
-
-def _add_audit(
-    db: AsyncSession,
-    event: Event,
-    actor: AdminActor,
-    action: EventAuditAction,
-    snapshots: tuple[dict | None, dict | None],
-) -> None:
-    db.add(
-        EventAuditLog(
-            event_id=event.id,
-            actor_type=actor.actor_type,
-            actor_id=actor.actor_id,
-            action=action,
-            before=snapshots[0],
-            after=snapshots[1],
-            created_at=datetime.now(UTC),
-        )
-    )
-
-
-async def _update_embedding(event: Event) -> None:
-    embedding = await recommender.generate_event_embedding(event)
-    if not recommender.is_valid_embedding(embedding):
-        return
-    event.embedding = embedding
-    event.embedding_vector = embedding
 
 
 @router.get("", response_model=AdminEventListResponse)
@@ -155,13 +113,7 @@ async def create_event(
     db: AsyncSession = Depends(get_db),
     actor: AdminActor = Depends(require_admin),
 ):
-    event = Event(**body.model_dump())
-    db.add(event)
-    await db.flush()
-    await _update_embedding(event)
-    _add_audit(
-        db, event, actor, EventAuditAction.CREATE, (None, _event_snapshot(event))
-    )
+    event = await create_canonical_event_listing(body, actor, db)
     await db.commit()
     await db.refresh(event)
     return admin_event_to_response(event)
@@ -180,7 +132,7 @@ async def update_event(
         raise HTTPException(status_code=404, detail="Event not found")
 
     changes = body.model_dump(exclude_unset=True)
-    before = _event_snapshot(event)
+    before = event_snapshot(event)
     next_start = changes.get("event_date", event.event_date)
     next_end = changes.get("event_end_date", event.event_end_date)
     if next_start and next_end and next_end < next_start:
@@ -206,11 +158,11 @@ async def update_event(
         setattr(event, field, value)
 
     if should_update_embedding:
-        await _update_embedding(event)
+        await update_event_embedding(event)
 
     if changes:
-        _add_audit(
-            db, event, actor, EventAuditAction.UPDATE, (before, _event_snapshot(event))
+        add_event_audit(
+            db, event, actor, EventAuditAction.UPDATE, before, event_snapshot(event)
         )
     await db.commit()
     await db.refresh(event)
@@ -227,16 +179,17 @@ async def _set_archive_state(
     if event.is_archived == is_archived:
         return event
 
-    before = _event_snapshot(event)
+    before = event_snapshot(event)
     event.is_archived = is_archived
     event.archived_at = datetime.now(UTC) if is_archived else None
     event.archived_by = actor.actor_id if is_archived else None
-    _add_audit(
+    add_event_audit(
         db,
         event,
         actor,
         EventAuditAction.ARCHIVE if is_archived else EventAuditAction.RESTORE,
-        (before, _event_snapshot(event)),
+        before,
+        event_snapshot(event),
     )
     await db.commit()
     await db.refresh(event)
@@ -303,12 +256,13 @@ async def get_event_presigned_upload(
         file_key=event_image_key(event_id),
         max_file_size_bytes=settings.event_image_max_bytes,
     )
-    _add_audit(
+    add_event_audit(
         db,
         event,
         actor,
         EventAuditAction.IMAGE_UPLOAD,
-        (None, {"event_picture_key": file_key}),
+        None,
+        {"event_picture_key": file_key},
     )
     await db.commit()
     return PresignedUploadResponse(
