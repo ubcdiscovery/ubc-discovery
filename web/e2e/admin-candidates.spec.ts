@@ -13,13 +13,25 @@ test("administrator filters and inspects an Event Listing Candidate", async ({ p
 
   await page.goto("/admin/candidates");
 
-  await expect(page.getByRole("heading", { name: "Candidates" })).toBeVisible();
+  const statusFilter = page.getByRole("combobox", { name: "Filter candidate status" });
+
+  // The queue opens on pending review by default.
+  await expect(statusFilter).toHaveValue("pending");
   await expect(page.getByRole("table", { name: "Event Listing Candidates" })).toBeVisible();
   await expect(page.getByRole("link", { name: mockCandidate.source_account })).toBeVisible();
-
-  await page.getByRole("combobox", { name: "Filter candidate status" }).selectOption("pending");
-  await expect(page).toHaveURL(/status=pending/);
   expect(candidateQueries.at(-1)).toMatchObject({ status: "pending" });
+
+  // The chosen status sticks across visits.
+  await statusFilter.selectOption("approved");
+  await expect(page).toHaveURL(/status=approved/);
+  expect(candidateQueries.at(-1)).toMatchObject({ status: "approved" });
+
+  await statusFilter.selectOption({ label: "All statuses" });
+  await expect(page).not.toHaveURL(/status=/);
+  expect(candidateQueries.at(-1)).toMatchObject({ status: "" });
+  await page.reload();
+  await expect(statusFilter).toHaveValue("");
+  expect(candidateQueries.at(-1)).toMatchObject({ status: "" });
 
   await page.getByRole("link", { name: mockCandidate.source_account }).click();
 
@@ -37,6 +49,36 @@ test("administrator filters and inspects an Event Listing Candidate", async ({ p
   await expect(page.getByRole("heading", { name: "Extraction metadata" })).toHaveCount(0);
   await expect(page.getByText("created", { exact: true })).toBeVisible();
   await expect(page.getByText("Campus importer", { exact: true })).toBeVisible();
+});
+
+test("administrator quick-reviews a pending Candidate from the queue", async ({ page }) => {
+  let decision = "";
+  await mockApi(page, {
+    profile: adminProfile,
+    adminCandidates: [mockExtractedCandidate],
+    onCandidateDecision: (action) => {
+      decision = action;
+    },
+  });
+  await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
+  await page.goto("/admin/candidates");
+
+  // A stray click can be backed out without changing anything.
+  await page
+    .getByRole("button", { name: `Reject ${mockExtractedCandidate.source_account}` })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("Reject this Candidate?");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(decision).toBe("");
+
+  await page
+    .getByRole("button", { name: `Approve ${mockExtractedCandidate.source_account}` })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("Approve this Candidate?");
+  await page.getByRole("button", { name: "Confirm approve" }).click();
+  await expect.poll(() => decision).toBe("approve");
+  await expect(page.getByText("No matching Candidates.")).toBeVisible();
 });
 
 test("administrator inspects extracted Candidate draft fields", async ({ page }) => {

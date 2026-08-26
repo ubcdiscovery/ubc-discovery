@@ -80,7 +80,9 @@ export function createCandidatesMock(options: {
   onDecision?: (action: "approve" | "reject" | "return") => void;
   mutationError?: { status: number; detail: string };
 }) {
-  const candidates = options.candidates ?? [];
+  // Clone so API-driven status changes never leak into the shared mock fixtures
+  // across tests sharing a worker process.
+  const candidates = (options.candidates ?? []).map((candidate) => ({ ...candidate }));
 
   return async function handleCandidates(route: Route, url: URL) {
     if (url.pathname === "/admin/candidates" && route.request().method() === "GET") {
