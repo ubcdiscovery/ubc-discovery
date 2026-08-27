@@ -19,6 +19,7 @@ from app.models.event_listing_candidate import (
     EventListingCandidateIngestionAudit,
 )
 from app.presenters.candidate import admin_candidate_to_response
+from app.presenters.event import event_image_key
 from app.schemas.event import CreateEventRequest
 from app.schemas.event_listing_candidate import (
     AdminCandidateListQuery,
@@ -27,6 +28,7 @@ from app.schemas.event_listing_candidate import (
     CorrectCandidateRequest,
     EventListingCandidateDetailResponse,
 )
+from app.services import s3
 from app.services.event_administration import create_canonical_event_listing
 
 router = APIRouter(prefix="/candidates", tags=["Admin Candidates"])
@@ -265,6 +267,8 @@ async def approve_candidate(
         await create_canonical_event_listing(
             request, actor, db, explicit_id=candidate.id
         )
+        if candidate.image_keys:
+            s3.copy_object(candidate.image_keys[0], event_image_key(candidate.id))
         candidate.status = CandidateStatus.APPROVED
         await db.commit()
     except ValidationError as exc:

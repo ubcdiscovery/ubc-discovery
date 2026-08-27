@@ -47,6 +47,14 @@ def delete_object(file_key: str) -> None:
     _client().delete_object(Bucket=settings.s3_bucket_name, Key=file_key)
 
 
+def copy_object(source_key: str, destination_key: str) -> None:
+    _client().copy_object(
+        Bucket=settings.s3_bucket_name,
+        CopySource={"Bucket": settings.s3_bucket_name, "Key": source_key},
+        Key=destination_key,
+    )
+
+
 def generate_presigned_download_url(
     file_key: str,
     *,

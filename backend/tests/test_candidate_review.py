@@ -3,11 +3,14 @@
 import asyncio
 import uuid
 from datetime import UTC, datetime
+from unittest.mock import MagicMock
 
+import pytest
 from httpx import AsyncClient
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.config import settings
 from app.dependencies import AdminActor
 from app.models.audit_actor import AuditActorType
 from app.models.event import Event
@@ -84,6 +87,60 @@ async def test_approval_uses_exact_id_and_event_create_audit(
     candidate = await db_session.get(EventListingCandidate, "cand0001")
     assert candidate is not None
     assert candidate.status == CandidateStatus.APPROVED
+
+
+async def test_approval_copies_first_candidate_image_to_event_picture(
+    admin_client: AsyncClient,
+    db_session: AsyncSession,
+    monkeypatch,
+):
+    candidate_image = "candidates/cand0001/00.jpg"
+    db_session.add(_candidate(image_keys=[candidate_image]))
+    await db_session.flush()
+
+    async def embedding(_event):
+        return [0.1] * 1024
+
+    s3_client = MagicMock()
+    s3_client.generate_presigned_url.return_value = "https://s3.example.com/candidate"
+    monkeypatch.setattr("app.services.recommender.generate_event_embedding", embedding)
+    monkeypatch.setattr("app.services.s3._client", lambda: s3_client)
+    monkeypatch.setattr(settings, "s3_bucket_name", "test-bucket")
+
+    response = await admin_client.post("/admin/candidates/cand0001/approve")
+
+    assert response.status_code == 200, response.text
+    s3_client.copy_object.assert_called_once_with(
+        Bucket="test-bucket",
+        CopySource={"Bucket": "test-bucket", "Key": candidate_image},
+        Key="event-pictures/cand0001.webp",
+    )
+
+
+async def test_image_copy_failure_rolls_back_candidate_approval(
+    admin_client: AsyncClient,
+    db_session: AsyncSession,
+    monkeypatch,
+):
+    db_session.add(_candidate(image_keys=["candidates/cand0001/00.webp"]))
+    await db_session.commit()
+
+    async def embedding(_event):
+        return [0.1] * 1024
+
+    monkeypatch.setattr("app.services.recommender.generate_event_embedding", embedding)
+    monkeypatch.setattr(
+        "app.services.s3.copy_object",
+        MagicMock(side_effect=RuntimeError("copy failed")),
+    )
+
+    with pytest.raises(RuntimeError, match="copy failed"):
+        await admin_client.post("/admin/candidates/cand0001/approve")
+
+    assert await db_session.get(Event, "cand0001") is None
+    candidate = await db_session.get(EventListingCandidate, "cand0001")
+    assert candidate is not None
+    assert candidate.status == CandidateStatus.PENDING
 
 
 async def test_repeated_approval_is_idempotent_and_does_not_duplicate_audit(
