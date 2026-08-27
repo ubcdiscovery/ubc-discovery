@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import AdminActor
 from app.models.event import Event
-from app.models.event_audit import EventAuditAction, EventAuditLog
+from app.models.event_audit import EventAuditAction, EventAuditActor, EventAuditLog
 from app.schemas.event import CreateEventRequest
 from app.services import recommender
 from app.services.ids import generate_unique_id
@@ -35,16 +35,21 @@ def event_snapshot(event: Event) -> dict:
 def add_event_audit(  # noqa: PLR0913
     session: AsyncSession,
     event: Event,
-    actor: AdminActor,
+    actor: AdminActor | EventAuditActor,
     action: EventAuditAction,
     before: dict | None,
     after: dict | None,
 ) -> None:
+    audit_actor = (
+        actor
+        if isinstance(actor, EventAuditActor)
+        else EventAuditActor.authenticated(actor.actor_type, actor.actor_id)
+    )
     session.add(
         EventAuditLog(
             event_id=event.id,
-            actor_type=actor.actor_type,
-            actor_id=actor.actor_id,
+            actor_type=audit_actor.actor_type,
+            actor_id=audit_actor.actor_id,
             action=action,
             before=before,
             after=after,
@@ -62,7 +67,7 @@ async def update_event_embedding(event: Event) -> None:
 
 async def create_canonical_event_listing(
     body: CreateEventRequest,
-    actor: AdminActor,
+    actor: AdminActor | EventAuditActor,
     session: AsyncSession,
     *,
     explicit_id: str | None = None,
