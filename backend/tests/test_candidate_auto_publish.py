@@ -290,7 +290,7 @@ class TestAutoPublication:
             assert candidate.status == CandidateStatus.PENDING
             assert await db_session.get(Event, candidate_id) is None
 
-    async def test_complete_candidate_with_past_start_still_publishes(
+    async def test_complete_candidate_with_past_start_stays_pending(
         self, db_session: AsyncSession
     ):
         db_session.add(_candidate("stale001"))
@@ -302,8 +302,9 @@ class TestAutoPublication:
 
         candidate = await db_session.get(EventListingCandidate, "stale001")
         assert candidate is not None
-        assert candidate.status == CandidateStatus.APPROVED
-        assert await db_session.get(Event, "stale001") is not None
+        assert candidate.status == CandidateStatus.PENDING
+        assert await db_session.get(Event, "stale001") is None
+        assert await _audits(db_session, "stale001") == []
         job = await db_session.scalar(
             select(CandidateExtractionJob).where(
                 CandidateExtractionJob.candidate_id == "stale001"
@@ -325,7 +326,7 @@ class TestAutoPublication:
         assert candidate.status == CandidateStatus.APPROVED
         assert await db_session.get(Event, "exact001") is not None
 
-    async def test_multiday_event_that_already_started_still_publishes(
+    async def test_multiday_event_that_already_started_stays_pending(
         self, db_session: AsyncSession
     ):
         db_session.add(_candidate("multi001"))
@@ -342,8 +343,8 @@ class TestAutoPublication:
         )
         candidate = await db_session.get(EventListingCandidate, "multi001")
         assert candidate is not None
-        assert candidate.status == CandidateStatus.APPROVED
-        assert await db_session.get(Event, "multi001") is not None
+        assert candidate.status == CandidateStatus.PENDING
+        assert await db_session.get(Event, "multi001") is None
 
 
 class TestSameClubSameDayHold:

@@ -8,10 +8,11 @@ runs when invoked manually:
     uv run python scripts/auto_publish_backfill.py --commit    # apply
 
 Each pending Candidate goes through the same decision as the extraction
-worker. Only complete AMS Club Candidates are eligible, and every source or
-same-club same-day hold stays pending for human review. Historical same-day
-pairs therefore both remain pending rather than selecting an automatic winner.
-Safe to re-run; already-decided Candidates are skipped.
+worker. Only complete, not-yet-started AMS Club Candidates are eligible. Past
+starts, other sources, and same-club same-day matches stay pending for human
+review. Historical same-day pairs therefore both remain pending rather than
+selecting an automatic winner. Safe to re-run; already-decided Candidates are
+skipped.
 
 Requires DATABASE_URL (backend/.env is loaded by app settings).
 """

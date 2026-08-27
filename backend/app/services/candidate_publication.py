@@ -55,6 +55,10 @@ def is_complete(candidate: EventListingCandidate) -> bool:
     )
 
 
+def has_started(event_date: datetime | None, *, now: datetime) -> bool:
+    return event_date is not None and _coerce_utc(event_date) < now
+
+
 def event_request(candidate: EventListingCandidate) -> CreateEventRequest:
     return CreateEventRequest.model_validate(
         {
@@ -174,14 +178,20 @@ async def publish_candidate(
 
 
 async def preview_auto_publication(
-    db: AsyncSession, candidate: EventListingCandidate
+    db: AsyncSession,
+    candidate: EventListingCandidate,
+    *,
+    now: datetime | None = None,
 ) -> AutoPublicationOutcome:
     """Return the automatic-publication outcome without mutating any state."""
+    moment = now or datetime.now(UTC)
     if candidate.status != CandidateStatus.PENDING:
         return AutoPublicationOutcome.PENDING
     if not is_complete(candidate):
         return AutoPublicationOutcome.PENDING
     if candidate.source_label != EventSourceLabel.AMS_CLUB:
+        return AutoPublicationOutcome.PENDING
+    if has_started(candidate.event_date, now=moment):
         return AutoPublicationOutcome.PENDING
     if await same_club_same_day_exists(candidate, db):
         return AutoPublicationOutcome.PENDING
@@ -193,13 +203,16 @@ async def preview_auto_publication(
 async def process_auto_publication(
     db: AsyncSession,
     candidate: EventListingCandidate,
+    *,
+    now: datetime | None = None,
 ) -> AutoPublicationOutcome:
     """Apply the automatic publication decision to one pending Candidate.
 
-    Complete AMS Club Candidates publish unless a same-club same-day hold
-    applies. Every other Candidate stays pending for human review.
+    Complete, not-yet-started AMS Club Candidates publish unless a same-club
+    same-day hold applies. Every other Candidate stays pending for human review.
     Idempotent: approved Candidates and claimed ids are left untouched.
     """
+    moment = now or datetime.now(UTC)
     locked = await db.scalar(
         select(EventListingCandidate)
         .where(EventListingCandidate.id == candidate.id)
@@ -209,8 +222,13 @@ async def process_auto_publication(
         return AutoPublicationOutcome.PENDING
     if not is_complete(locked) or locked.source_label != EventSourceLabel.AMS_CLUB:
         return AutoPublicationOutcome.PENDING
+    if has_started(locked.event_date, now=moment):
+        return AutoPublicationOutcome.PENDING
     await _lock_same_club_same_day(locked, db)
-    if await preview_auto_publication(db, locked) != AutoPublicationOutcome.PUBLISHED:
+    if (
+        await preview_auto_publication(db, locked, now=moment)
+        != AutoPublicationOutcome.PUBLISHED
+    ):
         return AutoPublicationOutcome.PENDING
     await publish_candidate(db, locked, AUTO_PUBLICATION_ACTOR)
     return AutoPublicationOutcome.PUBLISHED
