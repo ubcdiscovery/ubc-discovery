@@ -4,7 +4,7 @@ from datetime import datetime
 
 from app.models.event import EventSourceLabel, EventVibe
 from app.models.event_listing_candidate import EventListingCandidate
-from app.schemas.event import EVENT_SOURCE_LABELS, EVENT_VIBES
+from app.schemas.event import EVENT_VIBES
 from app.services.extraction.types import ExtractionResult
 
 
@@ -28,7 +28,6 @@ def persist_extraction(
         "location_name": result.location_name,
         "club_name": result.club_name,
         "vibes": list(result.vibes),
-        "source_label": result.source_label,
     }
     candidate.extraction_model = model
     candidate.extracted_at = extracted_at
@@ -44,15 +43,10 @@ def persist_extraction(
         return
 
     vibes = [EventVibe(vibe) for vibe in result.vibes if vibe in EVENT_VIBES]
-    source_label = (
-        EventSourceLabel(result.source_label)
-        if result.source_label in EVENT_SOURCE_LABELS
-        else None
-    )
     candidate.title = result.title
     candidate.location_name = result.location_name
     candidate.event_date = result.event_date
     candidate.event_end_date = result.event_end_date
     candidate.club_name = result.club_name
     candidate.vibes = vibes
-    candidate.source_label = source_label
+    candidate.source_label = EventSourceLabel.AMS_CLUB

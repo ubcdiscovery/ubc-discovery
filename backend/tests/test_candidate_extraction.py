@@ -80,7 +80,6 @@ def _result_for(candidate_id, *, is_event: bool = True) -> ExtractionResult:
         event_date=datetime(2026, 9, 4, 20, 0, tzinfo=UTC),
         club_name="UBC AMS",
         vibes=("social",),
-        source_label="ams_club",
         raw={"is_event": True, "title": "Club Night"},
     )
 
@@ -279,6 +278,7 @@ class TestCandidateExtraction:
         assert job.status == ExtractionJobStatus.SUCCEEDED
         assert candidate.is_event is True
         assert candidate.title == "Club Night"
+        assert candidate.source_label == "ams_club"
         assert candidate.extracted_original["title"] == "Club Night"
         assert candidate.extracted_at is not None
 

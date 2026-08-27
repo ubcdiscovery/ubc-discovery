@@ -34,7 +34,6 @@ class ExtractionResult:
     location_name: str | None = None
     club_name: str | None = None
     vibes: tuple[str, ...] = ()
-    source_label: str | None = None
     raw: dict = field(default_factory=dict)
 
 

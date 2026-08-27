@@ -14,7 +14,7 @@ from openai.types.shared_params.response_format_json_schema import (
 )
 
 from app.config import settings
-from app.schemas.event import EVENT_SOURCE_LABELS, EVENT_VIBES
+from app.schemas.event import EVENT_VIBES
 from app.services.extraction.prompts import SYSTEM_PROMPT
 from app.services.extraction.types import ExtractionEvidence, ExtractionResult
 
@@ -29,12 +29,6 @@ _ITEM_PROPERTIES = {
     "vibes": {
         "type": "array",
         "items": {"type": "string", "enum": list(EVENT_VIBES)},
-    },
-    "source_label": {
-        "anyOf": [
-            {"type": "string", "enum": list(EVENT_SOURCE_LABELS)},
-            {"type": "null"},
-        ]
     },
 }
 
@@ -64,9 +58,6 @@ def _parse_datetime(value: str | None) -> datetime | None:
 
 def _result_from_payload(payload: dict) -> ExtractionResult:
     vibes = tuple(vibe for vibe in payload.get("vibes") or [] if vibe in EVENT_VIBES)
-    source_label = payload.get("source_label")
-    if source_label not in EVENT_SOURCE_LABELS:
-        source_label = None
     return ExtractionResult(
         candidate_id=str(payload["candidate_id"]),
         is_event=bool(payload.get("is_event")),
@@ -76,7 +67,6 @@ def _result_from_payload(payload: dict) -> ExtractionResult:
         location_name=payload.get("location_name") or None,
         club_name=payload.get("club_name") or None,
         vibes=vibes,
-        source_label=source_label,
         raw=payload,
     )
 
