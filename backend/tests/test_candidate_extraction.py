@@ -77,7 +77,8 @@ def _result_for(candidate_id, *, is_event: bool = True) -> ExtractionResult:
         is_event=True,
         title="Club Night",
         location_name="The Nest",
-        event_date=datetime(2026, 9, 4, 20, 0, tzinfo=UTC),
+        # Keep the fixture future-dated; complete results auto-publish now.
+        event_date=datetime.now(UTC) + timedelta(days=7),
         club_name="UBC AMS",
         vibes=("social",),
         raw={"is_event": True, "title": "Club Night"},

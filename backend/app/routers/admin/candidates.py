@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, time, timedelta
+from datetime import UTC, datetime
 from typing import Annotated
-from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import ValidationError
@@ -19,8 +18,6 @@ from app.models.event_listing_candidate import (
     EventListingCandidateIngestionAudit,
 )
 from app.presenters.candidate import admin_candidate_to_response
-from app.presenters.event import event_image_key
-from app.schemas.event import CreateEventRequest
 from app.schemas.event_listing_candidate import (
     AdminCandidateListQuery,
     AdminEventListingCandidateListResponse,
@@ -28,81 +25,37 @@ from app.schemas.event_listing_candidate import (
     CorrectCandidateRequest,
     EventListingCandidateDetailResponse,
 )
-from app.services import s3
-from app.services.event_administration import create_canonical_event_listing
+from app.services.candidate_publication import (
+    has_started,
+    publish_candidate,
+    same_club_same_day_candidates,
+    same_club_same_day_events,
+)
 
 router = APIRouter(prefix="/candidates", tags=["Admin Candidates"])
-VANCOUVER = ZoneInfo("America/Vancouver")
-
-
-def _local_bounds(value: datetime) -> tuple[datetime, datetime]:
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=UTC)
-    local_date = value.astimezone(VANCOUVER).date()
-    start = datetime.combine(local_date, time.min, tzinfo=VANCOUVER)
-    return start.astimezone(UTC), (start + timedelta(days=1)).astimezone(UTC)
 
 
 async def _same_club_same_day_matches(
     candidate: EventListingCandidate, db: AsyncSession
 ) -> list[CandidateMatchResponse]:
-    if not candidate.club_name or not candidate.event_date:
-        return []
-    club = candidate.club_name.strip().lower()
-    if not club:
-        return []
-    start, end = _local_bounds(candidate.event_date)
-    club_match = func.lower(func.trim(EventListingCandidate.club_name)) == club
-    candidate_rows = (
-        await db.scalars(
-            select(EventListingCandidate)
-            .where(
-                EventListingCandidate.status == CandidateStatus.PENDING,
-                EventListingCandidate.id != candidate.id,
-                EventListingCandidate.club_name.is_not(None),
-                club_match,
-                EventListingCandidate.event_date >= start,
-                EventListingCandidate.event_date < end,
-            )
-            .order_by(
-                EventListingCandidate.event_date.asc(),
-                EventListingCandidate.id.asc(),
-            )
-        )
-    ).all()
-    event_rows = (
-        await db.scalars(
-            select(Event)
-            .where(
-                Event.is_archived.is_(False),
-                Event.id != candidate.id,
-                Event.club_name.is_not(None),
-                func.lower(func.trim(Event.club_name)) == club,
-                Event.event_date >= start,
-                Event.event_date < end,
-            )
-            .order_by(Event.event_date.asc(), Event.id.asc())
-        )
-    ).all()
-    candidate_matches: list[CandidateMatchResponse] = []
-    for item in candidate_rows:
-        if item.event_date is not None:
-            candidate_matches.append(
-                CandidateMatchResponse(
-                    kind="candidate",
-                    id=item.id,
-                    title=item.title or item.description,
-                    event_date=item.event_date,
-                )
-            )
-    matches = candidate_matches + [
+    candidate_matches = [
         CandidateMatchResponse(
-            kind="event", id=item.id, title=item.title, event_date=item.event_date
+            kind="candidate",
+            id=item.id,
+            title=item.title or item.description,
+            event_date=item.event_date,
         )
-        for item in event_rows
+        for item in await same_club_same_day_candidates(candidate, db)
+        if item.event_date is not None
     ]
     return sorted(
-        matches,
+        candidate_matches
+        + [
+            CandidateMatchResponse(
+                kind="event", id=item.id, title=item.title, event_date=item.event_date
+            )
+            for item in await same_club_same_day_events(candidate, db)
+        ],
         key=lambda item: (item.event_date.isoformat(), item.kind, item.id, item.title),
     )
 
@@ -119,23 +72,6 @@ async def _detail(
         **admin_candidate_to_response(candidate).model_dump(),
         ingestion_audits=audits.all(),
         same_club_same_day_matches=await _same_club_same_day_matches(candidate, db),
-    )
-
-
-def _event_request(candidate: EventListingCandidate) -> CreateEventRequest:
-    return CreateEventRequest.model_validate(
-        {
-            "title": candidate.title,
-            "description": candidate.description,
-            "source": candidate.source_type,
-            "source_label": candidate.source_label,
-            "source_url": candidate.source_url,
-            "club_name": candidate.club_name,
-            "vibes": candidate.vibes or [],
-            "location_name": candidate.location_name,
-            "event_date": candidate.event_date,
-            "event_end_date": candidate.event_end_date,
-        }
     )
 
 
@@ -258,18 +194,17 @@ async def approve_candidate(
         raise HTTPException(
             status_code=422, detail="Candidate must be classified as an event"
         )
+    if has_started(candidate.event_date, now=datetime.now(UTC)):
+        raise HTTPException(
+            status_code=422,
+            detail="Cannot approve a Candidate whose event already started",
+        )
     if await db.get(Event, candidate.id) is not None:
         raise HTTPException(
             status_code=409, detail="An Event Listing already uses this Candidate id"
         )
     try:
-        request = _event_request(candidate)
-        await create_canonical_event_listing(
-            request, actor, db, explicit_id=candidate.id
-        )
-        if candidate.image_keys:
-            s3.copy_object(candidate.image_keys[0], event_image_key(candidate.id))
-        candidate.status = CandidateStatus.APPROVED
+        await publish_candidate(db, candidate, actor)
         await db.commit()
     except ValidationError as exc:
         await db.rollback()

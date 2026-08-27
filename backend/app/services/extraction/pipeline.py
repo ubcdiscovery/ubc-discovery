@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime, timedelta
 
+from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -10,6 +12,7 @@ from app.models.event_listing_candidate import (
     CandidateExtractionJob,
     EventListingCandidate,
 )
+from app.services.candidate_publication import process_auto_publication
 from app.services.extraction.evidence import assemble_evidence
 from app.services.extraction.jobs import complete_job, delay_job, fail_job
 from app.services.extraction.persist import persist_extraction
@@ -55,6 +58,39 @@ def _past_image_wait(candidate: EventListingCandidate, now: datetime) -> bool:
     return now - started >= timedelta(seconds=settings.extraction_image_wait_seconds)
 
 
+async def _settle_auto_publication(
+    session: AsyncSession,
+    job: CandidateExtractionJob,
+    candidate: EventListingCandidate,
+    *,
+    now: datetime,
+) -> None:
+    """Decide auto-publication for an extracted Candidate, then finish the job.
+
+    Publication runs inside a savepoint so a failure cannot roll back the
+    persisted extraction. Validation and id-collision outcomes are permanent:
+    the Candidate stays pending for human review and the job completes.
+    Transient failures (embedding, image copy, database) requeue the job so
+    the existing retry backoff re-attempts publication.
+    """
+    try:
+        async with session.begin_nested():
+            await process_auto_publication(session, candidate, now=now)
+        await complete_job(session, job, now=now)
+    except ValidationError, IntegrityError:
+        logger.exception(
+            "Auto-publication withheld for candidate %s; leaving it pending",
+            job.candidate_id,
+        )
+        await complete_job(session, job, now=now)
+    except Exception as exc:
+        logger.exception(
+            "Auto-publication failed for candidate %s; requeueing",
+            job.candidate_id,
+        )
+        await fail_job(session, job, f"auto-publication failed: {exc}", now=now)
+
+
 async def process_claimed_jobs(
     session: AsyncSession,
     jobs: list[CandidateExtractionJob],
@@ -63,14 +99,16 @@ async def process_claimed_jobs(
     now: datetime | None = None,
 ) -> None:
     moment = now or datetime.now(UTC)
-    ready: list[tuple[CandidateExtractionJob, ExtractionEvidence]] = []
+    ready: list[
+        tuple[CandidateExtractionJob, ExtractionEvidence, EventListingCandidate]
+    ] = []
     for job in jobs:
         candidate = await session.get(EventListingCandidate, job.candidate_id)
         if candidate is None:
             await fail_job(session, job, "candidate missing", now=moment)
             continue
         if candidate.extracted_at is not None:
-            await complete_job(session, job, now=moment)
+            await _settle_auto_publication(session, job, candidate, now=moment)
             continue
         evidence = assemble_evidence(candidate)
         if evidence.pending_image_keys and not _past_image_wait(candidate, moment):
@@ -82,15 +120,19 @@ async def process_claimed_jobs(
                 now=moment,
             )
             continue
-        ready.append((job, evidence))
+        ready.append((job, evidence, candidate))
 
     if not ready:
         return
 
+    # Publication order is oldest-first so same-club same-day pairs inside one
+    # batch resolve deterministically: the earlier Candidate publishes and the
+    # later one is held.
+    ready.sort(key=lambda item: (item[2].created_at, item[2].id))
     successes, failures = await _extract_with_fallback(
-        extractor, [evidence for _job, evidence in ready]
+        extractor, [evidence for _job, evidence, _candidate in ready]
     )
-    for job, evidence in ready:
+    for job, evidence, candidate in ready:
         error = failures.get(str(evidence.candidate_id))
         if error:
             await fail_job(session, job, error, now=moment)
@@ -99,15 +141,11 @@ async def process_claimed_jobs(
         if result is None:
             await fail_job(session, job, "missing extraction result", now=moment)
             continue
-        candidate = await session.get(EventListingCandidate, job.candidate_id)
-        if candidate is None:
-            await fail_job(session, job, "candidate missing", now=moment)
-            continue
         persist_extraction(
             candidate,
             result,
             model=settings.extraction_model,
             extracted_at=moment,
         )
-        await complete_job(session, job, now=moment)
+        await _settle_auto_publication(session, job, candidate, now=moment)
     await session.flush()
