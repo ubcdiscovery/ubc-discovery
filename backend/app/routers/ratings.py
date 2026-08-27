@@ -1,7 +1,8 @@
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timezone
 
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -37,7 +38,7 @@ async def _verify_event(event_id: str, db: AsyncSession):
     if not event:
         raise HTTPException(status_code=404, detail="Event with give id NOT found")
 
-    if not event.event_end_date or event.event_end_date > datetime.now(timezone.utc):
+    if not event.event_end_date or event.event_end_date > datetime.now(UTC):
         raise HTTPException(
             status_code=400, detail="Event can not be rated at this time"
         )
