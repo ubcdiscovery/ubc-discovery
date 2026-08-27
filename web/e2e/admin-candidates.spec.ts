@@ -122,7 +122,9 @@ test("administrator saves a correction and confirms Candidate approval", async (
   await expect(page.getByText("Confirm approval?", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: "Confirm approve" }).click();
   await expect.poll(() => decision).toBe("approve");
-  await expect(page).toHaveURL(`/admin/events/${mockExtractedCandidate.id}`);
+  await expect(page).toHaveURL("/admin/candidates");
+  // The approved Candidate no longer matches the pending queue filter.
+  await expect(page.getByText("No matching Candidates.")).toBeVisible();
 });
 
 test("administrator rejects then returns a Candidate to review", async ({ page }) => {
@@ -134,6 +136,10 @@ test("administrator rejects then returns a Candidate to review", async ({ page }
   await page.goto(`/admin/candidates/${mockExtractedCandidate.id}`);
   await page.getByRole("button", { name: "Reject Candidate" }).click();
   await page.getByRole("button", { name: "Confirm reject" }).click();
+  await expect(page).toHaveURL("/admin/candidates");
+  // The rejected Candidate no longer matches the pending queue filter.
+  await expect(page.getByText("No matching Candidates.")).toBeVisible();
+  await page.goto(`/admin/candidates/${mockExtractedCandidate.id}`);
   await expect(page.getByRole("paragraph").filter({ hasText: "rejected" })).toBeVisible();
   await page.getByRole("button", { name: "Return to review" }).click();
   await expect(page.getByRole("paragraph").filter({ hasText: "pending" })).toBeVisible();
