@@ -75,7 +75,7 @@ export default function AdminCandidateDetail() {
       queryClient.setQueryData(["admin-candidate", id], updated);
       await queryClient.invalidateQueries({ queryKey: ["admin-candidates"] });
       setDecision(null);
-      if (action === "approve") await navigate(`/admin/events/${id}`);
+      if (action !== "return") await navigate("/admin/candidates");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The Candidate could not be updated.");
     } finally {

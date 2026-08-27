@@ -13,13 +13,25 @@ test("administrator filters and inspects an Event Listing Candidate", async ({ p
 
   await page.goto("/admin/candidates");
 
-  await expect(page.getByRole("heading", { name: "Candidates" })).toBeVisible();
+  const statusFilter = page.getByRole("combobox", { name: "Filter candidate status" });
+
+  // The queue opens on pending review by default.
+  await expect(statusFilter).toHaveValue("pending");
   await expect(page.getByRole("table", { name: "Event Listing Candidates" })).toBeVisible();
   await expect(page.getByRole("link", { name: mockCandidate.source_account })).toBeVisible();
-
-  await page.getByRole("combobox", { name: "Filter candidate status" }).selectOption("pending");
-  await expect(page).toHaveURL(/status=pending/);
   expect(candidateQueries.at(-1)).toMatchObject({ status: "pending" });
+
+  // The chosen status sticks across visits.
+  await statusFilter.selectOption("approved");
+  await expect(page).toHaveURL(/status=approved/);
+  expect(candidateQueries.at(-1)).toMatchObject({ status: "approved" });
+
+  await statusFilter.selectOption({ label: "All statuses" });
+  await expect(page).not.toHaveURL(/status=/);
+  expect(candidateQueries.at(-1)).toMatchObject({ status: "" });
+  await page.reload();
+  await expect(statusFilter).toHaveValue("");
+  expect(candidateQueries.at(-1)).toMatchObject({ status: "" });
 
   await page.getByRole("link", { name: mockCandidate.source_account }).click();
 
@@ -37,6 +49,36 @@ test("administrator filters and inspects an Event Listing Candidate", async ({ p
   await expect(page.getByRole("heading", { name: "Extraction metadata" })).toHaveCount(0);
   await expect(page.getByText("created", { exact: true })).toBeVisible();
   await expect(page.getByText("Campus importer", { exact: true })).toBeVisible();
+});
+
+test("administrator quick-reviews a pending Candidate from the queue", async ({ page }) => {
+  let decision = "";
+  await mockApi(page, {
+    profile: adminProfile,
+    adminCandidates: [mockExtractedCandidate],
+    onCandidateDecision: (action) => {
+      decision = action;
+    },
+  });
+  await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
+  await page.goto("/admin/candidates");
+
+  // A stray click can be backed out without changing anything.
+  await page
+    .getByRole("button", { name: `Reject ${mockExtractedCandidate.source_account}` })
+    .click();
+  await expect(page.getByRole("alertdialog")).toContainText("Reject this Candidate?");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  expect(decision).toBe("");
+
+  await page
+    .getByRole("button", { name: `Approve ${mockExtractedCandidate.source_account}` })
+    .click();
+  await expect(page.getByRole("alertdialog")).toContainText("Approve this Candidate?");
+  await page.getByRole("button", { name: "Confirm approve" }).click();
+  await expect.poll(() => decision).toBe("approve");
+  await expect(page.getByText("No matching Candidates.")).toBeVisible();
 });
 
 test("administrator inspects extracted Candidate draft fields", async ({ page }) => {
@@ -80,7 +122,9 @@ test("administrator saves a correction and confirms Candidate approval", async (
   await expect(page.getByText("Confirm approval?", { exact: false })).toBeVisible();
   await page.getByRole("button", { name: "Confirm approve" }).click();
   await expect.poll(() => decision).toBe("approve");
-  await expect(page).toHaveURL(`/admin/events/${mockExtractedCandidate.id}`);
+  await expect(page).toHaveURL("/admin/candidates");
+  // The approved Candidate no longer matches the pending queue filter.
+  await expect(page.getByText("No matching Candidates.")).toBeVisible();
 });
 
 test("administrator rejects then returns a Candidate to review", async ({ page }) => {
@@ -92,6 +136,10 @@ test("administrator rejects then returns a Candidate to review", async ({ page }
   await page.goto(`/admin/candidates/${mockExtractedCandidate.id}`);
   await page.getByRole("button", { name: "Reject Candidate" }).click();
   await page.getByRole("button", { name: "Confirm reject" }).click();
+  await expect(page).toHaveURL("/admin/candidates");
+  // The rejected Candidate no longer matches the pending queue filter.
+  await expect(page.getByText("No matching Candidates.")).toBeVisible();
+  await page.goto(`/admin/candidates/${mockExtractedCandidate.id}`);
   await expect(page.getByRole("paragraph").filter({ hasText: "rejected" })).toBeVisible();
   await page.getByRole("button", { name: "Return to review" }).click();
   await expect(page.getByRole("paragraph").filter({ hasText: "pending" })).toBeVisible();
@@ -101,8 +149,18 @@ test("administrator can follow Candidate hold links and keeps a failed draft", a
   const heldCandidate = {
     ...mockExtractedCandidate,
     same_club_same_day_matches: [
-      { kind: "event" as const, id: "event-held", title: "Held Event", event_date: "2026-09-04T20:00:00Z" },
-      { kind: "candidate" as const, id: "candidate-held", title: "Held Candidate", event_date: "2026-09-04T21:00:00Z" },
+      {
+        kind: "event" as const,
+        id: "event-held",
+        title: "Held Event",
+        event_date: "2026-09-04T20:00:00Z",
+      },
+      {
+        kind: "candidate" as const,
+        id: "candidate-held",
+        title: "Held Candidate",
+        event_date: "2026-09-04T21:00:00Z",
+      },
     ],
   };
   await mockApi(page, {
