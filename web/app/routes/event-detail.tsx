@@ -66,7 +66,7 @@ export default function EventDetail() {
     api.ratings
       .getAll(event.id)
       .then((ratings) => {
-        setAllRatings(ratings);
+        setAllRatings(Array.isArray(ratings) ? ratings : []);
         setRatingsAvailable(true);
       })
       .catch((err) => {

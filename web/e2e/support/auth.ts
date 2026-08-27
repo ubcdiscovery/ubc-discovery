@@ -183,6 +183,22 @@ export async function mockApi(
       });
       return;
     }
+    if (url.pathname === "/ratings/event-1") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([]),
+      });
+      return;
+    }
+    if (url.pathname === "/ratings/mine/event-1") {
+      await route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Rating not found" }),
+      });
+      return;
+    }
     if (url.pathname === "/saved-events" && route.request().method() === "GET") {
       await route.fulfill({
         status: 200,
