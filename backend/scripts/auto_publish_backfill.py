@@ -20,8 +20,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import sys
 from collections import Counter
 from datetime import UTC, datetime
+from pathlib import Path
+
+# Run directly from the backend directory; make the app package importable.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from pydantic import ValidationError
 from sqlalchemy import select
