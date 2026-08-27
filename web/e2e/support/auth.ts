@@ -176,35 +176,19 @@ export async function mockApi(
     if (await handleCandidates(route, url)) return;
     if (await handleApiKeys(route, url)) return;
     if (url.pathname === "/events/event-1") {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(mockEvent),
-      });
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(mockEvent) });
       return;
     }
     if (url.pathname === "/ratings/event-1") {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify([]),
-      });
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
       return;
     }
     if (url.pathname === "/ratings/mine/event-1") {
-      await route.fulfill({
-        status: 404,
-        contentType: "application/json",
-        body: JSON.stringify({ detail: "Rating not found" }),
-      });
+      await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Rating not found" }) });
       return;
     }
     if (url.pathname === "/saved-events" && route.request().method() === "GET") {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ saved_events: [], total: 0 }),
-      });
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ saved_events: [], total: 0 }) });
       return;
     }
     if (
