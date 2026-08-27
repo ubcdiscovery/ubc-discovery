@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -26,7 +25,6 @@ from app.schemas.event_listing_candidate import (
     EventListingCandidateDetailResponse,
 )
 from app.services.candidate_publication import (
-    has_started,
     publish_candidate,
     same_club_same_day_candidates,
     same_club_same_day_events,
@@ -193,11 +191,6 @@ async def approve_candidate(
     if candidate.is_event is not True:
         raise HTTPException(
             status_code=422, detail="Candidate must be classified as an event"
-        )
-    if has_started(candidate.event_date, now=datetime.now(UTC)):
-        raise HTTPException(
-            status_code=422,
-            detail="Cannot approve a Candidate whose event already started",
         )
     if await db.get(Event, candidate.id) is not None:
         raise HTTPException(

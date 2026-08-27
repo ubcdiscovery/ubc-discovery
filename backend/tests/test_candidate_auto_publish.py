@@ -12,8 +12,13 @@ from httpx import AsyncClient
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.models.event import Event
-from app.models.event_audit import EventAuditAction, EventAuditLog
+from app.models.audit_actor import AuditActorType
+from app.models.event import Event, EventSourceLabel
+from app.models.event_audit import (
+    EventAuditAction,
+    EventAuditActorType,
+    EventAuditLog,
+)
 from app.models.event_listing_candidate import (
     CandidateExtractionJob,
     CandidateStatus,
@@ -22,6 +27,7 @@ from app.models.event_listing_candidate import (
     ExtractionJobStatus,
 )
 from app.services.candidate_publication import (
+    AUTO_PUBLICATION_ACTOR_ID,
     AutoPublicationOutcome,
     process_auto_publication,
 )
@@ -32,6 +38,7 @@ from app.services.extraction.types import (
     ExtractionResult,
     Extractor,
 )
+from scripts.auto_publish_backfill import backfill_candidates
 from tests.conftest import _get_engine
 
 # Fixed clock for pipeline runs; candidates use day offsets from it.
@@ -201,6 +208,7 @@ class TestAutoPublication:
         audits = await _audits(db_session, "autopub1")
         assert [audit.action for audit in audits] == [EventAuditAction.CREATE]
         assert audits[0].actor_type == "system"
+        assert audits[0].actor_id == AUTO_PUBLICATION_ACTOR_ID
 
         job = await db_session.scalar(
             select(CandidateExtractionJob).where(
@@ -241,11 +249,11 @@ class TestAutoPublication:
             assert job is not None
             assert job.status == ExtractionJobStatus.SUCCEEDED
 
-    async def test_campus_community_stays_pending_even_when_stale(
+    async def test_only_ams_club_candidates_are_eligible_for_auto_publication(
         self, db_session: AsyncSession
     ):
-        # Extraction currently hard-codes AMS Club, so Campus Community reaches
-        # publication decisions after an administrator correction.
+        # Extraction currently assigns AMS Club. The whitelist prevents a future
+        # producer or administrator correction from bypassing manual review.
         db_session.add_all(
             [
                 _extracted_candidate(
@@ -254,21 +262,21 @@ class TestAutoPublication:
                     source_label="campus_community",
                 ),
                 _extracted_candidate(
-                    "comty002",
-                    event_date=NOW - timedelta(hours=1),
-                    source_label="campus_community",
+                    "ubcoff01",
+                    event_date=NEXT_LOCAL_DAY,
+                    source_label="ubc_official",
                 ),
             ]
         )
         await db_session.flush()
-        db_session.add_all([_claimed_job("comty001"), _claimed_job("comty002")])
+        db_session.add_all([_claimed_job("comty001"), _claimed_job("ubcoff01")])
         await db_session.flush()
         jobs = list(
             (
                 await db_session.scalars(
                     select(CandidateExtractionJob).where(
                         CandidateExtractionJob.candidate_id.in_(
-                            ["comty001", "comty002"]
+                            ["comty001", "ubcoff01"]
                         )
                     )
                 )
@@ -276,18 +284,15 @@ class TestAutoPublication:
         )
         await process_claimed_jobs(db_session, jobs, NoCallExtractor(), now=NOW)
 
-        for candidate_id in ("comty001", "comty002"):
+        for candidate_id in ("comty001", "ubcoff01"):
             candidate = await db_session.get(EventListingCandidate, candidate_id)
             assert candidate is not None
             assert candidate.status == CandidateStatus.PENDING
             assert await db_session.get(Event, candidate_id) is None
 
-    async def test_stale_start_is_rejected_even_with_same_club_match(
+    async def test_complete_candidate_with_past_start_still_publishes(
         self, db_session: AsyncSession
     ):
-        db_session.add(
-            _extracted_candidate("holdref1", event_date=NOW - timedelta(hours=2))
-        )
         db_session.add(_candidate("stale001"))
         await db_session.flush()
         await _run_extraction(
@@ -297,9 +302,8 @@ class TestAutoPublication:
 
         candidate = await db_session.get(EventListingCandidate, "stale001")
         assert candidate is not None
-        assert candidate.status == CandidateStatus.REJECTED
-        assert await db_session.get(Event, "stale001") is None
-        assert await _audits(db_session, "stale001") == []
+        assert candidate.status == CandidateStatus.APPROVED
+        assert await db_session.get(Event, "stale001") is not None
         job = await db_session.scalar(
             select(CandidateExtractionJob).where(
                 CandidateExtractionJob.candidate_id == "stale001"
@@ -321,7 +325,7 @@ class TestAutoPublication:
         assert candidate.status == CandidateStatus.APPROVED
         assert await db_session.get(Event, "exact001") is not None
 
-    async def test_multiday_event_that_already_started_is_rejected(
+    async def test_multiday_event_that_already_started_still_publishes(
         self, db_session: AsyncSession
     ):
         db_session.add(_candidate("multi001"))
@@ -338,8 +342,8 @@ class TestAutoPublication:
         )
         candidate = await db_session.get(EventListingCandidate, "multi001")
         assert candidate is not None
-        assert candidate.status == CandidateStatus.REJECTED
-        assert await db_session.get(Event, "multi001") is None
+        assert candidate.status == CandidateStatus.APPROVED
+        assert await db_session.get(Event, "multi001") is not None
 
 
 class TestSameClubSameDayHold:
@@ -594,7 +598,7 @@ class TestRetriesAndConcurrency:
             async with factory() as session:
                 candidate = await session.get(EventListingCandidate, candidate_id)
                 assert candidate is not None
-                outcome = await process_auto_publication(session, candidate, now=NOW)
+                outcome = await process_auto_publication(session, candidate)
                 await session.commit()
                 return outcome
 
@@ -625,9 +629,95 @@ class TestRetriesAndConcurrency:
             )
             await _cleanup(verify)
 
+    async def test_concurrent_same_club_extractions_publish_at_most_one(self):
+        first_id = f"a{uuid.uuid4().hex[:7]}"
+        second_id = f"b{uuid.uuid4().hex[:7]}"
+        candidate_ids = [first_id, second_id]
+        factory = async_sessionmaker(_get_engine(), expire_on_commit=False)
 
-class TestHumanApprovalGuard:
-    async def test_approval_rejects_event_that_already_started(
+        async def cleanup(session: AsyncSession) -> None:
+            await session.execute(
+                delete(EventAuditLog).where(EventAuditLog.event_id.in_(candidate_ids))
+            )
+            await session.execute(delete(Event).where(Event.id.in_(candidate_ids)))
+            await session.execute(
+                delete(EventListingCandidate).where(
+                    EventListingCandidate.id.in_(candidate_ids)
+                )
+            )
+            await session.commit()
+
+        async with factory() as setup:
+            await cleanup(setup)
+            setup.add_all([_candidate(first_id), _candidate(second_id)])
+            await setup.commit()
+
+        ready = 0
+        both_ready = asyncio.Event()
+
+        async def extract_and_decide(candidate_id: str) -> AutoPublicationOutcome:
+            nonlocal ready
+            async with factory() as session:
+                candidate = await session.get(EventListingCandidate, candidate_id)
+                assert candidate is not None
+                candidate.is_event = True
+                candidate.title = "Concurrent Club Night"
+                candidate.location_name = "The Nest"
+                candidate.event_date = SAME_LOCAL_DAY_MORNING
+                candidate.club_name = "UBC Concurrent Club"
+                candidate.source_label = EventSourceLabel.AMS_CLUB
+                candidate.extracted_at = NOW
+                await session.flush()
+                ready += 1
+                if ready == 2:
+                    both_ready.set()
+                await both_ready.wait()
+                outcome = await process_auto_publication(session, candidate)
+                await session.commit()
+                return outcome
+
+        outcomes = await asyncio.gather(
+            extract_and_decide(first_id), extract_and_decide(second_id)
+        )
+        assert sorted(outcome.value for outcome in outcomes) == [
+            "pending",
+            "published",
+        ]
+
+        async with factory() as verify:
+            events = (
+                await verify.scalars(select(Event).where(Event.id.in_(candidate_ids)))
+            ).all()
+            assert len(events) == 1
+            await cleanup(verify)
+
+
+async def test_local_backfill_preview_has_no_database_or_s3_writes(
+    db_session: AsyncSession, monkeypatch
+):
+    db_session.add(
+        _extracted_candidate(
+            "preview1",
+            event_date=NEXT_LOCAL_DAY,
+            image_keys=["candidates/preview1/00.jpg"],
+        )
+    )
+    await db_session.flush()
+    copy = MagicMock()
+    monkeypatch.setattr("app.services.s3.copy_object", copy)
+
+    outcomes = await backfill_candidates(db_session, commit=False, chunk_size=25)
+
+    assert outcomes == {"published": 1}
+    candidate = await db_session.get(EventListingCandidate, "preview1")
+    assert candidate is not None
+    assert candidate.status == CandidateStatus.PENDING
+    assert await db_session.get(Event, "preview1") is None
+    copy.assert_not_called()
+
+
+class TestHumanApprovalOverride:
+    async def test_approval_allows_event_that_already_started(
         self, admin_client: AsyncClient, db_session: AsyncSession
     ):
         db_session.add(
@@ -635,14 +725,13 @@ class TestHumanApprovalGuard:
         )
         await db_session.flush()
         response = await admin_client.post("/admin/candidates/oldapp01/approve")
-        assert response.status_code == 422
-        assert "already started" in response.json()["detail"]
-        assert await db_session.get(Event, "oldapp01") is None
+        assert response.status_code == 200, response.text
+        assert await db_session.get(Event, "oldapp01") is not None
         candidate = await db_session.get(EventListingCandidate, "oldapp01")
         assert candidate is not None
-        assert candidate.status == CandidateStatus.PENDING
+        assert candidate.status == CandidateStatus.APPROVED
 
-    async def test_returned_stale_candidate_cannot_be_approved(
+    async def test_returned_candidate_can_be_approved_regardless_of_start_time(
         self, admin_client: AsyncClient, db_session: AsyncSession
     ):
         db_session.add(
@@ -658,5 +747,22 @@ class TestHumanApprovalGuard:
         )
         assert returned.status_code == 200
         approved = await admin_client.post("/admin/candidates/oldrej01/approve")
-        assert approved.status_code == 422
-        assert await db_session.get(Event, "oldrej01") is None
+        assert approved.status_code == 200, approved.text
+        assert await db_session.get(Event, "oldrej01") is not None
+
+
+def test_system_actor_is_scoped_to_event_audit_history():
+    assert [actor.value for actor in AuditActorType] == ["member", "api_key"]
+    assert [actor.value for actor in EventAuditActorType] == [
+        "member",
+        "api_key",
+        "system",
+    ]
+    actor_constraint = next(
+        constraint
+        for constraint in EventAuditLog.__table_args__
+        if constraint.name == "ck_event_audit_actor_type"
+    )
+    assert str(actor_constraint.sqltext) == (
+        "actor_type IN ('member', 'api_key', 'system')"
+    )

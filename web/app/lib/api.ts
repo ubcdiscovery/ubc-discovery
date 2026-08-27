@@ -169,7 +169,7 @@ export const api = {
           entries: Array<{
             id: string;
             event_id: string;
-            actor_type: "member" | "api_key";
+            actor_type: "member" | "api_key" | "system";
             actor_id: string;
             action: "create" | "update" | "image_upload" | "archive" | "restore";
             before: Record<string, unknown> | null;

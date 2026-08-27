@@ -75,7 +75,7 @@ async def _settle_auto_publication(
     """
     try:
         async with session.begin_nested():
-            await process_auto_publication(session, candidate, now=now)
+            await process_auto_publication(session, candidate)
         await complete_job(session, job, now=now)
     except ValidationError, IntegrityError:
         logger.exception(

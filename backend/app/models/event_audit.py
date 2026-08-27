@@ -1,4 +1,5 @@
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from typing import Any
@@ -9,6 +10,28 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 from app.models.audit_actor import AuditActorType
+
+
+class EventAuditActorType(StrEnum):
+    MEMBER = "member"
+    API_KEY = "api_key"
+    SYSTEM = "system"
+
+
+@dataclass(frozen=True)
+class EventAuditActor:
+    actor_type: EventAuditActorType
+    actor_id: uuid.UUID
+
+    @classmethod
+    def authenticated(
+        cls, actor_type: AuditActorType, actor_id: uuid.UUID
+    ) -> EventAuditActor:
+        return cls(EventAuditActorType(actor_type), actor_id)
+
+    @classmethod
+    def system(cls, actor_id: uuid.UUID) -> EventAuditActor:
+        return cls(EventAuditActorType.SYSTEM, actor_id)
 
 
 class EventAuditAction(StrEnum):
@@ -23,7 +46,7 @@ class EventAuditLog(Base):
     __tablename__ = "event_audit_logs"
     __table_args__ = (
         CheckConstraint(
-            "actor_type IN ('member', 'api_key')",
+            "actor_type IN ('member', 'api_key', 'system')",
             name="ck_event_audit_actor_type",
         ),
         CheckConstraint(
@@ -40,7 +63,7 @@ class EventAuditLog(Base):
         ForeignKey("events.id", ondelete="RESTRICT"),
         index=True,
     )
-    actor_type: Mapped[AuditActorType] = mapped_column(String(50))
+    actor_type: Mapped[EventAuditActorType] = mapped_column(String(50))
     actor_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     action: Mapped[EventAuditAction] = mapped_column(String(50))
     before: Mapped[dict[str, Any] | None] = mapped_column(JSONB)

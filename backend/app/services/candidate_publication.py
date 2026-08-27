@@ -7,12 +7,12 @@ from datetime import UTC, datetime, time, timedelta
 from enum import StrEnum
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import AdminActor
-from app.models.audit_actor import AuditActorType
 from app.models.event import Event, EventSourceLabel
+from app.models.event_audit import EventAuditActor
 from app.models.event_listing_candidate import (
     CandidateStatus,
     EventListingCandidate,
@@ -24,13 +24,13 @@ from app.services.event_administration import create_canonical_event_listing
 
 VANCOUVER = ZoneInfo("America/Vancouver")
 
-# Automated publication writes audit entries under this actor.
-SYSTEM_ACTOR = AdminActor(actor_type=AuditActorType.SYSTEM, actor_id=uuid.UUID(int=0))
+# UUIDv5(NAMESPACE_URL, "https://ubcdiscovery.ca/system/candidate-auto-publication")
+AUTO_PUBLICATION_ACTOR_ID = uuid.UUID("d4ee205e-3e54-587e-8294-b31757177ac1")
+AUTO_PUBLICATION_ACTOR = EventAuditActor.system(AUTO_PUBLICATION_ACTOR_ID)
 
 
 class AutoPublicationOutcome(StrEnum):
     PUBLISHED = "published"
-    REJECTED = "rejected"
     PENDING = "pending"
 
 
@@ -42,11 +42,6 @@ def _local_bounds(value: datetime) -> tuple[datetime, datetime]:
     local_date = _coerce_utc(value).astimezone(VANCOUVER).date()
     start = datetime.combine(local_date, time.min, tzinfo=VANCOUVER)
     return start.astimezone(UTC), (start + timedelta(days=1)).astimezone(UTC)
-
-
-def has_started(event_date: datetime | None, *, now: datetime) -> bool:
-    """Return whether an event's start is already in the past."""
-    return event_date is not None and _coerce_utc(event_date) < now
 
 
 def is_complete(candidate: EventListingCandidate) -> bool:
@@ -143,8 +138,26 @@ async def same_club_same_day_exists(
     )
 
 
+async def _lock_same_club_same_day(
+    candidate: EventListingCandidate, db: AsyncSession
+) -> None:
+    if not candidate.club_name or not candidate.event_date:
+        return
+    club = candidate.club_name.strip().lower()
+    if not club:
+        return
+    local_date = _coerce_utc(candidate.event_date).astimezone(VANCOUVER).date()
+    identity = f"candidate-auto-publication:{club}:{local_date.isoformat()}"
+    await db.execute(
+        text("SELECT pg_advisory_xact_lock(hashtextextended(:identity, 0))"),
+        {"identity": identity},
+    )
+
+
 async def publish_candidate(
-    db: AsyncSession, candidate: EventListingCandidate, actor: AdminActor
+    db: AsyncSession,
+    candidate: EventListingCandidate,
+    actor: AdminActor | EventAuditActor,
 ) -> None:
     """Publish a decided Candidate through the authoritative Event Listing
     validation, embedding, image, and audit path and mark it approved.
@@ -160,20 +173,33 @@ async def publish_candidate(
     candidate.status = CandidateStatus.APPROVED
 
 
+async def preview_auto_publication(
+    db: AsyncSession, candidate: EventListingCandidate
+) -> AutoPublicationOutcome:
+    """Return the automatic-publication outcome without mutating any state."""
+    if candidate.status != CandidateStatus.PENDING:
+        return AutoPublicationOutcome.PENDING
+    if not is_complete(candidate):
+        return AutoPublicationOutcome.PENDING
+    if candidate.source_label != EventSourceLabel.AMS_CLUB:
+        return AutoPublicationOutcome.PENDING
+    if await same_club_same_day_exists(candidate, db):
+        return AutoPublicationOutcome.PENDING
+    if await db.get(Event, candidate.id) is not None:
+        return AutoPublicationOutcome.PENDING
+    return AutoPublicationOutcome.PUBLISHED
+
+
 async def process_auto_publication(
     db: AsyncSession,
     candidate: EventListingCandidate,
-    *,
-    now: datetime | None = None,
 ) -> AutoPublicationOutcome:
     """Apply the automatic publication decision to one pending Candidate.
 
-    Complete Candidates publish unless they are Campus Community, their event
-    already started, or a same-club same-day hold applies. Stale non-Campus
-    Community Candidates are rejected; every other hold stays pending.
+    Complete AMS Club Candidates publish unless a same-club same-day hold
+    applies. Every other Candidate stays pending for human review.
     Idempotent: approved Candidates and claimed ids are left untouched.
     """
-    moment = now or datetime.now(UTC)
     locked = await db.scalar(
         select(EventListingCandidate)
         .where(EventListingCandidate.id == candidate.id)
@@ -181,16 +207,10 @@ async def process_auto_publication(
     )
     if locked is None or locked.status != CandidateStatus.PENDING:
         return AutoPublicationOutcome.PENDING
-    if not is_complete(locked):
+    if not is_complete(locked) or locked.source_label != EventSourceLabel.AMS_CLUB:
         return AutoPublicationOutcome.PENDING
-    if locked.source_label == EventSourceLabel.CAMPUS_COMMUNITY:
+    await _lock_same_club_same_day(locked, db)
+    if await preview_auto_publication(db, locked) != AutoPublicationOutcome.PUBLISHED:
         return AutoPublicationOutcome.PENDING
-    if has_started(locked.event_date, now=moment):
-        locked.status = CandidateStatus.REJECTED
-        return AutoPublicationOutcome.REJECTED
-    if await same_club_same_day_exists(locked, db):
-        return AutoPublicationOutcome.PENDING
-    if await db.get(Event, locked.id) is not None:
-        return AutoPublicationOutcome.PENDING
-    await publish_candidate(db, locked, SYSTEM_ACTOR)
+    await publish_candidate(db, locked, AUTO_PUBLICATION_ACTOR)
     return AutoPublicationOutcome.PUBLISHED

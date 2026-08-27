@@ -4,9 +4,8 @@ from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models.audit_actor import AuditActorType
 from app.models.event import EventSourceLabel, EventVibe
-from app.models.event_audit import EventAuditAction
+from app.models.event_audit import EventAuditAction, EventAuditActorType
 
 EVENT_SOURCE_LABELS = tuple(label.value for label in EventSourceLabel)
 EVENT_VIBES = tuple(vibe.value for vibe in EventVibe)
@@ -119,7 +118,7 @@ class AdminEventListResponse(BaseModel):
 class EventAuditResponse(BaseModel):
     id: uuid.UUID
     event_id: str
-    actor_type: AuditActorType
+    actor_type: EventAuditActorType
     actor_id: uuid.UUID
     action: EventAuditAction
     before: dict[str, Any] | None
