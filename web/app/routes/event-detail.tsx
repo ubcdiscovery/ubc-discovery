@@ -1,4 +1,4 @@
-import { useLoaderData, Link } from "react-router";
+import { useLoaderData } from "react-router";
 import { useState, useEffect } from "react";
 import type { Route } from "./+types/event-detail";
 import { ApiError, api, type ApiEvent, type EventRatingResponse } from "~/lib/api";
