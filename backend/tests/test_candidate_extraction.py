@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -15,6 +16,7 @@ from app.models.event_listing_candidate import (
     EventListingCandidate,
     ExtractionJobStatus,
 )
+from app.services.extraction.extractors.openai_vision import RESPONSE_SCHEMA
 from app.services.extraction.jobs import (
     claim_jobs,
     enqueue_extraction_job,
@@ -80,9 +82,12 @@ def _result_for(candidate_id, *, is_event: bool = True) -> ExtractionResult:
         event_date=datetime(2026, 9, 4, 20, 0, tzinfo=UTC),
         club_name="UBC AMS",
         vibes=("social",),
-        source_label="ams_club",
         raw={"is_event": True, "title": "Club Night"},
     )
+
+
+def test_openai_extractor_does_not_classify_source_label():
+    assert "source_label" not in json.dumps(RESPONSE_SCHEMA)
 
 
 class RecordingExtractor:
@@ -279,6 +284,7 @@ class TestCandidateExtraction:
         assert job.status == ExtractionJobStatus.SUCCEEDED
         assert candidate.is_event is True
         assert candidate.title == "Club Night"
+        assert candidate.source_label == "ams_club"
         assert candidate.extracted_original["title"] == "Club Night"
         assert candidate.extracted_at is not None
 

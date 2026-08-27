@@ -15,8 +15,6 @@ return null.
 
 vibes must be chosen from: social, career, academic, arts, culture, outdoors,
 sports, food, wellness, volunteering.
-source_label must be one of: ubc_official, ams_club, campus_community.
-Residence associations are campus_community unless clearly AMS or UBC Official.
 
 Return one object per input capture, in the same order, with the given
 candidate_id.
