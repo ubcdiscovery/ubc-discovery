@@ -386,6 +386,7 @@ function RatingRow({ rating, mine, onEdit }: { rating: EventRatingResponse; mine
             Edit
           </button>
         )}
+        <span className="font-mono text-[11px] text-ink font-semibold">{rating.user_name}</span>
         <span className="ml-auto font-mono text-[11px] text-muted">
           {new Date(rating.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
         </span>

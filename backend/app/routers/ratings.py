@@ -16,6 +16,11 @@ from app.schemas.event_rating import (
 router = APIRouter(prefix="/ratings", tags=["Ratings"])
 
 
+def _to_response(r: EventRating, user_name: str) -> EventRatingResponse:
+    return EventRatingResponse.model_validate(
+        {**{k: v for k, v in vars(r).items() if not k.startswith("_")}, "user_name": user_name}
+    )
+
 @router.get("", response_model=RatingListResponse)
 async def list_ratings(
     skip: int = Query(default=0, ge=0),
@@ -41,7 +46,7 @@ async def list_ratings(
     )
     ratings = result.scalars().all()
     return RatingListResponse(
-        ratings=[EventRatingResponse.model_validate(r) for r in ratings],
+        ratings=[_to_response(r, user.preferred_name) for r in ratings],
         total=total,
     )
 
@@ -53,14 +58,12 @@ async def rate_event(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    # Verify event exists
     event_result = await db.execute(
         select(Event).where(Event.id == event_id, Event.is_archived.is_(False))
     )
     if not event_result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Event with give id NOT found")
 
-    # Upsert: update if already rated
     existing_result = await db.execute(
         select(EventRating).where(
             and_(EventRating.user_id == user.id, EventRating.event_id == event_id)
@@ -74,7 +77,7 @@ async def rate_event(
         existing.note = body.note
         await db.commit()
         await db.refresh(existing)
-        return EventRatingResponse.model_validate(existing)
+        return _to_response(existing, user.preferred_name)
 
     rating = EventRating(
         user_id=user.id,
@@ -86,7 +89,7 @@ async def rate_event(
     db.add(rating)
     await db.commit()
     await db.refresh(rating)
-    return EventRatingResponse.model_validate(rating)
+    return _to_response(rating, user.preferred_name)
 
 
 @router.get("/mine/{event_id}", response_model=EventRatingResponse)
@@ -109,7 +112,8 @@ async def get_rating(
     rating = result.scalar_one_or_none()
     if not rating:
         raise HTTPException(status_code=404, detail="Rating not found")
-    return EventRatingResponse.model_validate(rating)
+    return _to_response(rating, user.preferred_name)
+
 
 @router.get("/{event_id}", response_model=list[EventRatingResponse])
 async def get_event_ratings(
@@ -117,8 +121,9 @@ async def get_event_ratings(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EventRating)
+        select(EventRating, User.preferred_name)
         .join(Event, Event.id == EventRating.event_id)
+        .join(User, User.id == EventRating.user_id)
         .where(
             and_(
                 EventRating.event_id == event_id,
@@ -127,5 +132,4 @@ async def get_event_ratings(
         )
         .order_by(EventRating.created_at.desc())
     )
-    ratings = result.scalars().all()
-    return [EventRatingResponse.model_validate(r) for r in ratings]
+    return [_to_response(r, username) for r, username in result.all()]

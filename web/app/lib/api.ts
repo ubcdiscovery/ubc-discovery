@@ -111,6 +111,7 @@ export interface SavedEventListItem {
 export interface EventRatingResponse {
   id: string;
   user_id: string;
+  user_name: string;
   event_id: string;
   stars: number;
   strong_vibes: string[];

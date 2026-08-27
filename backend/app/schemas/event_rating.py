@@ -13,6 +13,7 @@ class CreateRatingRequest(BaseModel):
 class EventRatingResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
+    user_name: str
     event_id: str
     stars: float
     strong_vibes: list[str]
