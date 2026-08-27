@@ -58,9 +58,9 @@ export function EventCard({ event }: { event: ApiEvent | ApiPastEvent }) {
           ) : (
             <div
               aria-hidden="true"
-              className="hidden md:flex md:size-24 md:shrink-0 md:my-auto aspect-square items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 p-1.5"
+              className="hidden md:flex md:size-24 md:shrink-0 md:my-auto aspect-square items-center justify-center bg-linear-to-br from-zinc-800 to-zinc-900 p-1.5"
             >
-              <span className="text-center text-2xs font-mono font-semibold leading-tight tracking-wide text-zinc-400 uppercase line-clamp-4">
+              <span className="text-center text-2xs/tight font-mono font-semibold tracking-wide text-zinc-400 uppercase line-clamp-4">
                 {event.title}
               </span>
             </div>
