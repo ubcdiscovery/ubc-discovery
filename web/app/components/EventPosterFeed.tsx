@@ -120,7 +120,7 @@ export function EventPosterFeed({ events }: { events: ApiEvent[] }) {
   return (
     <section
       aria-label="Upcoming events"
-      className="mx-auto grid w-full max-w-245 grid-cols-1 gap-x-4 gap-y-10 sm:grid-cols-[minmax(0,25rem)] sm:justify-center md:grid-cols-[repeat(auto-fit,minmax(18rem,19.75rem))]"
+      className="mx-auto grid w-full max-w-245 grid-cols-1 gap-x-4 gap-y-10 sm:grid-cols-[minmax(0,25rem)] sm:justify-center md:grid-cols-[repeat(auto-fit,minmax(18rem,19.75rem))] xl:grid-cols-3"
     >
       {events.map((event, index) => (
         <article
