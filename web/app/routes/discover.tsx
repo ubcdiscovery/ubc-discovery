@@ -228,7 +228,7 @@ export default function Discover() {
       </div>
 
       <div className="flex flex-1">
-        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-64 shrink-0 self-start overflow-y-auto border-r border-ink px-6 py-4 md:block">
+        <aside className="hidden w-64 shrink-0 overflow-hidden border-r border-ink px-6 py-4 md:block">
           <div>
             <FilterBlock label="Source">
               {SOURCES.map((s) => (
@@ -302,7 +302,7 @@ export default function Discover() {
 
         <section
           aria-label="Discover events"
-          className={`min-w-0 flex-1 px-4.5 pb-32 sm:px-6 md:px-8 lg:px-7 ${display === "poster" ? "pt-5 md:pt-6" : "pt-4 md:pt-6"}`}
+          className={`min-w-0 flex-1 px-4.5 pb-32 sm:px-6 md:px-8 lg:px-7 md:h-[calc(100dvh-9.5rem)] lg:h-[calc(100dvh-3.5rem)] md:overflow-y-auto md:overscroll-auto ${display === "poster" ? "pt-5 md:pt-6" : "pt-4 md:pt-6"}`}
         >
           <h1 className="sr-only">Discover events</h1>
           {pastLoading ? (

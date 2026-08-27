@@ -1,5 +1,5 @@
-import { useLoaderData } from "react-router";
-import { useState, useEffect } from "react";
+import { useLoaderData, Link } from "react-router";
+import { useState, useEffect, useMemo } from "react";
 import type { Route } from "./+types/event-detail";
 import { ApiError, api, type ApiEvent, type EventRatingResponse } from "~/lib/api";
 import { fmtDay, fmtRange, fmtTime, fmtMonth, fmtDate02 } from "~/lib/date";
@@ -8,6 +8,7 @@ import { SourceBadge } from "~/components/SourceBadge";
 import { VibeTag } from "~/components/VibeTag";
 import { RouteErrorState } from "~/components/RouteErrorState";
 import { VIBES } from "~/lib/constants";
+import { useAuth } from "~/lib/auth";
 
 export function meta({ loaderData }: Route.MetaArgs) {
   const event = loaderData as ApiEvent | undefined;
@@ -49,6 +50,8 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
 export default function EventDetail() {
   const event = useLoaderData<typeof clientLoader>();
+  const { state: authState } = useAuth();
+  const isSignedIn = authState.status === "member";
   const d = event.event_date ? new Date(event.event_date) : null;
   const endD = event.event_end_date ? new Date(event.event_end_date) : null;
   const [allRatings, setAllRatings] = useState<EventRatingResponse[]>([]);
@@ -59,8 +62,12 @@ export default function EventDetail() {
 
   useEffect(() => {
     api.ratings.getAll(event.id).then(setAllRatings).catch(() => setAllRatings([]));
-    api.ratings.get(event.id).then(setMyRating).catch(() => setMyRating(null));
   }, [event.id]);
+
+  useEffect(() => {
+    if (authState.status !== "member") return;
+    api.ratings.get(event.id).then(setMyRating).catch(() => setMyRating(null));
+  }, [event.id, authState.status]);
 
   async function submitRating() {
     if (!ratingDraft) return;
@@ -222,9 +229,9 @@ export default function EventDetail() {
       </div>
 
       {/* Desktop */}
-      <div className="hidden md:block">
-        <div className="flex border-b border-ink">
-          <div className="min-w-0 flex-1 border-r border-ink p-8">
+      <div className="hidden md:flex md:h-[calc(100dvh-9.5rem)] lg:h-[calc(100dvh-3.5rem)] overflow-hidden border-b border-ink">
+        <div className="min-w-0 flex-1 border-r border-ink overflow-y-auto overscroll-auto">
+          <div className="p-8">
             <h1 className="font-display font-extrabold text-7xl/display text-ink tracking-tighter">
               {event.title}
             </h1>
@@ -259,11 +266,14 @@ export default function EventDetail() {
             <RatingsSection
               allRatings={allRatings}
               myRating={myRating}
+              isSignedIn={isSignedIn}
               onStarClick={(stars) => setRatingDraft({ stars, note: "", strong_vibes: [] })}
+              onEdit={() => myRating && setRatingDraft({ stars: myRating.stars, note: myRating.note ?? "", strong_vibes: myRating.strong_vibes })}
             />
           </div>
+        </div>
 
-          <aside className="sticky top-0 w-95 shrink-0 self-start">
+        <aside className="w-95 shrink-0 overflow-y-auto overscroll-none">
             {d && (
               <div className="p-6 border-b border-ink">
                 <div className="font-mono text-xs text-muted tracking-wider uppercase">WHEN</div>
@@ -309,7 +319,6 @@ export default function EventDetail() {
               <SaveEventButton eventId={event.id} event={event} variant="wide" />
             </div>
           </aside>
-        </div>
       </div>
     </div>
   );
@@ -356,15 +365,26 @@ function Stars({ count, total = 5 }: { count: number; total?: number }) {
   );
 }
 
-function RatingRow({ rating, mine }: { rating: EventRatingResponse; mine?: boolean }) {
+function RatingRow({ rating, mine, onEdit }: { rating: EventRatingResponse; mine?: boolean; onEdit?: () => void }) {
   return (
     <div className={`py-3 border-b border-rule-soft ${mine ? "opacity-100" : "opacity-80"}`}>
       <div className="flex items-center gap-2 mb-1">
         <Stars count={rating.stars} />
         {mine && (
-          <span className="font-mono text-[10px] tracking-widest uppercase text-muted border border-rule-soft px-1.5 py-0.5 leading-none">
+          <span className="font-mono text-[10px] tracking-widest uppercase text-muted border border-ink/40 px-1.5 py-0.5 leading-none">
             You
           </span>
+        )}
+        {mine && onEdit && (
+          <button
+            onClick={onEdit}
+            className="font-mono text-[10px] tracking-widest uppercase border px-1.5 py-0.5 leading-none cursor-pointer transition-colors group/edit"
+            style={{ color: "#FFAD00", borderColor: "#FFAD00", backgroundColor: "transparent" }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#FFAD00", e.currentTarget.style.color = "#0a0a0b")}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent", e.currentTarget.style.color = "#FFAD00")}
+          >
+            Edit
+          </button>
         )}
         <span className="ml-auto font-mono text-[11px] text-muted">
           {new Date(rating.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
@@ -389,60 +409,103 @@ function RatingRow({ rating, mine }: { rating: EventRatingResponse; mine?: boole
   );
 }
 
+type RatingSort = "newest" | "highest" | "lowest";
+
 function RatingsSection({
   allRatings,
   myRating,
+  isSignedIn,
   onStarClick,
+  onEdit,
 }: {
   allRatings: EventRatingResponse[];
   myRating: EventRatingResponse | null | undefined;
+  isSignedIn: boolean;
   onStarClick: (stars: number) => void;
+  onEdit: () => void;
 }) {
+  const [sort, setSort] = useState<RatingSort>("newest");
+
   const avg =
     allRatings.length > 0
       ? allRatings.reduce((sum, r) => sum + r.stars, 0) / allRatings.length
       : null;
 
-  const others = myRating
-    ? allRatings.filter((r) => r.user_id !== myRating.user_id)
-    : allRatings;
+  const others = useMemo(() => {
+    const base = myRating
+      ? allRatings.filter((r) => r.user_id !== myRating.user_id)
+      : allRatings;
+    return [...base].sort((a, b) => {
+      if (sort === "newest") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (sort === "highest") return b.stars - a.stars;
+      return a.stars - b.stars;
+    });
+  }, [allRatings, myRating, sort]);
 
   return (
-    <div className="mt-7 border-t border-ink pt-5">
-      <div className="font-mono text-xs text-muted tracking-widest uppercase mb-4">Ratings</div>
+    <div className="mt-7">
+      <div className="font-mono text-xs text-muted tracking-widest uppercase mb-3 pb-1.5 border-b border-ink">
+        Ratings
+      </div>
 
       {avg !== null ? (
-        <div className="flex items-end gap-3 mb-5">
-          <span className="font-display font-extrabold text-6xl leading-none tracking-tight text-ink">
-            {avg.toFixed(1)}
-          </span>
-          <div className="pb-1">
-            <Stars count={Math.round(avg)} />
-            <div className="font-mono text-xs text-muted mt-0.5">
-              {allRatings.length} {allRatings.length === 1 ? "rating" : "ratings"}
+        <>
+          <div className="flex items-end gap-3 mb-3">
+            <span className="font-display font-extrabold text-6xl leading-none tracking-tight text-ink">
+              {avg.toFixed(1)}
+            </span>
+            <div className="pb-1">
+              <Stars count={Math.round(avg)} />
+              <div className="font-mono text-xs text-muted mt-0.5">
+                {allRatings.length} {allRatings.length === 1 ? "rating" : "ratings"}
+              </div>
             </div>
           </div>
-        </div>
-      ) : myRating === null ? (
+          {!isSignedIn && (
+            <div className="mb-4 font-mono text-xs text-muted">
+              <Link to="/sign-in" className="text-accent underline">Sign in</Link> to rate this event
+            </div>
+          )}
+          {isSignedIn && myRating === null && (
+            <div className="mb-4">
+              <div className="font-mono text-xs text-muted mb-2">Rate this event</div>
+              <StarPicker onPick={onStarClick} size="2xl" />
+            </div>
+          )}
+        </>
+      ) : myRating === null && isSignedIn ? (
         <div className="mb-4">
           <div className="font-mono text-xs text-muted mb-2">Be the first to rate this event</div>
           <StarPicker onPick={onStarClick} size="2xl" />
         </div>
-      ) : null}
+      ) : (
+        <div className="mb-4 font-mono text-xs text-muted">
+          No ratings yet.{" "}
+          <Link to="/sign-in" className="text-accent underline">Sign in</Link> to be the first.
+        </div>
+      )}
 
       <div>
-        {myRating && <RatingRow rating={myRating} mine />}
+        {others.length > 1 && (
+          <div className="flex justify-end gap-3 mb-1">
+            {(["newest", "highest", "lowest"] as RatingSort[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => setSort(s)}
+                className={`font-mono text-[10px] tracking-widest uppercase cursor-pointer bg-transparent border-none p-0 ${sort === s ? "text-ink font-bold" : "text-muted hover:text-ink"}`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+        {myRating && <RatingRow rating={myRating} mine onEdit={onEdit} />}
         {others.map((r) => (
           <RatingRow key={r.id} rating={r} />
         ))}
       </div>
 
-      {myRating === null && avg !== null && (
-        <div className="mt-4">
-          <div className="font-mono text-xs text-muted mb-2">Rate this event</div>
-          <StarPicker onPick={onStarClick} size="2xl" />
-        </div>
-      )}
+
     </div>
   );
 }
