@@ -23,7 +23,7 @@ export function StarPicker({
           key={s}
           onClick={() => onPick(s)}
           onMouseEnter={() => setHover(s)}
-          className={`text-${size} cursor-pointer bg-transparent border-none p-0 leading-none`}
+          className={`${size === "2xl" ? "text-2xl" : "text-xl"} cursor-pointer bg-transparent border-none p-0 leading-none`}
           style={{ color: "#FFAD00" }}
         >
           {s <= displayed ? "★" : "☆"}
@@ -51,14 +51,14 @@ export function RatingRow({
       <div className="flex items-center gap-2 mb-1">
         <Stars count={rating.stars} />
         {mine && (
-          <span className="font-mono text-[10px] tracking-widest uppercase text-muted border border-ink/40 px-1.5 py-0.5 leading-none">
+          <span className="font-mono text-2xs tracking-widest uppercase text-muted border border-ink/40 px-1.5 py-0.5 leading-none">
             You
           </span>
         )}
         {mine && onEdit && (
           <button
             onClick={onEdit}
-            className="font-mono text-[10px] tracking-widest uppercase border px-1.5 py-0.5 leading-none cursor-pointer transition-colors group/edit"
+            className="font-mono text-2xs tracking-widest uppercase border px-1.5 py-0.5 leading-none cursor-pointer transition-colors group/edit"
             style={{ color: "#FFAD00", borderColor: "#FFAD00", backgroundColor: "transparent" }}
             onMouseEnter={(e) => (
               (e.currentTarget.style.backgroundColor = "#FFAD00"),
@@ -72,8 +72,8 @@ export function RatingRow({
             Edit
           </button>
         )}
-        <span className="font-mono text-[11px] text-ink font-semibold">{rating.user_name}</span>
-        <span className="ml-auto font-mono text-[11px] text-muted">
+        <span className="font-mono text-xs text-ink font-semibold">{rating.user_name}</span>
+        <span className="ml-auto font-mono text-xs text-muted">
           {new Date(rating.created_at).toLocaleDateString(undefined, {
             month: "short",
             day: "numeric",
@@ -88,7 +88,7 @@ export function RatingRow({
             .map((v) => {
               const meta = VIBES.find((x) => x.id === v);
               return (
-                <span key={v} className="font-mono text-[10px] tracking-wide uppercase text-muted">
+                <span key={v} className="font-mono text-2xs tracking-wide uppercase text-muted">
                   {meta?.label ?? v}
                 </span>
               );
@@ -97,7 +97,7 @@ export function RatingRow({
               (acc, el, i) =>
                 i === 0
                   ? [el]
-                  : [...acc, <span key={`sep-${i}`} className="text-muted font-mono text-[10px]">·</span>, el],
+                  : [...acc, <span key={`sep-${i}`} className="text-muted font-mono text-2xs">·</span>, el],
               [],
             )}
         </div>
@@ -196,7 +196,7 @@ export function RatingsSection({
               <button
                 key={s}
                 onClick={() => setSort(s)}
-                className={`font-mono text-[10px] tracking-widest uppercase cursor-pointer bg-transparent border-none p-0 ${sort === s ? "text-ink font-bold" : "text-muted hover:text-ink"}`}
+                className={`font-mono text-2xs tracking-widest uppercase cursor-pointer bg-transparent border-none p-0 ${sort === s ? "text-ink font-bold" : "text-muted hover:text-ink"}`}
               >
                 {s}
               </button>
