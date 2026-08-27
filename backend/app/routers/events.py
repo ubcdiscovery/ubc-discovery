@@ -13,6 +13,7 @@ from app.schemas.event import EventListResponse, EventResponse, PastEventListRes
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
+
 @router.get("", response_model=EventListResponse)
 async def list_events(
     skip: int = Query(default=0, ge=0),
@@ -39,7 +40,11 @@ async def list_past_events(
 ):
     current_time = datetime.now(ZoneInfo("America/Vancouver"))
     result = await db.execute(
-        select(Event, func.avg(EventRating.stars).cast(Float), func.count(EventRating.stars))
+        select(
+            Event,
+            func.avg(EventRating.stars).cast(Float),
+            func.count(EventRating.stars),
+        )
         .outerjoin(EventRating, Event.id == EventRating.event_id)
         .where(Event.event_date < current_time, Event.is_archived.is_(False))
         .group_by(Event.id)
@@ -48,7 +53,10 @@ async def list_past_events(
         .limit(limit)
     )
     events = result.all()
-    return PastEventListResponse(events=[event_to_past_response(e, avg, count) for e, avg, count in events])
+    return PastEventListResponse(
+        events=[event_to_past_response(e, avg, count) for e, avg, count in events]
+    )
+
 
 @router.get("/search", response_model=EventListResponse)
 async def search_events(
