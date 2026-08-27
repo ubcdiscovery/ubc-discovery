@@ -1,10 +1,20 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLoaderData } from "react-router";
-import { api, type ApiEvent } from "~/lib/api";
+import { api, type ApiEvent, type ApiPastEvent } from "~/lib/api";
 import { VIBES, SOURCES, type VibeId, type SourceId } from "~/lib/constants";
 import { VibeTag } from "~/components/VibeTag";
 import { RouteErrorState } from "~/components/RouteErrorState";
 import { EventPosterFeed } from "~/components/EventPosterFeed";
+import { EventCard } from "~/components/EventCard";
+import {
+  Pill,
+  FilterBlock,
+  RowSelect,
+  DisplayToggle,
+  type SortMode,
+  SORT_OPTIONS,
+  sortEvents,
+} from "~/components/DiscoverFilters";
 
 export function meta() {
   return [
@@ -13,8 +23,10 @@ export function meta() {
   ];
 }
 
+const PAGE_SIZE = 50;
+
 export async function clientLoader() {
-  const data = await api.events.list(0, 100);
+  const data = await api.events.list(0, PAGE_SIZE);
   return data;
 }
 
@@ -23,91 +35,10 @@ export function ErrorBoundary() {
     <RouteErrorState
       eyebrow="Could not load Discover"
       title="Events are taking a break."
-      description="We couldn’t reach the event feed. Check your connection and try again in a moment."
+      description="We couldn't reach the event feed. Check your connection and try again in a moment."
       retry
     />
   );
-}
-
-function Pill({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-2.5 py-1 border font-mono text-xs font-semibold tracking-wide uppercase cursor-pointer whitespace-nowrap shrink-0 ${
-        active ? "border-accent bg-accent text-on-color" : "border-ink bg-transparent text-ink"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function FilterBlock({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-6">
-      <div className="font-mono text-xs text-ink tracking-wider uppercase mb-2.5 pb-1 border-b border-ink">
-        {label}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function RowSelect({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <div
-      onClick={onClick}
-      className={`py-1 cursor-pointer font-mono text-xs tracking-wide flex items-center gap-2 ${
-        active ? "font-bold text-ink" : "font-normal text-muted"
-      }`}
-    >
-      <span className={`w-3 ${active ? "text-accent" : "text-transparent"}`}>→</span>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-type SortMode = "upcoming" | "newest" | "a-z";
-
-const SORT_OPTIONS: { id: SortMode; label: string }[] = [
-  { id: "upcoming", label: "Upcoming" },
-  { id: "newest", label: "Recently added" },
-];
-
-function sortEvents(events: ApiEvent[], mode: SortMode): ApiEvent[] {
-  const sorted = [...events];
-  switch (mode) {
-    case "upcoming":
-      return sorted.sort((a, b) => {
-        const da = a.event_date ? new Date(a.event_date).getTime() : Infinity;
-        const db = b.event_date ? new Date(b.event_date).getTime() : Infinity;
-        return da - db;
-      });
-    case "newest":
-      return sorted.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
-    case "a-z":
-      return sorted.sort((a, b) =>
-        a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
-      );
-  }
 }
 
 export default function Discover() {
@@ -115,13 +46,52 @@ export default function Discover() {
   const [activeVibe, setActiveVibe] = useState<VibeId | null>(null);
   const [activeSource, setActiveSource] = useState<SourceId>("all");
   const [sortBy, setSortBy] = useState<SortMode>("upcoming");
+  const [display, setDisplay] = useState<"poster" | "list">("poster");
+  const [pastEvents, setPastEvents] = useState<ApiPastEvent[] | null>(null);
+  const [pastLoading, setPastLoading] = useState(false);
+  const [extraEvents, setExtraEvents] = useState<ApiEvent[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState((data?.events.length ?? 0) === PAGE_SIZE);
+
+  useEffect(() => {
+    if (sortBy === "past" && pastEvents === null && !pastLoading) {
+      setPastLoading(true);
+      api.events
+        .listPast()
+        .then((res) => {
+          setPastEvents(res.events);
+          setPastLoading(false);
+        })
+        .catch(() => {
+          setPastEvents([]);
+          setPastLoading(false);
+        });
+    }
+  }, [sortBy, pastEvents, pastLoading]);
+
+  const allUpcoming = useMemo(
+    () => [...(data?.events ?? []), ...extraEvents],
+    [data, extraEvents],
+  );
 
   const events = useMemo(() => {
-    let filtered: ApiEvent[] = data?.events ?? [];
+    const pool: ApiEvent[] = sortBy === "past" ? (pastEvents ?? []) : allUpcoming;
+    let filtered = [...pool];
     if (activeVibe) filtered = filtered.filter((e) => e.vibes.includes(activeVibe));
     if (activeSource !== "all") filtered = filtered.filter((e) => e.source_label === activeSource);
     return sortEvents(filtered, sortBy);
-  }, [data, activeVibe, activeSource, sortBy]);
+  }, [allUpcoming, pastEvents, activeVibe, activeSource, sortBy]);
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const res = await api.events.list(allUpcoming.length, PAGE_SIZE);
+      setExtraEvents((prev) => [...prev, ...res.events]);
+      setHasMore(res.events.length === PAGE_SIZE);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   return (
     <div className="flex flex-1 flex-col">
@@ -186,7 +156,7 @@ export default function Discover() {
       </div>
 
       <div className="flex flex-1">
-        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-56 shrink-0 self-start overflow-y-auto border-r border-ink px-6 py-7 md:block">
+        <aside className="hidden w-64 shrink-0 overflow-hidden border-r border-ink px-6 py-4 md:block lg:h-[calc(100dvh-3.875rem)]">
           <div>
             <FilterBlock label="Source">
               {SOURCES.map((s) => (
@@ -227,15 +197,20 @@ export default function Discover() {
                 />
               ))}
             </FilterBlock>
+            <DisplayToggle display={display} onChange={setDisplay} />
           </div>
         </aside>
 
         <section
           aria-label="Discover events"
-          className="min-w-0 flex-1 px-4.5 pb-32 pt-4 sm:px-6 md:px-8 md:pt-7 lg:px-7"
+          className={`min-w-0 flex-1 px-4.5 pb-32 sm:px-6 md:px-8 lg:px-7 md:h-[calc(100dvh-9.5rem)] lg:h-[calc(100dvh-3.5rem)] md:overflow-y-auto md:overscroll-auto ${display === "poster" ? "pt-5 md:pt-6" : "pt-4 md:pt-6"}`}
         >
           <h1 className="sr-only">Discover events</h1>
-          {events.length === 0 ? (
+          {pastLoading ? (
+            <div className="py-16 text-center font-mono text-xs tracking-wider text-muted uppercase">
+              Loading past events…
+            </div>
+          ) : events.length === 0 ? (
             <div className="border border-dashed border-ink px-6 py-16 text-center">
               <h3 className="font-display text-4xl font-extrabold leading-none tracking-tight text-ink">
                 Nothing on this board.
@@ -253,8 +228,40 @@ export default function Discover() {
                 Clear filters
               </button>
             </div>
+          ) : display === "poster" ? (
+            <>
+              <EventPosterFeed events={events} />
+              {sortBy !== "past" && hasMore && (
+                <div className="mt-8 flex justify-center">
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="border border-ink px-6 py-2.5 font-mono text-xs font-bold tracking-wider uppercase cursor-pointer bg-transparent text-ink disabled:opacity-50"
+                  >
+                    {loadingMore ? "Loading…" : "Show more"}
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
-            <EventPosterFeed events={events} />
+            <>
+              <div>
+                {events.map((e) => (
+                  <EventCard key={e.id} event={e} />
+                ))}
+              </div>
+              {sortBy !== "past" && hasMore && (
+                <div className="mt-6 flex justify-center">
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="border border-ink px-6 py-2.5 font-mono text-xs font-bold tracking-wider uppercase cursor-pointer bg-transparent text-ink disabled:opacity-50"
+                  >
+                    {loadingMore ? "Loading…" : "Show more"}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </section>
       </div>

@@ -2,13 +2,14 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import or_, select
+from sqlalchemy import Float, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.event import Event
-from app.presenters.event import event_to_response
-from app.schemas.event import EventListResponse, EventResponse
+from app.models.event_rating import EventRating
+from app.presenters.event import event_to_past_response, event_to_response
+from app.schemas.event import EventListResponse, EventResponse, PastEventListResponse
 
 router = APIRouter(prefix="/events", tags=["Events"])
 
@@ -29,6 +30,32 @@ async def list_events(
     )
     events = result.scalars().all()
     return EventListResponse(events=[event_to_response(e) for e in events])
+
+
+@router.get("/past", response_model=PastEventListResponse)
+async def list_past_events(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, le=100),
+    db: AsyncSession = Depends(get_db),
+):
+    current_time = datetime.now(ZoneInfo("America/Vancouver"))
+    result = await db.execute(
+        select(
+            Event,
+            func.avg(EventRating.stars).cast(Float),
+            func.count(EventRating.stars),
+        )
+        .outerjoin(EventRating, Event.id == EventRating.event_id)
+        .where(Event.event_date < current_time, Event.is_archived.is_(False))
+        .group_by(Event.id)
+        .order_by(Event.event_date.desc(), Event.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    events = result.all()
+    return PastEventListResponse(
+        events=[event_to_past_response(e, avg, count) for e, avg, count in events]
+    )
 
 
 @router.get("/search", response_model=EventListResponse)
