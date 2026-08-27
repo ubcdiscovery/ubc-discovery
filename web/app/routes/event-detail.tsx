@@ -170,7 +170,7 @@ export default function EventDetail() {
           <div className="font-mono text-xs text-muted tracking-wider uppercase mb-2">
             About this event
           </div>
-          <p className="text-sm/relaxed text-ink-soft">{event.description}</p>
+          <p className="whitespace-pre-wrap text-sm/relaxed text-ink-soft">{event.description}</p>
         </div>
 
         <div className="px-4.5 pt-5 pb-3.5">
@@ -221,7 +221,7 @@ export default function EventDetail() {
               <div className="font-mono text-xs text-muted tracking-wider uppercase mb-3 pb-1.5 border-b border-ink">
                 About this event
               </div>
-              <p className="text-base/relaxed text-ink-soft">{event.description}</p>
+              <p className="whitespace-pre-wrap text-base/relaxed text-ink-soft">{event.description}</p>
             </div>
 
             <div className="mt-7">
