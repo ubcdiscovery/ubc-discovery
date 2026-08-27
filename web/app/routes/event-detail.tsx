@@ -59,9 +59,19 @@ export default function EventDetail() {
   const [imgFailed, setImgFailed] = useState(false);
   const [ratingDraft, setRatingDraft] = useState<{ stars: number; note: string; strong_vibes: string[] } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [ratingsAvailable, setRatingsAvailable] = useState<boolean | undefined>(undefined);
 
   useEffect(() => {
-    api.ratings.getAll(event.id).then(setAllRatings).catch(() => setAllRatings([]));
+    api.ratings.getAll(event.id)
+      .then((ratings) => { setAllRatings(ratings); setRatingsAvailable(true); })
+      .catch((err) => {
+        if (err instanceof ApiError && (err.status === 400 || err.status === 403 || err.status === 404)) {
+          setRatingsAvailable(false);
+        } else {
+          setAllRatings([]);
+          setRatingsAvailable(true);
+        }
+      });
   }, [event.id]);
 
   useEffect(() => {
@@ -263,13 +273,15 @@ export default function EventDetail() {
               </div>
             </div>
 
-            <RatingsSection
-              allRatings={allRatings}
-              myRating={myRating}
-              isSignedIn={isSignedIn}
-              onStarClick={(stars) => setRatingDraft({ stars, note: "", strong_vibes: [] })}
-              onEdit={() => myRating && setRatingDraft({ stars: myRating.stars, note: myRating.note ?? "", strong_vibes: myRating.strong_vibes })}
-            />
+            {ratingsAvailable && (
+              <RatingsSection
+                allRatings={allRatings}
+                myRating={myRating}
+                isSignedIn={isSignedIn}
+                onStarClick={(stars) => setRatingDraft({ stars, note: "", strong_vibes: [] })}
+                onEdit={() => myRating && setRatingDraft({ stars: myRating.stars, note: myRating.note ?? "", strong_vibes: myRating.strong_vibes })}
+              />
+            )}
           </div>
         </div>
 
