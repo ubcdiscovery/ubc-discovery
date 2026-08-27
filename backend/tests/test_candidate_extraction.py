@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -15,6 +16,7 @@ from app.models.event_listing_candidate import (
     EventListingCandidate,
     ExtractionJobStatus,
 )
+from app.services.extraction.extractors.openai_vision import RESPONSE_SCHEMA
 from app.services.extraction.jobs import (
     claim_jobs,
     enqueue_extraction_job,
@@ -82,6 +84,10 @@ def _result_for(candidate_id, *, is_event: bool = True) -> ExtractionResult:
         vibes=("social",),
         raw={"is_event": True, "title": "Club Night"},
     )
+
+
+def test_openai_extractor_does_not_classify_source_label():
+    assert "source_label" not in json.dumps(RESPONSE_SCHEMA)
 
 
 class RecordingExtractor:
