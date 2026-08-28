@@ -93,6 +93,13 @@ export interface SavedEventListItem {
   event: ApiEvent;
 }
 
+export interface ConnectRequest {
+  id: string;
+  user_uuid: string;
+  preferred_name: string;
+  created_at: string;
+}
+
 export interface EventRatingResponse {
   id: string;
   user_id: string;

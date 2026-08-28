@@ -48,3 +48,20 @@ class PresignedUploadResponse(BaseModel):
     fields: dict[str, str]
     file_key: str
     max_file_size_bytes: int
+
+
+class ConnectedUser(BaseModel):
+    user_id: uuid.UUID
+    preferred_name: str
+    connected_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ConnectRequest(BaseModel):
+    id: uuid.UUID
+    user_uuid: uuid.UUID
+    preferred_name: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

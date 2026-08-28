@@ -13,6 +13,7 @@ import type {
   SavedEventResponse,
   SavedEventListItem,
   EventRatingResponse,
+  ConnectRequest,
 } from "~/lib/api.types";
 
 export type {
@@ -29,6 +30,7 @@ export type {
   SavedEventResponse,
   SavedEventListItem,
   EventRatingResponse,
+  ConnectRequest,
 };
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
@@ -194,6 +196,12 @@ export const api = {
       authenticatedApiFetch<SavedEventResponse>(`/saved-events/${eventId}`, { method: "PUT" }),
     unsave: (eventId: string) =>
       authenticatedApiFetch<void>(`/saved-events/${eventId}`, { method: "DELETE" }),
+  },
+  connectionRequests: {
+    inbound: () => authenticatedApiFetch<ConnectRequest[]>("/connection-requests/inbound"),
+    outbound: () => authenticatedApiFetch<ConnectRequest[]>("/connection-requests/outbound"),
+    send: (userId: string) =>
+      authenticatedApiFetch<ConnectRequest>(`/connection-requests/request/${userId}`, { method: "POST" }),
   },
   ratings: {
     list: () =>

@@ -12,6 +12,8 @@ from app.database import engine
 from app.routers import (
     admin,
     auth,
+    connection,
+    connection_request,
     events,
     ingestion,
     ratings,
@@ -66,6 +68,8 @@ app.include_router(ingestion.router)
 app.include_router(ratings.router)
 app.include_router(saved_events.router)
 app.include_router(recommendations.router)
+app.include_router(connection.router)
+app.include_router(connection_request.router)
 
 
 @app.get("/", tags=["Health"])

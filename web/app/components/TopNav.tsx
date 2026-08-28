@@ -31,7 +31,7 @@ export function TopNav({
           </span>
         </Link>
         <nav className="flex gap-5">
-          {PRIMARY_NAVIGATION.map((item) => (
+          {PRIMARY_NAVIGATION.filter((item) => item.id !== "connection-requests" || !!memberName).map((item) => (
             <NavLink
               key={item.id}
               to={item.to}
