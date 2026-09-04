@@ -2,7 +2,47 @@ import { useEffect, useState } from "react";
 import { ApiError, api, type ConnectRequest } from "~/lib/api";
 import { useAuth } from "~/lib/auth";
 
-function RequestRow({ req }: { req: ConnectRequest }) {
+function RequestRow({
+  req,
+  onAccepted,
+  onRemoved,
+}: {
+  req: ConnectRequest;
+  onAccepted?: (id: string) => void;
+  onRemoved?: (id: string) => void;
+}) {
+  const [acceptLoading, setAcceptLoading] = useState(false);
+  const [removeLoading, setRemoveLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleAccept() {
+    setAcceptLoading(true);
+    setError("");
+    try {
+      await api.connectionRequests.accept(req.id);
+      onAccepted?.(req.id);
+    } catch (err) {
+      setError(err instanceof ApiError ? `Error ${err.status}: ${err.message}` : String(err));
+    } finally {
+      setAcceptLoading(false);
+    }
+  }
+
+  async function handleRemove() {
+    setRemoveLoading(true);
+    setError("");
+    try {
+      await api.connectionRequests.remove(req.id);
+      onRemoved?.(req.id);
+    } catch (err) {
+      setError(err instanceof ApiError ? `Error ${err.status}: ${err.message}` : String(err));
+    } finally {
+      setRemoveLoading(false);
+    }
+  }
+
+  const busy = acceptLoading || removeLoading;
+
   return (
     <div className="flex items-center justify-between border-b border-rule-soft py-3">
       <div>
@@ -14,6 +54,27 @@ function RequestRow({ req }: { req: ConnectRequest }) {
             year: "numeric",
           })}
         </div>
+      </div>
+      <div className="flex items-center gap-2">
+        {error && <span className="font-mono text-xs text-red-500">{error}</span>}
+        {onRemoved && (
+          <button
+            onClick={handleRemove}
+            disabled={busy}
+            className="font-mono text-xs tracking-wider uppercase px-3 py-1.5 border border-rule-soft cursor-pointer disabled:opacity-50 hover:border-red-400 hover:text-red-500"
+          >
+            {removeLoading ? "···" : onAccepted ? "Decline" : "Cancel"}
+          </button>
+        )}
+        {onAccepted && (
+          <button
+            onClick={handleAccept}
+            disabled={busy}
+            className="border border-accent bg-accent text-on-color font-mono text-xs font-bold tracking-wider uppercase px-3 py-1.5 cursor-pointer disabled:opacity-50"
+          >
+            {acceptLoading ? "···" : "Accept"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -128,7 +189,17 @@ function ConnectionRequestsInner() {
           No {tab} requests
         </div>
       ) : (
-        items.map((req) => <RequestRow key={req.id} req={req} />)
+        items.map((req) => (
+          <RequestRow
+            key={req.id}
+            req={req}
+            onAccepted={tab === "inbound" ? (id) => setInbound((prev) => prev.filter((r) => r.id !== id)) : undefined}
+            onRemoved={tab === "inbound"
+              ? (id) => setInbound((prev) => prev.filter((r) => r.id !== id))
+              : (id) => setOutbound((prev) => prev.filter((r) => r.id !== id))
+            }
+          />
+        ))
       )}
     </div>
   );

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -61,7 +63,7 @@ async def get_outbound_requests(
 
 @router.post("/request/{user_id}", response_model=ConnectRequest)
 async def send_connection_request(
-    user_id: str,
+    user_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -106,3 +108,58 @@ async def send_connection_request(
         preferred_name=receiver.preferred_name,
         created_at=new_request.sent_at,
     )
+
+@router.post('/accept/{request_id}')
+async def accept_request(
+    request_id: UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(ConnectionRequest)
+        .where(ConnectionRequest.request_id == request_id)
+    )
+
+    request = result.scalar_one_or_none()
+    if request is None:
+        raise HTTPException(status_code=404, detail="Can not find a request with given request_id")
+
+    if request.receiver_id != user.id:
+        raise HTTPException(status_code=403, detail="User can not approve this request")
+
+    user_1_id, user_2_id = sorted(
+        [request.sender_id, request.receiver_id],
+        key=str
+    )
+
+    new_connection = Connection(
+        user_1_id=user_1_id,
+        user_2_id=user_2_id,
+    )
+
+    db.add(new_connection)
+    await db.delete(request)
+    await db.commit()
+    await db.refresh(new_connection)
+
+# remove because both sender/receiver can delete
+@router.delete('/remove/{request_id}')
+async def reject_request(
+    request_id: UUID,
+    user: User=Depends(get_current_user),
+    db: AsyncSession=Depends(get_db),
+):
+    result = await db.execute(
+        select(ConnectionRequest)
+        .where(ConnectionRequest.request_id == request_id)
+    )
+
+    request = result.scalar_one_or_none()
+    if request is None:
+        raise HTTPException(status_code=404, detail='Result with requested id does not exist')
+
+    if (user.id != request.receiver_id and user.id != request.sender_id):
+        raise HTTPException(status_code=403, detail='User does not have perms to delete this request')
+
+    await db.delete(request)
+    await db.commit()

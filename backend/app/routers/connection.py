@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy import or_, select
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import or_, select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
+from uuid import UUID
 
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -47,3 +48,30 @@ async def get_connections(
         )
         for user, connection in results
     ]
+
+@router.delete('/disconnect/{user_id}')
+async def disconnect_user(
+    user_id : UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if user_id == user.id:
+        raise HTTPException(status_code=400, detail='Can not disconnect from yourself')
+
+    user_1_id, user_2_id = sorted(
+        [user_id, user.id],
+        key=str
+    )
+
+    result = await db.execute(
+        select(Connection).
+        where(and_(Connection.user_1_id == user_1_id,
+                    Connection.user_2_id == user_2_id))
+    )
+
+    connection = result.scalar_one_or_none()
+    if connection is None:
+        raise HTTPException(status_code=400, detail='You do not have a connection with that user')
+
+    await db.delete(connection)
+    await db.commit()

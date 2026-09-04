@@ -10,6 +10,7 @@ export default [
     index("routes/discover.tsx"),
     route("events/:id", "routes/event-detail.tsx"),
     route("saved", "routes/saved.tsx"),
+    route("connections", "routes/connections.tsx"),
     route("connection-requests", "routes/connection-requests.tsx"),
     route("profile", "routes/profile.tsx"),
     route("organizers", "routes/organizers.tsx"),

@@ -13,6 +13,7 @@ import type {
   SavedEventResponse,
   SavedEventListItem,
   EventRatingResponse,
+  ConnectedUser,
   ConnectRequest,
 } from "~/lib/api.types";
 
@@ -30,6 +31,7 @@ export type {
   SavedEventResponse,
   SavedEventListItem,
   EventRatingResponse,
+  ConnectedUser,
   ConnectRequest,
 };
 
@@ -197,11 +199,20 @@ export const api = {
     unsave: (eventId: string) =>
       authenticatedApiFetch<void>(`/saved-events/${eventId}`, { method: "DELETE" }),
   },
+  connections: {
+    list: () => authenticatedApiFetch<ConnectedUser[]>("/connections"),
+    disconnect: (userId: string) =>
+      authenticatedApiFetch(`/connections/disconnect/${userId}`, { method: "DELETE" }),
+  },
   connectionRequests: {
     inbound: () => authenticatedApiFetch<ConnectRequest[]>("/connection-requests/inbound"),
     outbound: () => authenticatedApiFetch<ConnectRequest[]>("/connection-requests/outbound"),
     send: (userId: string) =>
       authenticatedApiFetch<ConnectRequest>(`/connection-requests/request/${userId}`, { method: "POST" }),
+    accept: (requestId: string) =>
+      authenticatedApiFetch(`/connection-requests/accept/${requestId}`, { method: "POST" }),
+    remove: (requestId: string) =>
+      authenticatedApiFetch(`/connection-requests/remove/${requestId}`, { method: "DELETE" }),
   },
   ratings: {
     list: () =>
