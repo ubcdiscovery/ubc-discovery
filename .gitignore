@@ -237,3 +237,15 @@ __marimo__/
 
 # Firebase
 firebase-service-account.json
+
+# macOS
+.DS_Store
+
+# JetBrains IDEs
+.idea/
+
+# Claude Code
+.claude/
+
+# Local env overrides
+web/.env.local
