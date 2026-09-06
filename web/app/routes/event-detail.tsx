@@ -122,7 +122,7 @@ export default function EventDetail() {
             onClick={() => setShowRecommended(!showRecommended)}
             className="font-mono text-xs text-muted tracking-wider uppercase flex items-center gap-1.5 cursor-pointer pb-1.5 border-b border-ink w-full"
           >
-            <span className="text-lg -mt-0.5">{showRecommended ? "▾" : "▸"}</span> RECOMMENDED
+            <span className="text-lg -mt-0.5">{showRecommended ? "▾" : "▸"}</span> SIMILAR EVENTS
           </button>
           {showRecommended && recommended.map((rec) => (
             <EventCard key={rec.id} event={rec} />
@@ -192,7 +192,7 @@ export default function EventDetail() {
                 onClick={() => setShowRecommended(!showRecommended)}
                 className="font-mono text-xs text-muted tracking-wider uppercase flex items-center gap-1.5 cursor-pointer pb-1.5 border-b border-ink w-full"
               >
-                <span className="text-lg -mt-0.5">{showRecommended ? "▾" : "▸"}</span> RECOMMENDED
+                <span className="text-lg -mt-0.5">{showRecommended ? "▾" : "▸"}</span> SIMILAR EVENTS
               </button>
               {showRecommended && recommended.map((rec) => (
                 <EventCard key={rec.id} event={rec} />
