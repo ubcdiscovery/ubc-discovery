@@ -17,7 +17,7 @@ router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
 @router.get("/events/{event_id}/similar", response_model=SimilarEventsResponse)
 async def get_similar_events(
     event_id: str,
-    n: int = Query(default=5, ge=1, le=20),
+    n: int = Query(default=3, ge=1, le=20),
     vibe_weight: float = Query(default=recommender.VIBE_WEIGHT_DEFAULT, ge=0.0, le=1.0),
     db: AsyncSession = Depends(get_db),
 ):

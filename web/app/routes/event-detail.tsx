@@ -1,14 +1,16 @@
+import { useState } from "react";
 import { useLoaderData } from "react-router";
 import type { Route } from "./+types/event-detail";
 import { ApiError, api, type ApiEvent } from "~/lib/api";
 import { fmtDay, fmtRange, fmtTime, fmtMonth, fmtDate02 } from "~/lib/date";
 import { SaveEventButton } from "~/components/SaveEventButton";
+import { EventCard } from "~/components/EventCard";
 import { SourceBadge } from "~/components/SourceBadge";
 import { VibeTag } from "~/components/VibeTag";
 import { RouteErrorState } from "~/components/RouteErrorState";
 
 export function meta({ loaderData }: Route.MetaArgs) {
-  const event = loaderData as ApiEvent | undefined;
+  const event = (loaderData as { event: ApiEvent } | undefined)?.event;
   return [
     {
       title: event ? `${event.title} - UBC Discovery` : "Event — UBC Discovery",
@@ -17,7 +19,11 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export async function clientLoader({ params }: Route.ClientLoaderArgs) {
-  return api.events.get(params.id);
+  const [event, recResponse] = await Promise.all([
+    api.events.get(params.id),
+    api.recommendations.get(params.id),
+  ]);
+  return { event, recommended: recResponse.events }
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
@@ -46,9 +52,10 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 }
 
 export default function EventDetail() {
-  const event = useLoaderData<typeof clientLoader>();
+  const { event, recommended } = useLoaderData<typeof clientLoader>();
   const d = event.event_date ? new Date(event.event_date) : null;
   const endD = event.event_end_date ? new Date(event.event_end_date) : null;
+  const [showRecommended, setShowRecommended] = useState(false);
 
   return (
     <div>
@@ -160,10 +167,24 @@ export default function EventDetail() {
               <p className="text-base/relaxed text-ink-soft">{event.description}</p>
             </div>
 
+            {/* Commented out bc it does nothing rn
             <div className="mt-7">
               <div className="font-mono text-xs text-muted tracking-wide">
                 ○ REPORT AN ISSUE WITH THIS LISTING
               </div>
+            </div>
+            */}
+
+            <div className="mt-7">
+              <button
+                onClick={() => setShowRecommended(!showRecommended)}
+                className="font-mono text-xs text-muted tracking-wider uppercase flex items-center gap-1.5 cursor-pointer pb-1.5 border-b border-ink w-full"
+              >
+                <span className="text-lg -mt-0.5">{showRecommended ? "▾" : "▸"}</span> RECOMMENDED
+              </button>
+              {showRecommended && recommended.map((rec) => (
+                <EventCard key={rec.id} event={rec} />
+              ))}
             </div>
           </div>
 

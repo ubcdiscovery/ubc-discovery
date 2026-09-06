@@ -294,4 +294,10 @@ export const api = {
     get: (eventId: string) =>
       authenticatedApiFetch<EventRatingResponse>(`/ratings/${eventId}`),
   },
+  recommendations: {
+    get: (eventId: string) =>
+      apiFetch<{ event_id: string; events: ApiEvent[]; scores: number[] }>(
+        `/recommendations/events/${eventId}/similar`
+      ),
+  }
 };
