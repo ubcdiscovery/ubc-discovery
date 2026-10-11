@@ -1,13 +1,16 @@
 import json
 import logging
 import math
-from collections.abc import Sequence
 from functools import lru_cache
 from typing import TypeGuard
 
 import boto3
-from sqlalchemy import select
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import bindparam, case, func, select
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import defer
+from sqlalchemy.sql import Select
 
 from app.config import settings
 from app.constants import EVENT_EMBEDDING_DIMENSIONS
@@ -46,39 +49,6 @@ def generate_event_text(event: Event) -> str:
     return ". ".join(parts)
 
 
-def cosine_similarity(a: list[float], b: list[float]) -> float:
-    if len(a) != len(b):
-        raise ValueError(f"Vector length mismatch: {len(a)} vs {len(b)}")
-    dot = sum(x * y for x, y in zip(a, b, strict=True))
-    norm_a = math.sqrt(sum(x * x for x in a))
-    norm_b = math.sqrt(sum(y * y for y in b))
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-    return dot / (norm_a * norm_b)
-
-
-def vibe_jaccard(vibes_a: Sequence[str], vibes_b: Sequence[str]) -> float:
-    if not vibes_a or not vibes_b:
-        return 0.0
-    set_a = set(vibes_a)
-    set_b = set(vibes_b)
-    intersection = len(set_a & set_b)
-    union = len(set_a | set_b)
-    return intersection / union if union > 0 else 0.0
-
-
-def hybrid_score(
-    emb_a: list[float],
-    emb_b: list[float],
-    vibes_a: Sequence[str],
-    vibes_b: Sequence[str],
-    vibe_weight: float = VIBE_WEIGHT_DEFAULT,
-) -> float:
-    text_score = cosine_similarity(emb_a, emb_b)
-    vibe_score = vibe_jaccard(vibes_a, vibes_b)
-    return (1.0 - vibe_weight) * text_score + vibe_weight * vibe_score
-
-
 def embed_text(text: str) -> list[float] | None:
     try:
         client = _bedrock_client()
@@ -111,98 +81,121 @@ async def generate_event_embedding(event: Event) -> list[float] | None:
     return embed_text(text)
 
 
-async def fetch_nearest_events(
-    db: AsyncSession,
-    embedding: list[float],
-    *,
-    exclude_event_id: str | None = None,
-    limit: int = 100,
-) -> list[Event]:
-    """Fetch vector-nearest events while leaving JSON ranking available to callers."""
-    if not is_valid_embedding(embedding):
-        return []
-
-    query = select(Event).where(
-        Event.embedding_vector.is_not(None), Event.is_archived.is_(False)
+async def average_saved_embedding(
+    db: AsyncSession, saved_event_ids: list[str]
+) -> list[float] | None:
+    """Build the taste vector in PostgreSQL without transferring saved vectors."""
+    average = await db.scalar(
+        select(
+            func.avg(Event.embedding_vector, type_=Vector(EVENT_EMBEDDING_DIMENSIONS))
+        ).where(Event.id.in_(saved_event_ids), Event.is_archived.is_(False))
     )
-    if exclude_event_id is not None:
-        query = query.where(Event.id != exclude_event_id)
-    query = query.order_by(
-        Event.embedding_vector.cosine_distance(embedding), Event.id
-    ).limit(limit)
-    result = await db.execute(query)
-    return list(result.scalars().all())
+
+    return list(average) if average is not None else None
 
 
-def mean_embedding(embeddings: list[list[float]]) -> list[float] | None:
-    if not embeddings:
-        return None
-    dim = len(embeddings[0])
-    result = [0.0] * dim
-    for emb in embeddings:
-        for i in range(dim):
-            result[i] += emb[i]
-    count = len(embeddings)
-    return [v / count for v in result]
-
-
-def rank_events(
-    taste_vector: list[float],
-    candidates: list[Event],
-    top_n: int = 10,
-    vibe_profile: list[str] | None = None,
-    vibe_weight: float = VIBE_WEIGHT_DEFAULT,
+async def _rank_candidates(  # noqa: PLR0913 - explicit ranking inputs
+    db: AsyncSession,
+    candidates: Select,
+    *,
+    embedding: list[float] | None,
+    vibes: list[str],
+    top_n: int,
+    vibe_weight: float,
 ) -> list[tuple[Event, float]]:
-    scored: list[tuple[Event, float]] = []
-    effective_vibe_profile = vibe_profile or []
-    for event in candidates:
-        if not event.embedding:
-            continue
-        score = hybrid_score(
-            taste_vector,
-            event.embedding,
-            effective_vibe_profile,
-            event.vibes or [],
-            vibe_weight=vibe_weight,
+    # Materialize the candidate boundary before hybrid ranking (especially the
+    # For You recent-200 limit, which precedes the missing-vector filter).
+    candidate_rows = candidates.cte("candidates").prefix_with("MATERIALIZED")
+    event_vibes = select(
+        func.json_array_elements_text(candidate_rows.c.vibes).label("vibe")
+    ).correlate(candidate_rows)
+    profile_vibes = select(
+        func.jsonb_array_elements_text(
+            bindparam("profile_vibes", value=vibes, type_=JSONB)
+        ).label("vibe")
+    )
+    intersection = event_vibes.intersect(profile_vibes).subquery()
+    union = event_vibes.union(profile_vibes).subquery()
+    shared_count = select(func.count()).select_from(intersection).scalar_subquery()
+    total_count = select(func.count()).select_from(union).scalar_subquery()
+    vibe_score = func.coalesce(shared_count * 1.0 / func.nullif(total_count, 0), 0.0)
+    ranking = select(candidate_rows.c.id)
+    if embedding is None:
+        score = vibe_score
+        ranking = ranking.where(vibe_score > 0)
+    else:
+        query_vector = bindparam(
+            "query_vector", value=embedding, type_=Vector(EVENT_EMBEDDING_DIMENSIONS)
         )
-        scored.append((event, score))
-    scored.sort(key=lambda x: x[1], reverse=True)
-    return scored[:top_n]
+        cosine = case(
+            (
+                (func.vector_norm(candidate_rows.c.embedding_vector) == 0)
+                | (func.vector_norm(query_vector) == 0),
+                0.0,
+            ),
+            else_=1.0 - candidate_rows.c.embedding_vector.cosine_distance(query_vector),
+        )
+        score = (1.0 - vibe_weight) * cosine + vibe_weight * vibe_score
+        ranking = ranking.where(candidate_rows.c.embedding_vector.is_not(None))
+    ranked = (
+        ranking.add_columns(score.label("score"))
+        .order_by(score.desc(), candidate_rows.c.id)
+        .limit(top_n)
+        .cte("ranked")
+    )
+    result = await db.execute(
+        select(Event, ranked.c.score)
+        .join(ranked, Event.id == ranked.c.id)
+        .options(defer(Event.embedding_vector))
+        .order_by(ranked.c.score.desc(), Event.id),
+    )
+    return [(event, float(score)) for event, score in result.all()]
 
 
-def get_similar_events(
-    event: Event,
-    candidates: list[Event],
-    top_n: int = 5,
-    vibe_weight: float = VIBE_WEIGHT_DEFAULT,
+async def similar_events(
+    db: AsyncSession, source: Event, *, top_n: int, vibe_weight: float
 ) -> list[tuple[Event, float]]:
-    if not event.embedding:
-        scored: list[tuple[Event, float]] = []
-        for c in candidates:
-            if c.id == event.id:
-                continue
-            score = vibe_jaccard(event.vibes or [], c.vibes or [])
-            if score > 0:
-                scored.append((c, score))
-        scored.sort(key=lambda x: x[1], reverse=True)
-        return scored[:top_n]
-
-    scored = []
-    for c in candidates:
-        if c.id == event.id:
-            continue
-        if not c.embedding:
-            vibe_score = vibe_jaccard(event.vibes or [], c.vibes or [])
-            if vibe_score > 0:
-                scored.append((c, vibe_score))
-            continue
-        score = hybrid_score(
-            event.embedding,
-            c.embedding,
-            event.vibes or [],
-            c.vibes or [],
-            vibe_weight=vibe_weight,
+    candidates = select(Event.id, Event.embedding_vector, Event.vibes).where(
+        Event.id != source.id, Event.is_archived.is_(False)
+    )
+    if source.embedding_vector is not None:
+        candidates = (
+            candidates.where(Event.embedding_vector.is_not(None))
+            .order_by(
+                Event.embedding_vector.cosine_distance(source.embedding_vector),
+                Event.id,
+            )
+            .limit(max(100, top_n * 20))
         )
-        scored.append((c, score))
-    scored.sort(key=lambda x: x[1], reverse=True)
-    return scored[:top_n]
+    return await _rank_candidates(
+        db,
+        candidates,
+        embedding=source.embedding_vector,
+        vibes=list(source.vibes or []),
+        top_n=top_n,
+        vibe_weight=vibe_weight,
+    )
+
+
+async def personalized_events(
+    db: AsyncSession,
+    *,
+    embedding: list[float],
+    saved_event_ids: list[str],
+    vibes: list[str],
+    top_n: int,
+) -> list[tuple[Event, float]]:
+    candidates = (
+        select(Event.id, Event.embedding_vector, Event.vibes)
+        .where(Event.id.notin_(saved_event_ids), Event.is_archived.is_(False))
+        .order_by(Event.event_date.desc().nullslast(), Event.id)
+        .limit(200)
+    )
+    return await _rank_candidates(
+        db,
+        candidates,
+        embedding=embedding,
+        vibes=vibes,
+        top_n=top_n,
+        vibe_weight=VIBE_WEIGHT_DEFAULT,
+    )

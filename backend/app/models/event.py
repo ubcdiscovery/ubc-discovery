@@ -76,9 +76,6 @@ class Event(Base):
     )
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     archived_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
-    embedding: Mapped[list[float] | None] = mapped_column(
-        JSON, nullable=True, default=None
-    )
     embedding_vector: Mapped[list[float] | None] = mapped_column(
         Vector(EVENT_EMBEDDING_DIMENSIONS), nullable=True, default=None
     )

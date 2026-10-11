@@ -78,7 +78,7 @@ async def test_approval_uses_exact_id_and_event_create_audit(
     event = await db_session.get(Event, "cand0001")
     assert event is not None
     assert event.title == "Original title"
-    assert event.embedding == [0.1] * 1024
+    assert event.embedding_vector == pytest.approx([0.1] * 1024)
     audit = await db_session.scalar(
         select(EventAuditLog).where(EventAuditLog.event_id == "cand0001")
     )

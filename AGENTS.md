@@ -87,7 +87,7 @@ web/
 - UBC email is not required for membership; `*.ubc.ca` is only used to set/confirm the optional `ubc_verified` trust badge
 - Profile pictures and event images: S3 presigned URLs (upload + download), key stored in DB (`profile_picture_key`, `event_picture_key`)
 - Event coordinates are optional lat/lng floats; location text remains the human-facing source of truth
-- Recommender: Content-based event similarity using Bedrock Titan embeddings + vibe Jaccard weighted blend. Embeddings pre-computed at event creation and stored as JSON.
+- Recommender: Content-based event similarity using Bedrock Titan embeddings + vibe Jaccard weighted blend. Embeddings are pre-computed at event creation and stored as 1024-dimensional pgvector values.
 
 ### Frontend (Web)
 - React Router 7 routes live in `web/app/routes/`; shared web UI lives in `web/app/components/`.

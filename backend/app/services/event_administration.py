@@ -61,7 +61,6 @@ def add_event_audit(  # noqa: PLR0913
 async def update_event_embedding(event: Event) -> None:
     embedding = await recommender.generate_event_embedding(event)
     if recommender.is_valid_embedding(embedding):
-        event.embedding = embedding
         event.embedding_vector = embedding
 
 

@@ -210,7 +210,7 @@ class TestAutoPublication:
         assert event.source == "instagram"
         assert event.source_label == "ams_club"
         assert event.club_name == "UBC AMS"
-        assert event.embedding == [0.1] * 1024
+        assert event.embedding_vector == pytest.approx([0.1] * 1024)
 
         audits = await _audits(db_session, "autopub1")
         assert [audit.action for audit in audits] == [EventAuditAction.CREATE]
