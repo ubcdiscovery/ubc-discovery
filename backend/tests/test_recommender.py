@@ -1,297 +1,367 @@
-from unittest.mock import patch
+"""Behavioral coverage for vector-backed recommendation endpoints."""
+
+import io
+import json
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.event import Event
+from app.models.event import Event, EventVibe
+from app.models.saved_event import SavedEvent
+from app.models.user import User
 from app.services import recommender
 
 
-def _make_embedding_from_title(title: str) -> list[float]:
-    h = sum(ord(c) for c in title)
-    return [
-        (h % 10) / 10.0,
-        ((h * 3) % 10) / 10.0,
-        ((h * 7) % 10) / 10.0,
-        ((h * 11) % 10) / 10.0,
+def _vector(first: float = 0.0, second: float = 0.0) -> list[float]:
+    return [first, second] + [0.0] * 1022
+
+
+def _score(response, event_id: str) -> float:
+    data = response.json()
+    return data["scores"][
+        next(i for i, event in enumerate(data["events"]) if event["id"] == event_id)
     ]
 
 
-class TestCosineSimilarity:
-    def test_identical(self):
-        v = [1.0, 0.0, 0.5]
-        assert recommender.cosine_similarity(v, v) == pytest.approx(1.0)
-
-    def test_orthogonal(self):
-        assert recommender.cosine_similarity([1.0, 0.0], [0.0, 1.0]) == 0.0
-
-    def test_zero_vector(self):
-        assert recommender.cosine_similarity([0.0, 0.0], [1.0, 0.0]) == 0.0
-
-    def test_negative_values(self):
-        a = [1.0, -2.0, 3.0]
-        b = [-1.0, 2.0, -3.0]
-        assert recommender.cosine_similarity(a, b) == pytest.approx(-1.0)
-
-    def test_length_mismatch(self):
-        with pytest.raises(ValueError, match="Vector length mismatch"):
-            recommender.cosine_similarity([1.0], [1.0, 2.0])
+def _event(
+    title: str,
+    date: datetime,
+    vector: list[float] | None = None,
+    vibes: list[EventVibe] | None = None,
+) -> Event:
+    return Event(
+        title=title,
+        description="",
+        source="manual",
+        source_label="campus_community",
+        vibes=vibes or [],
+        location_name="UBC",
+        event_date=date,
+        embedding_vector=vector,
+    )
 
 
-class TestVibeJaccard:
-    def test_identical(self):
-        assert (
-            recommender.vibe_jaccard(["social", "academic"], ["academic", "social"])
-            == 1.0
-        )
+class TestEmbeddingValidation:
+    def test_validates_dimension_and_finite_components(self):
+        assert recommender.is_valid_embedding(_vector(0.1))
+        assert not recommender.is_valid_embedding([0.1])
+        assert not recommender.is_valid_embedding(_vector(float("nan")))
+        assert not recommender.is_valid_embedding(_vector(float("inf")))
+        assert not recommender.is_valid_embedding(_vector(True))
 
-    def test_disjoint(self):
-        assert recommender.vibe_jaccard(["social"], ["career"]) == 0.0
+    def test_rejects_invalid_generated_embedding(self, monkeypatch):
+        class Client:
+            def invoke_model(self, **_kwargs):
+                return {"body": io.BytesIO(json.dumps({"embedding": [0.1]}).encode())}
 
-    def test_partial(self):
-        assert (
-            recommender.vibe_jaccard(
-                ["social", "academic", "career"], ["social", "academic"]
-            )
-            == 2.0 / 3.0
-        )
-
-    def test_both_empty(self):
-        assert recommender.vibe_jaccard([], []) == 0.0
-
-    def test_one_empty(self):
-        assert recommender.vibe_jaccard(["social"], []) == 0.0
-
-
-class TestHybridScore:
-    def test_same_event(self):
-        emb = [0.5, 0.5, 0.5, 0.5]
-        vibes = ["social", "academic"]
-        score = recommender.hybrid_score(emb, emb, vibes, vibes)
-        assert score == 1.0
-
-    def test_no_overlap(self):
-        a = [1.0, 0.0, 0.0, 0.0]
-        b = [0.0, 1.0, 0.0, 0.0]
-        score = recommender.hybrid_score(a, b, ["social"], ["career"])
-        assert score == 0.0
-
-    def test_pure_cosine(self):
-        a = [1.0, 0.0, 0.0]
-        b = [0.0, 1.0, 0.0]
-        score = recommender.hybrid_score(a, b, ["social"], ["career"], vibe_weight=0.0)
-        assert score == 0.0
-
-        c = [1.0, 0.0, 0.0]
-        d = [1.0, 0.0, 0.0]
-        score2 = recommender.hybrid_score(c, d, ["social"], ["career"], vibe_weight=0.0)
-        assert score2 == 1.0
-
-    def test_pure_vibe(self):
-        a = [1.0, 0.0, 0.0]
-        b = [0.0, 1.0, 0.0]
-        score = recommender.hybrid_score(
-            a, b, ["social", "academic"], ["academic"], vibe_weight=1.0
-        )
-        assert score == 0.5
-
-    def test_balanced_blend(self):
-        a = [1.0, 0.0]
-        b = [1.0, 0.0]
-        score = recommender.hybrid_score(a, b, ["social"], ["social"], vibe_weight=0.5)
-        assert score == 1.0
-
-        score2 = recommender.hybrid_score(a, b, ["social"], ["career"], vibe_weight=0.5)
-        assert score2 == 0.5
-
-
-class TestMeanEmbedding:
-    def test_single(self):
-        result = recommender.mean_embedding([[1.0, 2.0, 3.0]])
-        assert result == [1.0, 2.0, 3.0]
-
-    def test_multiple(self):
-        result = recommender.mean_embedding(
-            [
-                [1.0, 2.0],
-                [3.0, 4.0],
-                [5.0, 6.0],
-            ]
-        )
-        assert result == [3.0, 4.0]
-
-    def test_empty(self):
-        assert recommender.mean_embedding([]) is None
-
-
-class TestRankEvents:
-    def _make_event_stub(self, eid: str, embedding, vibes: list[str]):
-        from types import SimpleNamespace
-
-        return SimpleNamespace(id=eid, embedding=embedding, vibes=vibes)
-
-    def test_with_vibe_profile(self):
-        taste = [1.0, 0.0]
-        candidates = [
-            self._make_event_stub("e1", [1.0, 0.0], ["social"]),
-            self._make_event_stub("e2", [1.0, 0.0], ["career"]),
-            self._make_event_stub("e3", [-1.0, 0.0], ["social"]),
-        ]
-        vibe_profile = ["social"]
-
-        result = recommender.rank_events(
-            taste,
-            candidates,
-            top_n=3,
-            vibe_profile=vibe_profile,
-            vibe_weight=0.5,
-        )
-        assert len(result) == 3
-        assert result[0][0].id == "e1"
-        assert result[0][1] == 1.0
-        assert result[1][0].id == "e2"
-        assert result[1][1] == 0.5
-        assert result[2][0].id == "e3"
-        assert result[2][1] == 0.0
-
-    def test_empty_vibe_profile(self):
-        taste = [1.0, 0.0]
-        candidates = [
-            self._make_event_stub("e1", [1.0, 0.0], ["social"]),
-        ]
-        result = recommender.rank_events(taste, candidates, top_n=1, vibe_profile=[])
-        assert result[0][1] == 0.5
-
-    def test_skips_events_without_embedding(self):
-        taste = [1.0, 0.0]
-        candidates = [
-            self._make_event_stub("e1", None, ["social"]),
-        ]
-        result = recommender.rank_events(taste, candidates, top_n=5)
-        assert result == []
-
-    def test_default_parameters(self):
-        taste = [1.0, 0.0]
-        candidates = [
-            self._make_event_stub("e1", [1.0, 0.0], []),
-        ]
-        result = recommender.rank_events(taste, candidates, top_n=1)
-        assert result[0][1] == 0.5
+        monkeypatch.setattr(recommender, "_bedrock_client", lambda: Client())
+        assert recommender.embed_text("example") is None
 
 
 class TestSimilarEvents:
-    async def test_returns_similar(
-        self, unauthed_client: AsyncClient, sample_events: list[Event]
+    async def test_vector_cosine_plus_half_vibe_blend(
+        self,
+        unauthed_client: AsyncClient,
+        db_session: AsyncSession,
+        sample_events: list[Event],
     ):
-        with patch.object(recommender, "embed_text") as mock_embed:
-            mock_embed.return_value = _make_embedding_from_title("generic")
+        source, same_vector, vibe_only = sample_events
+        source.embedding_vector = _vector(1)
+        same_vector.embedding_vector = _vector(1)
+        vibe_only.embedding_vector = _vector(0, 1)
+        source.vibes, same_vector.vibes, vibe_only.vibes = (
+            [EventVibe.SOCIAL],
+            [EventVibe.SOCIAL],
+            [EventVibe.CAREER],
+        )
+        await db_session.flush()
 
-            event = sample_events[0]
-            resp = await unauthed_client.get(
-                f"/recommendations/events/{event.id}/similar", params={"n": 2}
-            )
+        response = await unauthed_client.get(
+            f"/recommendations/events/{source.id}/similar"
+        )
+        assert response.status_code == 200
+        assert _score(response, same_vector.id) == pytest.approx(1.0)
+        assert _score(response, vibe_only.id) == pytest.approx(0.0)
 
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["event_id"] == event.id
-        assert len(data["events"]) <= 2
-        assert len(data["scores"]) == len(data["events"])
-        ids = [e["id"] for e in data["events"]]
-        assert event.id not in ids
+        vibe_only.vibes = [EventVibe.SOCIAL]
+        await db_session.flush()
+        response = await unauthed_client.get(
+            f"/recommendations/events/{source.id}/similar"
+        )
+        assert _score(response, vibe_only.id) == pytest.approx(0.5)
 
-    async def test_not_found(self, unauthed_client: AsyncClient):
-        resp = await unauthed_client.get("/recommendations/events/nope123/similar")
-        assert resp.status_code == 404
-
-    async def test_respects_n(
-        self, unauthed_client: AsyncClient, sample_events: list[Event]
+    async def test_vibe_weight_zero_and_one(
+        self, unauthed_client, db_session, sample_events
     ):
-        with patch.object(recommender, "embed_text") as mock_embed:
-            mock_embed.return_value = _make_embedding_from_title("generic")
-            resp = await unauthed_client.get(
-                f"/recommendations/events/{sample_events[0].id}/similar",
-                params={"n": 1},
-            )
+        source, aligned, matching_vibe = sample_events
+        source.embedding_vector = aligned.embedding_vector = _vector(1)
+        matching_vibe.embedding_vector = _vector(0, 1)
+        source.vibes, aligned.vibes, matching_vibe.vibes = (
+            [EventVibe.SOCIAL],
+            [EventVibe.CAREER],
+            [EventVibe.SOCIAL],
+        )
+        await db_session.flush()
+        base = f"/recommendations/events/{source.id}/similar"
 
-        assert resp.status_code == 200
-        assert len(resp.json()["events"]) == 1
+        response = await unauthed_client.get(base, params={"n": 2, "vibe_weight": 0})
+        assert response.status_code == 200
+        assert _score(response, aligned.id) == pytest.approx(1.0)
+        assert _score(response, matching_vibe.id) == pytest.approx(0.0)
+        response = await unauthed_client.get(base, params={"n": 2, "vibe_weight": 1})
+        assert _score(response, aligned.id) == pytest.approx(0.0)
+        assert _score(response, matching_vibe.id) == pytest.approx(1.0)
 
-    async def test_vibe_weight_param(
-        self, unauthed_client: AsyncClient, sample_events: list[Event]
+    async def test_no_source_vector_uses_positive_vibe_fallback(
+        self, unauthed_client, db_session, sample_events
     ):
-        with patch.object(recommender, "embed_text") as mock_embed:
-            mock_embed.return_value = _make_embedding_from_title("generic")
-            event = sample_events[0]
-            resp = await unauthed_client.get(
-                f"/recommendations/events/{event.id}/similar",
-                params={"n": 2, "vibe_weight": 0.0},
-            )
-        assert resp.status_code == 200
+        source, match, no_match = sample_events
+        source.embedding_vector = None
+        match.embedding_vector = no_match.embedding_vector = None
+        source.vibes, match.vibes, no_match.vibes = (
+            [EventVibe.SOCIAL],
+            [EventVibe.SOCIAL],
+            [EventVibe.CAREER],
+        )
+        await db_session.flush()
+        response = await unauthed_client.get(
+            f"/recommendations/events/{source.id}/similar"
+        )
+        assert response.status_code == 200
+        assert [e["id"] for e in response.json()["events"]] == [match.id]
+        assert response.json()["scores"] == [1.0]
 
-    async def test_vibe_weight_out_of_range(
-        self, unauthed_client: AsyncClient, sample_events: list[Event]
+    async def test_zero_vectors_have_zero_cosine(
+        self, unauthed_client, db_session, sample_events
     ):
-        with patch.object(recommender, "embed_text") as mock_embed:
-            mock_embed.return_value = _make_embedding_from_title("generic")
-            event = sample_events[0]
-            resp = await unauthed_client.get(
-                f"/recommendations/events/{event.id}/similar",
-                params={"vibe_weight": 1.5},
+        source, candidate, _ = sample_events
+        source.embedding_vector = candidate.embedding_vector = _vector()
+        source.vibes, candidate.vibes = [], []
+        await db_session.flush()
+        response = await unauthed_client.get(
+            f"/recommendations/events/{source.id}/similar"
+        )
+        assert response.status_code == 200
+        assert _score(response, candidate.id) == pytest.approx(0.0)
+
+    async def test_not_found_archived_limit_and_validation(
+        self, unauthed_client, db_session, sample_events
+    ):
+        source, candidate, archived = sample_events
+        source.embedding_vector = candidate.embedding_vector = (
+            archived.embedding_vector
+        ) = _vector(0, 1)
+        archived.is_archived = True
+        await db_session.flush()
+        assert (
+            await unauthed_client.get("/recommendations/events/nope123/similar")
+        ).status_code == 404
+        assert (
+            await unauthed_client.get(
+                f"/recommendations/events/{source.id}/similar", params={"n": 21}
             )
-        assert resp.status_code == 422
+        ).status_code == 422
+        response = await unauthed_client.get(
+            f"/recommendations/events/{source.id}/similar", params={"n": 1}
+        )
+        assert len(response.json()["events"]) == 1
+        assert archived.id not in {event["id"] for event in response.json()["events"]}
+
+    @pytest.mark.parametrize(("n", "near_count"), [(1, 101), (20, 401)])
+    async def test_nearest_candidate_cap_precedes_hybrid_vibe_ranking(
+        self, unauthed_client, db_session, sample_events, n, near_count
+    ):
+        source = sample_events[0]
+        source.embedding_vector = _vector(1)
+        source.vibes = [EventVibe.SOCIAL]
+        for event in sample_events[1:]:
+            event.embedding_vector = None
+        now = datetime.now(UTC)
+        near = [
+            _event(f"Near {i}", now + timedelta(days=i), _vector(1), [])
+            for i in range(near_count)
+        ]
+        far_vibe_match = _event(
+            "Far vibe match",
+            now + timedelta(days=200),
+            _vector(0, 1),
+            [EventVibe.SOCIAL],
+        )
+        db_session.add_all([*near, far_vibe_match])
+        await db_session.flush()
+
+        response = await unauthed_client.get(
+            f"/recommendations/events/{source.id}/similar",
+            params={"n": n, "vibe_weight": 1},
+        )
+        assert response.status_code == 200
+        assert far_vibe_match.id not in {
+            event["id"] for event in response.json()["events"]
+        }
 
 
 class TestForYou:
-    async def test_falls_back_to_recent_when_no_saved(
-        self, client: AsyncClient, sample_events: list[Event]
+    async def test_saved_vector_average_and_saved_vibe_profile(
+        self,
+        client: AsyncClient,
+        db_session: AsyncSession,
+        sample_events: list[Event],
+        test_user: User,
     ):
-        resp = await client.get("/recommendations/events/for-you", params={"n": 5})
+        saved_a, saved_b, aligned = sample_events
+        test_user.interests = {}
+        saved_a.embedding_vector = _vector(1)
+        saved_b.embedding_vector = _vector(0, 1)
+        aligned.embedding_vector = _vector(1, 1)
+        saved_a.vibes, saved_b.vibes, aligned.vibes = (
+            [EventVibe.SOCIAL],
+            [EventVibe.CAREER],
+            [EventVibe.SOCIAL, EventVibe.CAREER],
+        )
+        for event in (saved_a, saved_b):
+            db_session.add(SavedEvent(user_id=test_user.id, event_id=event.id))
+        await db_session.flush()
+        response = await client.get("/recommendations/events/for-you", params={"n": 5})
+        assert response.status_code == 200
+        assert response.json()["source"] == "saved_events"
+        # Mean of the two saved vectors points equally along each component;
+        # aligned candidate cosine is 1 and both saved vibes overlap.
+        assert _score(response, aligned.id) == pytest.approx(1.0)
+        assert saved_a.id not in {e["id"] for e in response.json()["events"]}
+        assert saved_b.id not in {e["id"] for e in response.json()["events"]}
 
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["source"] == "recent"
-        assert len(data["events"]) > 0
-        assert all(s == 0.0 for s in data["scores"])
+    async def test_saved_vibes_and_user_interests_drive_vibe_scores(
+        self, client, db_session, sample_events, test_user
+    ):
+        saved, interest_match, saved_match = sample_events
+        saved.embedding_vector = _vector(1)
+        interest_match.embedding_vector = saved_match.embedding_vector = _vector(0, 1)
+        saved.vibes = [EventVibe.SOCIAL]
+        interest_match.vibes = [EventVibe.CAREER]
+        saved_match.vibes = [EventVibe.SOCIAL]
+        test_user.interests = {"career": True}
+        db_session.add(SavedEvent(user_id=test_user.id, event_id=saved.id))
+        await db_session.flush()
+        response = await client.get("/recommendations/events/for-you", params={"n": 5})
+        assert response.json()["source"] == "saved_events"
+        assert _score(response, interest_match.id) == pytest.approx(0.25)
+        assert _score(response, saved_match.id) == pytest.approx(0.25)
 
-    async def test_archived_event_is_excluded_from_recommendations(
-        self, client: AsyncClient, db_session: AsyncSession, sample_events: list[Event]
+    async def test_recent_fallback_when_saved_events_have_no_vector(
+        self, client, db_session, sample_events, test_user
+    ):
+        saved = sample_events[0]
+        saved.embedding_vector = None
+        db_session.add(SavedEvent(user_id=test_user.id, event_id=saved.id))
+        await db_session.flush()
+        response = await client.get("/recommendations/events/for-you", params={"n": 2})
+        assert response.status_code == 200
+        assert response.json()["source"] == "recent"
+        assert response.json()["scores"] == [0.0] * len(response.json()["events"])
+
+    async def test_missing_vector_candidates_are_excluded_with_saved_taste(
+        self, client, db_session, sample_events, test_user
+    ):
+        saved, missing_a, missing_b = sample_events
+        saved.embedding_vector = _vector(1)
+        missing_a.embedding_vector = missing_b.embedding_vector = None
+        db_session.add(SavedEvent(user_id=test_user.id, event_id=saved.id))
+        await db_session.flush()
+
+        response = await client.get("/recommendations/events/for-you", params={"n": 5})
+        assert response.status_code == 200
+        assert response.json()["source"] == "recent"
+        assert response.json()["scores"] == [0.0] * len(response.json()["events"])
+
+    async def test_recent_fallback_and_archived_exclusion(
+        self, client, db_session, sample_events
     ):
         archived = sample_events[0]
         archived.is_archived = True
         await db_session.flush()
+        response = await client.get("/recommendations/events/for-you", params={"n": 5})
+        assert response.status_code == 200
+        assert response.json()["source"] == "recent"
+        assert archived.id not in {e["id"] for e in response.json()["events"]}
+
+    async def test_recent_200_boundary_is_applied_before_missing_vector_filter(
+        self, client, db_session, sample_events, test_user
+    ):
+        saved = sample_events[0]
+        saved.embedding_vector = _vector(1)
+        db_session.add(SavedEvent(user_id=test_user.id, event_id=saved.id))
+        now = datetime.now(UTC)
+        recent_missing = [
+            _event(f"Recent {i}", now + timedelta(days=400 + i)) for i in range(200)
+        ]
+        older_with_vector = _event(
+            "Older vector candidate", now + timedelta(days=100), _vector(1)
+        )
+        db_session.add_all([*recent_missing, older_with_vector])
+        await db_session.flush()
 
         response = await client.get("/recommendations/events/for-you", params={"n": 5})
-
         assert response.status_code == 200
-        assert archived.id not in {item["id"] for item in response.json()["events"]}
+        assert response.json()["source"] == "recent"
+        assert older_with_vector.id not in {
+            event["id"] for event in response.json()["events"]
+        }
 
-    async def test_requires_auth(self, unauthed_client: AsyncClient):
-        resp = await unauthed_client.get("/recommendations/events/for-you")
-        assert resp.status_code == 401
+    async def test_only_most_recent_100_saves_contribute_vectors(
+        self, client, db_session, test_user
+    ):
+        now = datetime.now(UTC)
+        saved_events = [
+            _event(f"No vector {i}", now + timedelta(days=i)) for i in range(100)
+        ]
+        oldest_with_vector = _event("Old vector save", now, _vector(0, 1))
+        candidate = _event("Candidate", now - timedelta(days=1), _vector(0, 1))
+        db_session.add_all([*saved_events, oldest_with_vector, candidate])
+        await db_session.flush()
+        db_session.add_all(
+            [
+                SavedEvent(
+                    user_id=test_user.id,
+                    event_id=event.id,
+                    saved_at=now + timedelta(days=i + 1),
+                )
+                for i, event in enumerate(saved_events)
+            ]
+            + [
+                SavedEvent(
+                    user_id=test_user.id,
+                    event_id=oldest_with_vector.id,
+                    saved_at=now,
+                )
+            ]
+        )
+        await db_session.flush()
 
-    # TODO: Investigate this test
-    # async def test_personalized_from_saved(
-    #     self, client: AsyncClient, db_session: AsyncSession,
-    #     sample_events: list[Event], test_user: User
-    # ):
-    #     event = sample_events[0]
-    #     for ev in sample_events:
-    #         ev.embedding = _make_embedding_from_title(ev.title)
-    #     await db_session.flush()
-    #     save_resp = await client.post(f"/saved-events/{event.id}")
-    #     assert save_resp.status_code == 200
+        response = await client.get("/recommendations/events/for-you", params={"n": 5})
+        assert response.status_code == 200
+        assert response.json()["source"] == "recent"
+        assert all(score == 0 for score in response.json()["scores"])
 
-    #     with patch.object(recommender, "embed_text") as mock_embed:
-    #         mock_embed.return_value = _make_embedding_from_title(event.title)
-    #         resp = await client.get(
-    #             "/recommendations/events/for-you", params={"n": 5}
-    #         )
+    async def test_all_saved_events_means_no_recommendation_candidates(
+        self, client, db_session, sample_events, test_user
+    ):
+        for event in sample_events:
+            event.embedding_vector = _vector(1)
+            db_session.add(SavedEvent(user_id=test_user.id, event_id=event.id))
+        await db_session.flush()
+        response = await client.get("/recommendations/events/for-you", params={"n": 5})
+        assert response.status_code == 200
+        assert response.json()["source"] == "recent"
+        assert response.json()["scores"] == [0.0] * len(response.json()["events"])
 
-    #     assert resp.status_code == 200
-    #     data = resp.json()
-    #     assert data["source"] == "saved_events"
-    #     assert len(data["events"]) > 0
-    #     assert any(s > 0.0 for s in data["scores"])
-    #     result_ids = [e["id"] for e in data["events"]]
-    #     assert event.id not in result_ids
+    async def test_requires_auth(self, unauthed_client):
+        assert (
+            await unauthed_client.get("/recommendations/events/for-you")
+        ).status_code == 401
+
+    async def test_limit(self, client):
+        assert (
+            await client.get("/recommendations/events/for-you", params={"n": 51})
+        ).status_code == 422

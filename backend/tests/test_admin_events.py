@@ -262,7 +262,7 @@ class TestCreateAdminEvent:
         assert entry["before"] is None
         assert entry["after"]["title"] == "My New Event"
 
-    async def test_create_event_writes_json_and_vector_embeddings(
+    async def test_create_event_writes_vector_embedding_only(
         self, admin_client: AsyncClient, db_session: AsyncSession
     ):
         embedding = _test_embedding(0.1)
@@ -282,8 +282,7 @@ class TestCreateAdminEvent:
         assert resp.status_code == 200
         event = await db_session.get(Event, resp.json()["id"])
         assert event is not None
-        assert event.embedding == embedding
-        assert event.embedding_vector == embedding
+        assert event.embedding_vector == pytest.approx(embedding)
 
     async def test_create_preserves_free_form_ingestion_source(
         self, admin_client: AsyncClient

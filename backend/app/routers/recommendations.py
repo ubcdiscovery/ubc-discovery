@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import defer
 
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -28,23 +29,8 @@ async def get_similar_events(
     if not source_event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    if source_event.embedding_vector is not None:
-        candidates = await recommender.fetch_nearest_events(
-            db,
-            source_event.embedding_vector,
-            exclude_event_id=event_id,
-            limit=max(100, n * 20),
-        )
-    else:
-        result = await db.execute(
-            select(Event)
-            .where(Event.id != event_id, Event.is_archived.is_(False))
-            .order_by(Event.event_date.desc().nullslast())
-        )
-        candidates = list(result.scalars().all())
-
-    similar = recommender.get_similar_events(
-        source_event, candidates, top_n=n, vibe_weight=vibe_weight
+    similar = await recommender.similar_events(
+        db, source_event, top_n=n, vibe_weight=vibe_weight
     )
 
     return SimilarEventsResponse(
@@ -63,7 +49,7 @@ async def get_for_you(
     saved_result = await db.execute(
         select(SavedEvent)
         .where(SavedEvent.user_id == current_user.id)
-        .order_by(SavedEvent.saved_at.desc())
+        .order_by(SavedEvent.saved_at.desc(), SavedEvent.event_id)
         .limit(100)
     )
     saved_rows = list(saved_result.scalars().all())
@@ -71,19 +57,16 @@ async def get_for_you(
     if saved_rows:
         saved_event_ids = [s.event_id for s in saved_rows]
         events_result = await db.execute(
-            select(Event).where(
+            select(Event.vibes).where(
                 Event.id.in_(saved_event_ids), Event.is_archived.is_(False)
             )
         )
-        saved_events = list(events_result.scalars().all())
-
-        saved_embeddings = [e.embedding for e in saved_events if e.embedding]
-        taste = recommender.mean_embedding(saved_embeddings)
+        saved_vibe_lists = list(events_result.scalars().all())
+        taste = await recommender.average_saved_embedding(db, saved_event_ids)
 
         saved_vibes: list[str] = []
-        for e in saved_events:
-            if e.vibes:
-                saved_vibes.extend(e.vibes)
+        for event_vibes in saved_vibe_lists:
+            saved_vibes.extend(event_vibes or [])
         vibe_counts: dict[str, int] = {}
         for v in saved_vibes:
             vibe_counts[v] = vibe_counts.get(v, 0) + 1
@@ -96,17 +79,13 @@ async def get_for_you(
         )
         combined_vibes = list(set(user_interests) | set(top_saved_vibes))
 
-        if taste:
-            candidates_result = await db.execute(
-                select(Event)
-                .where(Event.id.notin_(saved_event_ids), Event.is_archived.is_(False))
-                .order_by(Event.event_date.desc().nullslast())
-                .limit(200)
-            )
-            candidates = list(candidates_result.scalars().all())
-
-            ranked = recommender.rank_events(
-                taste, candidates, top_n=n, vibe_profile=combined_vibes
+        if taste is not None:
+            ranked = await recommender.personalized_events(
+                db,
+                embedding=taste,
+                saved_event_ids=saved_event_ids,
+                vibes=combined_vibes,
+                top_n=n,
             )
 
             if ranked:
@@ -118,6 +97,7 @@ async def get_for_you(
 
     recent_result = await db.execute(
         select(Event)
+        .options(defer(Event.embedding_vector))
         .where(Event.is_archived.is_(False))
         .order_by(Event.event_date.desc().nullslast(), Event.created_at.desc())
         .limit(n)
