@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import AsyncGenerator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -331,6 +331,7 @@ async def unauthed_client(
 async def sample_events(db_session: AsyncSession) -> list[Event]:
     """Seed a few events for listing tests."""
     events = []
+    first_event_at = datetime.now(UTC) + timedelta(days=30)
     for i in range(3):
         e = Event(
             title=f"Test Event {i}",
@@ -340,8 +341,8 @@ async def sample_events(db_session: AsyncSession) -> list[Event]:
             club_name=f"Club {i}",
             vibes=["social", "academic"] if i == 0 else ["social"],
             location_name=f"Location {i}",
-            event_date=datetime(2026, 9, 1 + i, 10, 0, tzinfo=UTC),
-            event_end_date=datetime(2026, 9, 1 + i, 13, 0, tzinfo=UTC),
+            event_date=first_event_at + timedelta(days=i),
+            event_end_date=first_event_at + timedelta(days=i, hours=3),
         )
         db_session.add(e)
         events.append(e)
