@@ -36,6 +36,7 @@ const firebaseConfig = {
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 export const FIREBASE_CONFIG_MISSING_MESSAGE =
@@ -84,6 +85,10 @@ function writeTestUser(user: TestFirebaseUser | null) {
   }
 }
 
+export function getFirebaseApp() {
+  return getApps().length ? getApp() : initializeApp(firebaseConfig);
+}
+
 function getFirebaseAuth(): Auth {
   if (typeof window === "undefined") {
     throw new Error("Firebase auth is only available in the browser.");
@@ -93,8 +98,7 @@ function getFirebaseAuth(): Auth {
     throw new Error(configError);
   }
 
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  return getAuth(app);
+  return getAuth(getFirebaseApp());
 }
 
 export function watchFirebaseAuth(callback: (user: User | null) => void) {
