@@ -33,22 +33,6 @@ export const SOURCE_DISPLAY: Record<string, { code: string; tone: string }> = {
   campus_community: { code: "CC", tone: "#7E6F4C" },
 };
 
-export const FACULTIES = [
-  "Arts",
-  "Science",
-  "Applied Science (Engineering)",
-  "Sauder · Business",
-  "Land & Food Systems",
-  "Forestry",
-  "Kinesiology",
-  "Education",
-  "Music",
-  "Vancouver School of Economics",
-  "Pharmaceutical Sciences",
-  "Architecture",
-  "Other",
-];
-
 export const YEARS = [
   "1st year",
   "2nd year",

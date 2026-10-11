@@ -21,20 +21,23 @@ test("edits and clears profile fields from every supported viewport", async ({ p
 
   await expect(page.getByRole("option", { name: "Graduate" })).toHaveCount(0);
   await expect(page.getByRole("option", { name: "Postdoc" })).toHaveCount(0);
+  await expect(page.getByLabel("Faculty or school")).toHaveValue("Science");
   await page.getByLabel("Preferred name").fill("Updated Taylor");
-  await page.getByLabel("Faculty").selectOption("");
-  await page.getByLabel("Major or program").fill("");
+  await page.getByLabel("Faculty or school").fill("");
+  await page.getByLabel("Program or major").fill("");
   await page.getByLabel("Year").selectOption("");
   await page.getByRole("button", { name: "[SOCIAL]" }).click();
   await page.getByRole("button", { name: /Save changes/ }).click();
 
-  await expect.poll(() => submitted).toEqual({
-    preferred_name: "Updated Taylor",
-    faculty: null,
-    major: null,
-    year_standing: null,
-    interests: ["music", "outdoors", "food", "social"],
-  });
+  await expect
+    .poll(() => submitted)
+    .toEqual({
+      preferred_name: "Updated Taylor",
+      faculty: null,
+      major: null,
+      year_standing: null,
+      interests: ["music", "outdoors", "food", "social"],
+    });
   await expect(page.getByRole("heading", { name: "Updated Taylor" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit profile" })).toBeVisible();
   await expect(page.getByText("Not specified", { exact: true })).toHaveCount(3);
