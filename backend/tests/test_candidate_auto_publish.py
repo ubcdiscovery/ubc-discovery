@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, time, timedelta
 from unittest.mock import MagicMock
+from zoneinfo import ZoneInfo
 
 import pytest
 from httpx import AsyncClient
@@ -43,11 +44,17 @@ from tests.conftest import _get_engine
 
 # Fixed clock for pipeline runs; candidates use day offsets from it.
 NOW = datetime.now(UTC)
-# September 2026 is PDT (UTC-7), so the local day Sept 4 spans
-# [2026-09-04 07:00Z, 2026-09-05 07:00Z).
-SAME_LOCAL_DAY_MORNING = datetime(2026, 9, 4, 18, 0, tzinfo=UTC)
-SAME_LOCAL_DAY_EVENING = datetime(2026, 9, 5, 2, 0, tzinfo=UTC)
-NEXT_LOCAL_DAY = datetime(2026, 9, 5, 12, 0, tzinfo=UTC)
+VANCOUVER = ZoneInfo("America/Vancouver")
+TEST_LOCAL_DATE = NOW.astimezone(VANCOUVER).date() + timedelta(days=2)
+SAME_LOCAL_DAY_MORNING = datetime.combine(
+    TEST_LOCAL_DATE, time(11), tzinfo=VANCOUVER
+).astimezone(UTC)
+SAME_LOCAL_DAY_EVENING = datetime.combine(
+    TEST_LOCAL_DATE, time(19), tzinfo=VANCOUVER
+).astimezone(UTC)
+NEXT_LOCAL_DAY = datetime.combine(
+    TEST_LOCAL_DATE + timedelta(days=1), time(12), tzinfo=VANCOUVER
+).astimezone(UTC)
 
 
 def _candidate(candidate_id: str, **changes) -> EventListingCandidate:

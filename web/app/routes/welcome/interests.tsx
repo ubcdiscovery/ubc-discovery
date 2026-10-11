@@ -70,8 +70,8 @@ export default function OnboardingInterests() {
         await completeOnboarding({
           preferred_name: draft.preferred_name,
           major: draft.major,
-          year_standing: draft.year_standing,
-          faculty: draft.faculty,
+          academic_level: draft.academic_level,
+          faculty_id: draft.faculty_id,
           interests: draft.interests,
         });
       } catch (requestError) {

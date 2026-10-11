@@ -1,15 +1,11 @@
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { ProfileAcademicFields } from "~/components/profile/ProfileAcademicFields";
 import { VibeTag } from "~/components/VibeTag";
 import type { UserResponse } from "~/lib/api";
+import { getAcademicLevelLabel, getFacultyLabel } from "~/lib/academic-option-values";
 import { useAuth } from "~/lib/auth";
-import { FACULTIES, VIBES, YEARS } from "~/lib/constants";
-import { yearLabelToStanding, yearStandingToLabel } from "~/lib/onboarding";
+import { VIBES } from "~/lib/constants";
 import { useProfileEditor } from "~/lib/use-profile-editor";
-
-const PROFILE_YEAR_OPTIONS = YEARS.flatMap((label) => {
-  const value = yearLabelToStanding(label);
-  return value === undefined ? [] : [{ label, value: String(value) }];
-});
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
     <section className="border-b border-rule-soft p-4.5 md:p-0">
@@ -27,17 +23,6 @@ function KV({ label, value }: { label: string; value: string }) {
       <span className="text-muted">{label}</span>
       <span className="font-bold">{value || "Not specified"}</span>
     </div>
-  );
-}
-
-function FieldLabel({ htmlFor, children }: { htmlFor: string; children: ReactNode }) {
-  return (
-    <label
-      htmlFor={htmlFor}
-      className="mb-1.5 block font-mono text-xs uppercase tracking-wide text-muted md:tracking-wider"
-    >
-      {children}
-    </label>
   );
 }
 
@@ -154,8 +139,9 @@ export function MemberProfile({ user }: { user: UserResponse }) {
                 </h1>
                 <div className="mt-1.5 text-sm text-ink-soft md:mt-2 md:flex md:items-center md:gap-3.5">
                   <span>
-                    {[user.major, yearStandingToLabel(user.year_standing)].filter(Boolean).join(" · ") ||
-                      "Profile ready"}
+                    {[user.major, user.academic_level && getAcademicLevelLabel(user.academic_level)]
+                      .filter(Boolean)
+                      .join(" · ") || "Profile ready"}
                   </span>
                   <span className="hidden size-1 rounded-full bg-muted md:block" />
                   <span className="hidden font-mono text-xs tracking-wide text-muted md:block">
@@ -184,52 +170,18 @@ export function MemberProfile({ user }: { user: UserResponse }) {
         <div className="md:grid md:grid-cols-2 md:gap-8">
           <Section label="Academic context">
             {draft ? (
-              <div className="space-y-3 md:space-y-3.5">
-                <div>
-                  <FieldLabel htmlFor="profile-faculty">Faculty</FieldLabel>
-                  <select
-                    id="profile-faculty"
-                    value={draft.faculty}
-                    onChange={(event) => editor.updateDraft({ faculty: event.target.value })}
-                    className="w-full cursor-pointer appearance-none border border-ink bg-surface px-3 py-2.5 font-body text-sm text-ink outline-none"
-                  >
-                    <option value="">Not specified</option>
-                    {FACULTIES.map((faculty) => (
-                      <option key={faculty}>{faculty}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <FieldLabel htmlFor="profile-major">Major or program</FieldLabel>
-                  <input
-                    id="profile-major"
-                    value={draft.major}
-                    onChange={(event) => editor.updateDraft({ major: event.target.value })}
-                    className="w-full border border-ink bg-surface px-3 py-2.5 font-body text-sm text-ink outline-none"
-                  />
-                </div>
-                <div>
-                  <FieldLabel htmlFor="profile-year">Year</FieldLabel>
-                  <select
-                    id="profile-year"
-                    value={draft.yearStanding}
-                    onChange={(event) => editor.updateDraft({ yearStanding: event.target.value })}
-                    className="w-full cursor-pointer appearance-none border border-ink bg-surface px-3 py-2.5 font-body text-sm text-ink outline-none"
-                  >
-                    <option value="">Not specified</option>
-                    {PROFILE_YEAR_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              <ProfileAcademicFields draft={draft} updateDraft={editor.updateDraft} />
             ) : (
               <>
-                <KV label="Faculty" value={user.faculty ?? ""} />
+                <KV
+                  label="Faculty"
+                  value={user.faculty_id ? getFacultyLabel(user.faculty_id) : ""}
+                />
                 <KV label="Major" value={user.major ?? ""} />
-                <KV label="Year" value={yearStandingToLabel(user.year_standing)} />
+                <KV
+                  label="Year"
+                  value={user.academic_level ? getAcademicLevelLabel(user.academic_level) : ""}
+                />
               </>
             )}
           </Section>

@@ -1,16 +1,25 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { FACULTIES, YEARS } from "~/lib/constants";
+import { FreeTextAutocomplete } from "~/components/ui/FreeTextAutocomplete";
+import { SearchableSelect } from "~/components/ui/SearchableSelect";
+import {
+  ACADEMIC_LEVEL_LABELS,
+  FACULTIES,
+  FACULTY_SEARCH_TERMS,
+  getProgramSuggestions,
+} from "~/lib/academic-options";
+import {
+  getAcademicLevel,
+  getAcademicLevelLabel,
+  getFacultyId,
+  getFacultyLabel,
+} from "~/lib/academic-option-values";
 import {
   OnboardingTop,
   OnboardingFooter,
   OnboardingDesktopShell,
 } from "~/components/OnboardingShell";
 import { useAuth } from "~/lib/auth";
-import {
-  yearLabelToStanding,
-  yearStandingToLabel,
-} from "~/lib/onboarding";
 import { onboardingDraftStore } from "~/lib/onboarding-draft";
 
 export function meta() {
@@ -18,36 +27,37 @@ export function meta() {
 }
 
 function SelectField({
+  id,
   label,
   value,
   onChange,
   options,
+  searchTerms,
 }: {
+  id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
-  options: string[];
+  options: readonly string[];
+  searchTerms?: Readonly<Record<string, string>>;
 }) {
   return (
     <div>
-      <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
+      <label
+        htmlFor={id}
+        className="mb-1.5 block font-mono text-xs tracking-wider text-muted uppercase"
+      >
         {label}
-      </div>
-      <div className="relative">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full p-3.5 border border-ink bg-surface font-display text-lg font-bold text-ink appearance-none cursor-pointer tracking-tight outline-none"
-        >
-          <option value="">Select...</option>
-          {options.map((o) => (
-            <option key={o}>{o}</option>
-          ))}
-        </select>
-        <span className="absolute right-3.5 top-4.5 text-muted pointer-events-none font-mono">
-          ▾
-        </span>
-      </div>
+      </label>
+      <SearchableSelect
+        id={id}
+        value={value}
+        onChange={onChange}
+        options={options}
+        searchTerms={searchTerms}
+        placeholder="Search or select..."
+        className="p-3.5 font-display text-lg font-bold tracking-tight"
+      />
     </div>
   );
 }
@@ -70,6 +80,8 @@ function PillGrid({
         return (
           <button
             key={opt}
+            type="button"
+            aria-pressed={on}
             onClick={() => onChange(opt)}
             className={`py-2.5 px-3 border-none text-left font-display font-bold text-sm tracking-tight cursor-pointer ${
               on ? "bg-ink text-bg" : "bg-transparent text-ink"
@@ -93,9 +105,9 @@ export default function OnboardingAcademic() {
   const navigate = useNavigate();
   const { state } = useAuth();
   const uid = state.status === "onboarding" ? state.uid : null;
-  const [faculty, setFaculty] = useState("");
+  const [facultyId, setFacultyId] = useState("");
   const [major, setMajor] = useState("");
-  const [year, setYear] = useState("");
+  const [academicLevel, setAcademicLevel] = useState("");
 
   useEffect(() => {
     if (!uid) return;
@@ -108,9 +120,9 @@ export default function OnboardingAcademic() {
         return;
       }
 
-      setFaculty(draft.faculty ?? "");
+      setFacultyId(draft.faculty_id ?? "");
       setMajor(draft.major ?? "");
-      setYear(yearStandingToLabel(draft.year_standing));
+      setAcademicLevel(draft.academic_level ?? "");
     });
     return () => {
       active = false;
@@ -121,9 +133,9 @@ export default function OnboardingAcademic() {
     if (!uid) return;
 
     await onboardingDraftStore.update(uid, {
-      faculty: faculty || undefined,
+      faculty_id: facultyId || undefined,
       major: major.trim() || undefined,
-      year_standing: yearLabelToStanding(year),
+      academic_level: academicLevel || undefined,
     });
     void navigate("/welcome/interests");
   }
@@ -136,11 +148,7 @@ export default function OnboardingAcademic() {
     <div className="min-h-screen bg-bg text-ink font-body">
       {/* Mobile */}
       <div className="md:hidden pb-32">
-        <OnboardingTop
-          step={2}
-          total={3}
-          onBack={() => navigate("/welcome/name")}
-        />
+        <OnboardingTop step={2} total={3} onBack={() => navigate("/welcome/name")} />
         <div className="px-5.5 pt-6 pb-4">
           <div className="font-mono text-xs text-accent font-bold tracking-wide uppercase">
             Optional · skippable
@@ -151,25 +159,32 @@ export default function OnboardingAcademic() {
             in your degree?
           </h1>
           <p className="text-sm/relaxed text-ink-soft">
-            This helps us rank first-year, upper-year, and faculty-specific
-            events more appropriately.
+            This helps us rank first-year, upper-year, and faculty-specific events more
+            appropriately.
           </p>
 
           <div className="mt-5 space-y-4">
             <SelectField
-              label="Faculty"
-              value={faculty}
-              onChange={setFaculty}
+              id="mobile-faculty"
+              label="Faculty or school · UBC Vancouver"
+              value={getFacultyLabel(facultyId)}
+              onChange={(label) => setFacultyId(getFacultyId(label) ?? "")}
               options={FACULTIES}
+              searchTerms={FACULTY_SEARCH_TERMS}
             />
             <div>
-              <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5 flex justify-between">
-                <span>Major or program</span>
-                <span>Free text</span>
-              </div>
-              <input
+              <label
+                htmlFor="mobile-major"
+                className="mb-1.5 flex justify-between font-mono text-xs tracking-wider text-muted uppercase"
+              >
+                <span>Program or major</span>
+                <span>Choose or type</span>
+              </label>
+              <FreeTextAutocomplete
+                id="mobile-major"
                 value={major}
-                onChange={(e) => setMajor(e.target.value)}
+                onChange={setMajor}
+                options={getProgramSuggestions(facultyId)}
                 placeholder="e.g. Cognitive Systems, Mechanical Engineering"
                 className="w-full px-3.5 py-3 border border-ink bg-surface font-body text-base text-ink outline-none"
               />
@@ -178,7 +193,11 @@ export default function OnboardingAcademic() {
               <div className="font-mono text-xs text-muted tracking-wider uppercase mb-2">
                 Year standing
               </div>
-              <PillGrid options={YEARS} value={year} onChange={setYear} />
+              <PillGrid
+                options={ACADEMIC_LEVEL_LABELS}
+                value={getAcademicLevelLabel(academicLevel)}
+                onChange={(label) => setAcademicLevel(getAcademicLevel(label) ?? "")}
+              />
             </div>
           </div>
         </div>
@@ -212,25 +231,33 @@ export default function OnboardingAcademic() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <SelectField
-              label="Faculty"
-              value={faculty}
-              onChange={setFaculty}
+              id="desktop-faculty"
+              label="Faculty or school · UBC Vancouver"
+              value={getFacultyLabel(facultyId)}
+              onChange={(label) => setFacultyId(getFacultyId(label) ?? "")}
               options={FACULTIES}
+              searchTerms={FACULTY_SEARCH_TERMS}
             />
             <SelectField
+              id="desktop-year"
               label="Year"
-              value={year}
-              onChange={setYear}
-              options={YEARS}
+              value={getAcademicLevelLabel(academicLevel)}
+              onChange={(label) => setAcademicLevel(getAcademicLevel(label) ?? "")}
+              options={ACADEMIC_LEVEL_LABELS}
             />
           </div>
           <div>
-            <div className="font-mono text-xs text-muted tracking-wider uppercase mb-1.5">
-              Major or program
-            </div>
-            <input
+            <label
+              htmlFor="desktop-major"
+              className="mb-1.5 block font-mono text-xs tracking-wider text-muted uppercase"
+            >
+              Program or major
+            </label>
+            <FreeTextAutocomplete
+              id="desktop-major"
               value={major}
-              onChange={(e) => setMajor(e.target.value)}
+              onChange={setMajor}
+              options={getProgramSuggestions(facultyId)}
               placeholder="e.g. Cognitive Systems"
               className="w-full px-3 py-2.5 border border-ink bg-surface font-body text-sm text-ink outline-none"
             />

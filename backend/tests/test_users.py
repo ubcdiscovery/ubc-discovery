@@ -31,9 +31,9 @@ class TestGetMe:
             "email",
             "preferred_name",
             "major",
-            "year_standing",
+            "academic_level",
             "interests",
-            "faculty",
+            "faculty_id",
             "bio",
             "profile_picture_url",
             "is_admin",
@@ -63,10 +63,10 @@ class TestOnboarding:
             "/users/onboarding",
             json={
                 "preferred_name": "New User",
-                "major": "Physics",
-                "year_standing": 2,
+                "major": "  Physics  ",
+                "academic_level": "year_2",
                 "interests": ["stargazing", "gaming"],
-                "faculty": "Science",
+                "faculty_id": "science",
                 "bio": "Love physics!",
             },
         )
@@ -74,7 +74,8 @@ class TestOnboarding:
         data = resp.json()
         assert data["preferred_name"] == "New User"
         assert data["major"] == "Physics"
-        assert data["year_standing"] == 2
+        assert data["academic_level"] == "year_2"
+        assert data["faculty_id"] == "science"
         assert data["email"] == "newuser@student.ubc.ca"
 
     async def test_onboarding_duplicate_returns_409(
@@ -89,6 +90,30 @@ class TestOnboarding:
             json={"preferred_name": "New User"},
         )
         assert resp.status_code == 409
+
+    async def test_rejects_unknown_academic_identifiers(
+        self, onboarding_client: AsyncClient
+    ):
+        resp = await onboarding_client.post(
+            "/users/onboarding",
+            json={
+                "preferred_name": "New User",
+                "faculty_id": "not-a-ubc-faculty",
+                "academic_level": "sixth_year",
+            },
+        )
+        assert resp.status_code == 422
+
+    async def test_rejects_legacy_academic_fields(self, onboarding_client: AsyncClient):
+        resp = await onboarding_client.post(
+            "/users/onboarding",
+            json={
+                "preferred_name": "New User",
+                "faculty": "Science",
+                "year_standing": 3,
+            },
+        )
+        assert resp.status_code == 422
 
 
 class TestUpdateProfile:
@@ -106,25 +131,25 @@ class TestUpdateProfile:
             json={
                 "bio": "New bio here",
                 "interests": ["swimming", "reading"],
-                "year_standing": 4,
+                "academic_level": "graduate",
             },
         )
         assert resp.status_code == 200
         data = resp.json()
         assert data["bio"] == "New bio here"
         assert data["interests"] == ["swimming", "reading"]
-        assert data["year_standing"] == 4
+        assert data["academic_level"] == "graduate"
 
     async def test_clear_optional_academic_context(self, client: AsyncClient):
         resp = await client.put(
             "/users/me",
-            json={"faculty": None, "major": None, "year_standing": None},
+            json={"faculty_id": None, "major": None, "academic_level": None},
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data["faculty"] is None
+        assert data["faculty_id"] is None
         assert data["major"] is None
-        assert data["year_standing"] is None
+        assert data["academic_level"] is None
 
 
 class TestPresignedUpload:

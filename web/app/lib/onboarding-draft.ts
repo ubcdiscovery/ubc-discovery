@@ -1,19 +1,18 @@
+import { getAcademicLevel, getFacultyId } from "~/lib/academic-option-values";
+
 const STORAGE_KEY_PREFIX = "ubc-discovery:onboarding-draft:";
 
 type OnboardingDraft = {
   preferred_name?: string;
   major?: string;
-  year_standing?: number;
-  faculty?: string;
+  academic_level?: string;
+  faculty_id?: string;
   interests?: string[];
 };
 
 interface OnboardingDraftStore {
   read(accountId: string): Promise<OnboardingDraft>;
-  update(
-    accountId: string,
-    patch: Partial<OnboardingDraft>
-  ): Promise<OnboardingDraft>;
+  update(accountId: string, patch: Partial<OnboardingDraft>): Promise<OnboardingDraft>;
   clear(accountId: string): Promise<void>;
 }
 
@@ -37,13 +36,14 @@ function parseDraft(value: string | null): OnboardingDraft | null {
     }
 
     const candidate = draft as Record<string, unknown>;
+    const legacyYear = candidate.year_standing;
     if (
       !isOptionalString(candidate.preferred_name) ||
       !isOptionalString(candidate.major) ||
+      !isOptionalString(candidate.academic_level) ||
+      !isOptionalString(candidate.faculty_id) ||
       !isOptionalString(candidate.faculty) ||
-      (candidate.year_standing !== undefined &&
-        (!Number.isInteger(candidate.year_standing) ||
-          (candidate.year_standing as number) < 1)) ||
+      (legacyYear !== undefined && (!Number.isInteger(legacyYear) || (legacyYear as number) < 1)) ||
       (candidate.interests !== undefined &&
         (!Array.isArray(candidate.interests) ||
           !candidate.interests.every((interest) => typeof interest === "string")))
@@ -51,11 +51,27 @@ function parseDraft(value: string | null): OnboardingDraft | null {
       return null;
     }
 
+    const facultyId = getFacultyId((candidate.faculty_id ?? candidate.faculty ?? "") as string);
+    const academicLevel = candidate.academic_level
+      ? getAcademicLevel(candidate.academic_level as string)
+      : typeof legacyYear === "number"
+        ? legacyYear >= 5
+          ? "year_5_plus"
+          : getAcademicLevel(`year_${legacyYear}`)
+        : undefined;
+
+    if ((candidate.faculty_id !== undefined || candidate.faculty !== undefined) && !facultyId) {
+      return null;
+    }
+    if ((candidate.academic_level !== undefined || legacyYear !== undefined) && !academicLevel) {
+      return null;
+    }
+
     return {
       preferred_name: candidate.preferred_name as string | undefined,
       major: candidate.major as string | undefined,
-      year_standing: candidate.year_standing as number | undefined,
-      faculty: candidate.faculty as string | undefined,
+      academic_level: academicLevel,
+      faculty_id: facultyId,
       interests: candidate.interests as string[] | undefined,
     };
   } catch {
@@ -63,9 +79,7 @@ function parseDraft(value: string | null): OnboardingDraft | null {
   }
 }
 
-function createLocalOnboardingDraftStore(
-  getStorage: StorageProvider
-): OnboardingDraftStore {
+function createLocalOnboardingDraftStore(getStorage: StorageProvider): OnboardingDraftStore {
   async function read(accountId: string) {
     const storage = getStorage();
     if (!storage) return {};
@@ -94,5 +108,5 @@ function createLocalOnboardingDraftStore(
 }
 
 export const onboardingDraftStore = createLocalOnboardingDraftStore(() =>
-  typeof window === "undefined" ? null : window.localStorage
+  typeof window === "undefined" ? null : window.localStorage,
 );

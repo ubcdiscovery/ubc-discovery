@@ -395,16 +395,17 @@ class TestUpdateAdminEvent:
     async def test_update_rejects_invalid_values(
         self, admin_client: AsyncClient, sample_events: list[Event]
     ):
-        event_id = sample_events[0].id
+        event = sample_events[0]
+        assert event.event_end_date is not None
         for payload in (
             {"vibes": ["invented"]},
             {"source_label": "other"},
             {"location_name": None},
             {"location_name": "  "},
-            {"event_end_date": "2026-08-01T10:00:00Z"},
-            {"event_date": "2026-10-01T10:00:00Z"},
+            {"event_end_date": (event.event_date - timedelta(hours=1)).isoformat()},
+            {"event_date": (event.event_end_date + timedelta(hours=1)).isoformat()},
         ):
-            resp = await admin_client.put(f"/admin/events/{event_id}", json=payload)
+            resp = await admin_client.put(f"/admin/events/{event.id}", json=payload)
             assert resp.status_code == 422
 
     async def test_update_not_found(self, admin_client: AsyncClient):
