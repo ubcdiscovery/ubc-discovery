@@ -127,9 +127,9 @@ async def test_user(db_session: AsyncSession) -> User:
         email="testuser@student.ubc.ca",
         preferred_name="Test User",
         major="Computer Science",
-        year_standing=3,
+        academic_level="year_3",
         interests=["hiking", "coding", "photography"],
-        faculty="Science",
+        faculty_id="science",
         bio="A test user for unit tests",
         onboarding_completed=True,
     )
@@ -146,9 +146,9 @@ async def other_user(db_session: AsyncSession) -> User:
         email="other@student.ubc.ca",
         preferred_name="Other User",
         major="Biology",
-        year_standing=2,
+        academic_level="year_2",
         interests=["music", "cooking"],
-        faculty="Science",
+        faculty_id="science",
         bio="Another test user",
         onboarding_completed=True,
     )

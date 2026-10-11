@@ -4,18 +4,18 @@ import { useAuth } from "~/lib/auth";
 
 export type ProfileDraft = {
   preferredName: string;
-  faculty: string;
+  facultyId: string;
   major: string;
-  yearStanding: string;
+  academicLevel: string;
   interests: string[];
 };
 
 function createDraft(user: UserResponse): ProfileDraft {
   return {
     preferredName: user.preferred_name,
-    faculty: user.faculty ?? "",
+    facultyId: user.faculty_id ?? "",
     major: user.major ?? "",
-    yearStanding: user.year_standing ? String(Math.min(user.year_standing, 5)) : "",
+    academicLevel: user.academic_level ?? "",
     interests: user.interests ?? [],
   };
 }
@@ -58,9 +58,9 @@ export function useProfileEditor(user: UserResponse) {
     try {
       const next = await updateProfile({
         preferred_name: draft.preferredName.trim(),
-        faculty: draft.faculty || null,
+        faculty_id: draft.facultyId || null,
         major: draft.major.trim() || null,
-        year_standing: draft.yearStanding ? Number(draft.yearStanding) : null,
+        academic_level: draft.academicLevel || null,
         interests: draft.interests,
       });
       setDraft(null);

@@ -2,9 +2,9 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ProfileAcademicFields } from "~/components/profile/ProfileAcademicFields";
 import { VibeTag } from "~/components/VibeTag";
 import type { UserResponse } from "~/lib/api";
+import { getAcademicLevelLabel, getFacultyLabel } from "~/lib/academic-option-values";
 import { useAuth } from "~/lib/auth";
 import { VIBES } from "~/lib/constants";
-import { yearStandingToLabel } from "~/lib/onboarding";
 import { useProfileEditor } from "~/lib/use-profile-editor";
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -139,7 +139,7 @@ export function MemberProfile({ user }: { user: UserResponse }) {
                 </h1>
                 <div className="mt-1.5 text-sm text-ink-soft md:mt-2 md:flex md:items-center md:gap-3.5">
                   <span>
-                    {[user.major, yearStandingToLabel(user.year_standing)]
+                    {[user.major, user.academic_level && getAcademicLevelLabel(user.academic_level)]
                       .filter(Boolean)
                       .join(" · ") || "Profile ready"}
                   </span>
@@ -173,9 +173,15 @@ export function MemberProfile({ user }: { user: UserResponse }) {
               <ProfileAcademicFields draft={draft} updateDraft={editor.updateDraft} />
             ) : (
               <>
-                <KV label="Faculty" value={user.faculty ?? ""} />
+                <KV
+                  label="Faculty"
+                  value={user.faculty_id ? getFacultyLabel(user.faculty_id) : ""}
+                />
                 <KV label="Major" value={user.major ?? ""} />
-                <KV label="Year" value={yearStandingToLabel(user.year_standing)} />
+                <KV
+                  label="Year"
+                  value={user.academic_level ? getAcademicLevelLabel(user.academic_level) : ""}
+                />
               </>
             )}
           </Section>

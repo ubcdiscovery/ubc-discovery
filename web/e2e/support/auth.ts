@@ -1,18 +1,15 @@
 import type { Page } from "@playwright/test";
 import { createAdminApiMock, type AdminMockEvent } from "./admin";
 import { createApiKeysMock, type AdminMockApiCredential } from "./api-keys";
-import {
-  createCandidatesMock,
-  type AdminMockCandidate,
-} from "./candidates";
+import { createCandidatesMock, type AdminMockCandidate } from "./candidates";
 
 export type MockProfile = {
   id: string;
   email: string;
   preferred_name: string;
   major: string | null;
-  year_standing: number | null;
-  faculty: string | null;
+  academic_level: string | null;
+  faculty_id: string | null;
   interests: string[];
   bio: string | null;
   profile_picture_url: string | null;
@@ -26,8 +23,8 @@ export const existingProfile: MockProfile = {
   email: "member@example.com",
   preferred_name: "Taylor",
   major: "Computer Science",
-  year_standing: 3,
-  faculty: "Science",
+  academic_level: "year_3",
+  faculty_id: "science",
   interests: ["music", "outdoors", "food"],
   bio: null,
   profile_picture_url: null,
@@ -92,7 +89,7 @@ export async function mockApi(
     onApiKeyRevoke?: (id: string) => void;
     otpUid?: string;
     profilesByUid?: Record<string, MockProfile | null>;
-  } = {}
+  } = {},
 ) {
   let profile = options.profile === undefined ? null : options.profile;
   const handleAdminApi = createAdminApiMock({
@@ -119,10 +116,7 @@ export async function mockApi(
   });
   await page.route("http://api.test/**", async (route) => {
     const url = new URL(route.request().url());
-    if (
-      url.pathname === "/users/me" &&
-      route.request().method() === "GET"
-    ) {
+    if (url.pathname === "/users/me" && route.request().method() === "GET") {
       const authorization = route.request().headers().authorization ?? "";
       const uid = authorization.match(/^Bearer mock-token:([^:]+):/)?.[1] ?? null;
       await options.onProfileRequest?.(uid);
@@ -135,16 +129,11 @@ export async function mockApi(
       await route.fulfill({
         status: requestedProfile ? 200 : 404,
         contentType: "application/json",
-        body: JSON.stringify(
-          requestedProfile ?? { detail: "User profile not found." }
-        ),
+        body: JSON.stringify(requestedProfile ?? { detail: "User profile not found." }),
       });
       return;
     }
-    if (
-      url.pathname === "/users/me" &&
-      route.request().method() === "PUT"
-    ) {
+    if (url.pathname === "/users/me" && route.request().method() === "PUT") {
       const body = route.request().postDataJSON();
       options.onProfileUpdate?.(body);
       profile = profile ? { ...profile, ...body } : profile;
@@ -155,10 +144,7 @@ export async function mockApi(
       });
       return;
     }
-    if (
-      url.pathname === "/users/onboarding" &&
-      route.request().method() === "POST"
-    ) {
+    if (url.pathname === "/users/onboarding" && route.request().method() === "POST") {
       const body = route.request().postDataJSON();
       profile = {
         ...existingProfile,
@@ -166,8 +152,8 @@ export async function mockApi(
         email: "member@example.com",
         preferred_name: body.preferred_name,
         major: body.major ?? null,
-        year_standing: body.year_standing ?? null,
-        faculty: body.faculty ?? null,
+        academic_level: body.academic_level ?? null,
+        faculty_id: body.faculty_id ?? null,
         interests: body.interests ?? [],
       };
       await route.fulfill({
@@ -181,7 +167,11 @@ export async function mockApi(
     if (await handleCandidates(route, url)) return;
     if (await handleApiKeys(route, url)) return;
     if (url.pathname === "/events/event-1") {
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(mockEvent) });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(mockEvent),
+      });
       return;
     }
     if (url.pathname === "/ratings/event-1") {
@@ -189,17 +179,22 @@ export async function mockApi(
       return;
     }
     if (url.pathname === "/ratings/mine/event-1") {
-      await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Rating not found" }) });
+      await route.fulfill({
+        status: 404,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "Rating not found" }),
+      });
       return;
     }
     if (url.pathname === "/saved-events" && route.request().method() === "GET") {
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ saved_events: [], total: 0 }) });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ saved_events: [], total: 0 }),
+      });
       return;
     }
-    if (
-      url.pathname === "/saved-events/event-1" &&
-      route.request().method() === "PUT"
-    ) {
+    if (url.pathname === "/saved-events/event-1" && route.request().method() === "PUT") {
       options.onSave?.();
       if (options.saveError) {
         await route.fulfill({
@@ -287,14 +282,11 @@ export async function mockApi(
 }
 export async function setAuthenticatedUser(
   page: Page,
-  user = { uid: "existing-uid", email: "member@example.com" }
+  user = { uid: "existing-uid", email: "member@example.com" },
 ) {
   await page.addInitScript((value) => {
     if (!window.sessionStorage.getItem("ubc-discovery-test-firebase-user")) {
-      window.sessionStorage.setItem(
-        "ubc-discovery-test-firebase-user",
-        JSON.stringify(value)
-      );
+      window.sessionStorage.setItem("ubc-discovery-test-firebase-user", JSON.stringify(value));
     }
   }, user);
 }

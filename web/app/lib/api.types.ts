@@ -66,8 +66,8 @@ export interface UserResponse {
   email: string;
   preferred_name: string;
   major: string | null;
-  year_standing: number | null;
-  faculty: string | null;
+  academic_level: string | null;
+  faculty_id: string | null;
   interests: string[] | null;
   bio: string | null;
   profile_picture_url: string | null;

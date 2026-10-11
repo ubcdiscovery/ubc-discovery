@@ -22,8 +22,8 @@ import { createProfileHydrationCoordinator } from "~/lib/profile-hydration";
 type OnboardingPayload = {
   preferred_name: string;
   major?: string;
-  year_standing?: number;
-  faculty?: string;
+  academic_level?: string;
+  faculty_id?: string;
   interests?: string[];
   bio?: string;
 };
@@ -31,8 +31,8 @@ type OnboardingPayload = {
 type UpdateProfilePayload = {
   preferred_name?: string;
   major?: string | null;
-  year_standing?: number | null;
-  faculty?: string | null;
+  academic_level?: string | null;
+  faculty_id?: string | null;
   interests?: string[];
   bio?: string | null;
 };
@@ -67,13 +67,8 @@ async function loadProfile() {
   }
 }
 
-function authenticatedState(
-  uid: string,
-  profile: UserResponse | null
-): AuthState {
-  return profile
-    ? { status: "member", uid, profile }
-    : { status: "onboarding", uid };
+function authenticatedState(uid: string, profile: UserResponse | null): AuthState {
+  return profile ? { status: "member", uid, profile } : { status: "onboarding", uid };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -139,14 +134,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return profileHydrationRef.current.wait(uid, requestId);
     },
-    [hydrateFirebaseIdentity]
+    [hydrateFirebaseIdentity],
   );
 
-  const signInWithOtpToken = useCallback(async (customToken: string) => {
-    const requestId = authRequestRef.current;
-    const user = await firebaseSignInWithCustomToken(customToken);
-    return waitForProfileHydration(user.uid, requestId);
-  }, [waitForProfileHydration]);
+  const signInWithOtpToken = useCallback(
+    async (customToken: string) => {
+      const requestId = authRequestRef.current;
+      const user = await firebaseSignInWithCustomToken(customToken);
+      return waitForProfileHydration(user.uid, requestId);
+    },
+    [waitForProfileHydration],
+  );
 
   const signInWithGoogle = useCallback(async () => {
     const requestId = authRequestRef.current;
@@ -173,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState({ status: "member", uid, profile: nextProfile });
       return nextProfile;
     },
-    [state]
+    [state],
   );
 
   const updateProfile = useCallback(
@@ -185,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState({ ...state, profile: nextProfile });
       return nextProfile;
     },
-    [state]
+    [state],
   );
 
   const uploadProfilePhoto = useCallback(
@@ -194,8 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Sign in before updating your profile photo.");
       }
       const resized = await resizeImage(file);
-      const { upload_url, fields, max_file_size_bytes } =
-        await api.users.presignedUpload();
+      const { upload_url, fields, max_file_size_bytes } = await api.users.presignedUpload();
       if (resized.size > max_file_size_bytes) {
         throw new Error("Profile photo is too large after compression.");
       }
@@ -215,7 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return refreshProfile();
     },
-    [refreshProfile, state.status]
+    [refreshProfile, state.status],
   );
 
   const value = useMemo(
@@ -242,7 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       state,
       updateProfile,
       uploadProfilePhoto,
-    ]
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

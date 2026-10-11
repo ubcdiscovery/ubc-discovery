@@ -19,9 +19,9 @@ test("edits and clears profile fields from every supported viewport", async ({ p
   await expect(page.getByText("Taylor", { exact: true })).toHaveCount(1);
   await page.getByRole("button", { name: "Edit profile" }).click();
 
-  await expect(page.getByRole("option", { name: "Graduate" })).toHaveCount(0);
-  await expect(page.getByRole("option", { name: "Postdoc" })).toHaveCount(0);
-  await expect(page.getByLabel("Faculty or school")).toHaveValue("Science");
+  await expect(page.getByRole("option", { name: "Graduate" })).toHaveCount(1);
+  await expect(page.getByRole("option", { name: "Postdoc" })).toHaveCount(1);
+  await expect(page.getByLabel("Faculty or school")).toHaveValue("Faculty of Science");
   await page.getByLabel("Preferred name").fill("Updated Taylor");
   await page.getByLabel("Faculty or school").fill("");
   await page.getByLabel("Program or major").fill("");
@@ -33,9 +33,9 @@ test("edits and clears profile fields from every supported viewport", async ({ p
     .poll(() => submitted)
     .toEqual({
       preferred_name: "Updated Taylor",
-      faculty: null,
+      faculty_id: null,
       major: null,
-      year_standing: null,
+      academic_level: null,
       interests: ["music", "outdoors", "food", "social"],
     });
   await expect(page.getByRole("heading", { name: "Updated Taylor" })).toBeVisible();

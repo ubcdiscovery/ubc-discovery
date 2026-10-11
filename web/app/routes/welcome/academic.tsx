@@ -2,15 +2,24 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { FreeTextAutocomplete } from "~/components/ui/FreeTextAutocomplete";
 import { SearchableSelect } from "~/components/ui/SearchableSelect";
-import { FACULTIES, FACULTY_SEARCH_TERMS, getProgramSuggestions } from "~/lib/academic-options";
-import { YEARS } from "~/lib/constants";
+import {
+  ACADEMIC_LEVEL_LABELS,
+  FACULTIES,
+  FACULTY_SEARCH_TERMS,
+  getProgramSuggestions,
+} from "~/lib/academic-options";
+import {
+  getAcademicLevel,
+  getAcademicLevelLabel,
+  getFacultyId,
+  getFacultyLabel,
+} from "~/lib/academic-option-values";
 import {
   OnboardingTop,
   OnboardingFooter,
   OnboardingDesktopShell,
 } from "~/components/OnboardingShell";
 import { useAuth } from "~/lib/auth";
-import { yearLabelToStanding, yearStandingToLabel } from "~/lib/onboarding";
 import { onboardingDraftStore } from "~/lib/onboarding-draft";
 
 export function meta() {
@@ -71,6 +80,8 @@ function PillGrid({
         return (
           <button
             key={opt}
+            type="button"
+            aria-pressed={on}
             onClick={() => onChange(opt)}
             className={`py-2.5 px-3 border-none text-left font-display font-bold text-sm tracking-tight cursor-pointer ${
               on ? "bg-ink text-bg" : "bg-transparent text-ink"
@@ -94,9 +105,9 @@ export default function OnboardingAcademic() {
   const navigate = useNavigate();
   const { state } = useAuth();
   const uid = state.status === "onboarding" ? state.uid : null;
-  const [faculty, setFaculty] = useState("");
+  const [facultyId, setFacultyId] = useState("");
   const [major, setMajor] = useState("");
-  const [year, setYear] = useState("");
+  const [academicLevel, setAcademicLevel] = useState("");
 
   useEffect(() => {
     if (!uid) return;
@@ -109,9 +120,9 @@ export default function OnboardingAcademic() {
         return;
       }
 
-      setFaculty(draft.faculty ?? "");
+      setFacultyId(draft.faculty_id ?? "");
       setMajor(draft.major ?? "");
-      setYear(yearStandingToLabel(draft.year_standing));
+      setAcademicLevel(draft.academic_level ?? "");
     });
     return () => {
       active = false;
@@ -122,9 +133,9 @@ export default function OnboardingAcademic() {
     if (!uid) return;
 
     await onboardingDraftStore.update(uid, {
-      faculty: faculty || undefined,
+      faculty_id: facultyId || undefined,
       major: major.trim() || undefined,
-      year_standing: yearLabelToStanding(year),
+      academic_level: academicLevel || undefined,
     });
     void navigate("/welcome/interests");
   }
@@ -156,8 +167,8 @@ export default function OnboardingAcademic() {
             <SelectField
               id="mobile-faculty"
               label="Faculty or school · UBC Vancouver"
-              value={faculty}
-              onChange={setFaculty}
+              value={getFacultyLabel(facultyId)}
+              onChange={(label) => setFacultyId(getFacultyId(label) ?? "")}
               options={FACULTIES}
               searchTerms={FACULTY_SEARCH_TERMS}
             />
@@ -173,7 +184,7 @@ export default function OnboardingAcademic() {
                 id="mobile-major"
                 value={major}
                 onChange={setMajor}
-                options={getProgramSuggestions(faculty)}
+                options={getProgramSuggestions(facultyId)}
                 placeholder="e.g. Cognitive Systems, Mechanical Engineering"
                 className="w-full px-3.5 py-3 border border-ink bg-surface font-body text-base text-ink outline-none"
               />
@@ -182,7 +193,11 @@ export default function OnboardingAcademic() {
               <div className="font-mono text-xs text-muted tracking-wider uppercase mb-2">
                 Year standing
               </div>
-              <PillGrid options={YEARS} value={year} onChange={setYear} />
+              <PillGrid
+                options={ACADEMIC_LEVEL_LABELS}
+                value={getAcademicLevelLabel(academicLevel)}
+                onChange={(label) => setAcademicLevel(getAcademicLevel(label) ?? "")}
+              />
             </div>
           </div>
         </div>
@@ -218,17 +233,17 @@ export default function OnboardingAcademic() {
             <SelectField
               id="desktop-faculty"
               label="Faculty or school · UBC Vancouver"
-              value={faculty}
-              onChange={setFaculty}
+              value={getFacultyLabel(facultyId)}
+              onChange={(label) => setFacultyId(getFacultyId(label) ?? "")}
               options={FACULTIES}
               searchTerms={FACULTY_SEARCH_TERMS}
             />
             <SelectField
               id="desktop-year"
               label="Year"
-              value={year}
-              onChange={setYear}
-              options={YEARS}
+              value={getAcademicLevelLabel(academicLevel)}
+              onChange={(label) => setAcademicLevel(getAcademicLevel(label) ?? "")}
+              options={ACADEMIC_LEVEL_LABELS}
             />
           </div>
           <div>
@@ -242,7 +257,7 @@ export default function OnboardingAcademic() {
               id="desktop-major"
               value={major}
               onChange={setMajor}
-              options={getProgramSuggestions(faculty)}
+              options={getProgramSuggestions(facultyId)}
               placeholder="e.g. Cognitive Systems"
               className="w-full px-3 py-2.5 border border-ink bg-surface font-body text-sm text-ink outline-none"
             />

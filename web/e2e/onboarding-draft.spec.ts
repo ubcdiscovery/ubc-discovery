@@ -49,6 +49,36 @@ test("discards a malformed account draft", async ({ page }) => {
     .toBeNull();
 });
 
+test("normalizes a legacy academic draft to constrained identifiers", async ({ page }) => {
+  await mockApi(page, { profile: null });
+  await setAuthenticatedUser(page, {
+    uid: "account-a",
+    email: "a@example.com",
+  });
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "ubc-discovery:onboarding-draft:account-a",
+      JSON.stringify({
+        preferred_name: "Account A",
+        faculty: "Science",
+        year_standing: 3,
+      }),
+    );
+  });
+  await page.goto("/welcome/academic");
+
+  const prefix = (page.viewportSize()?.width ?? 0) < 768 ? "mobile" : "desktop";
+  await expect(page.locator(`#${prefix}-faculty`)).toHaveValue("Faculty of Science");
+  if (prefix === "mobile") {
+    await expect(page.locator("button:visible", { hasText: /^3rd year$/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  } else {
+    await expect(page.locator("#desktop-year")).toHaveValue("3rd year");
+  }
+});
+
 test("searches Vancouver faculties and accepts a custom program", async ({ page }) => {
   await mockApi(page, { profile: null });
   await setAuthenticatedUser(page, {
@@ -80,6 +110,13 @@ test("searches Vancouver faculties and accepts a custom program", async ({ page 
   await expect(page.getByRole("option", { name: /Combined Major/ })).toHaveCount(0);
   await program.fill("Combined Major in Business and Computer Science");
   await program.press("Escape");
+  if (prefix === "mobile") {
+    await page.locator("button:visible", { hasText: /^Graduate$/ }).click();
+  } else {
+    const year = page.locator("#desktop-year");
+    await year.fill("Graduate");
+    await year.press("Enter");
+  }
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page).toHaveURL("/welcome/interests");
@@ -91,7 +128,8 @@ test("searches Vancouver faculties and accepts a custom program", async ({ page 
       }),
     )
     .toMatchObject({
-      faculty: "Faculty of Applied Science (Engineering)",
+      faculty_id: "applied-science",
       major: "Combined Major in Business and Computer Science",
+      academic_level: "graduate",
     });
 });

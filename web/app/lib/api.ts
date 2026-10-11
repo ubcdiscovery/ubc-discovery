@@ -64,9 +64,7 @@ async function apiFetch<T>(
       ? detail.find((item) => typeof item?.msg === "string")?.msg
       : undefined;
     const objectMessage =
-      detail && !Array.isArray(detail) && typeof detail === "object"
-        ? detail.message
-        : undefined;
+      detail && !Array.isArray(detail) && typeof detail === "object" ? detail.message : undefined;
     const message =
       validationMessage ??
       objectMessage ??
@@ -114,8 +112,8 @@ export const api = {
     onboarding: (data: {
       preferred_name: string;
       major?: string;
-      year_standing?: number;
-      faculty?: string;
+      academic_level?: string;
+      faculty_id?: string;
       interests?: string[];
     }) =>
       authenticatedApiFetch<UserResponse>("/users/onboarding", {
@@ -125,8 +123,8 @@ export const api = {
     update: (data: {
       preferred_name?: string;
       major?: string | null;
-      year_standing?: number | null;
-      faculty?: string | null;
+      academic_level?: string | null;
+      faculty_id?: string | null;
       interests?: string[];
     }) =>
       authenticatedApiFetch<UserResponse>("/users/me", {
@@ -155,15 +153,13 @@ export const api = {
           body: JSON.stringify(data),
         }),
       archive: (id: string) =>
-        authenticatedApiFetch<AdminApiEvent>(
-          `/admin/events/${encodeURIComponent(id)}/archive`,
-          { method: "POST" },
-        ),
+        authenticatedApiFetch<AdminApiEvent>(`/admin/events/${encodeURIComponent(id)}/archive`, {
+          method: "POST",
+        }),
       restore: (id: string) =>
-        authenticatedApiFetch<AdminApiEvent>(
-          `/admin/events/${encodeURIComponent(id)}/restore`,
-          { method: "POST" },
-        ),
+        authenticatedApiFetch<AdminApiEvent>(`/admin/events/${encodeURIComponent(id)}/restore`, {
+          method: "POST",
+        }),
       audit: (id: string) =>
         authenticatedApiFetch<{
           entries: Array<{

@@ -74,13 +74,28 @@ export const ACADEMIC_UNITS = [
 
 export const FACULTIES = ACADEMIC_UNITS.map(({ label }) => label);
 
+export type FacultyId = (typeof ACADEMIC_UNITS)[number]["id"];
+
+export const ACADEMIC_LEVELS = [
+  { id: "year_1", label: "1st year" },
+  { id: "year_2", label: "2nd year" },
+  { id: "year_3", label: "3rd year" },
+  { id: "year_4", label: "4th year" },
+  { id: "year_5_plus", label: "5th year+" },
+  { id: "graduate", label: "Graduate" },
+  { id: "postdoc", label: "Postdoc" },
+  { id: "other", label: "Other" },
+] as const;
+
+export type AcademicLevel = (typeof ACADEMIC_LEVELS)[number]["id"];
+
+export const ACADEMIC_LEVEL_LABELS = ACADEMIC_LEVELS.map(({ label }) => label);
+
 export const FACULTY_SEARCH_TERMS = Object.fromEntries(
   ACADEMIC_UNITS.map(({ label, aliases }) => [label, aliases.join(" ")]),
 );
 
-type AcademicUnitId = (typeof ACADEMIC_UNITS)[number]["id"];
-
-const PROGRAMS_BY_FACULTY_ID: Partial<Record<AcademicUnitId, readonly string[]>> = {
+const PROGRAMS_BY_FACULTY_ID: Partial<Record<FacultyId, readonly string[]>> = {
   "applied-science": [
     "Biomedical Engineering",
     "Chemical and Biological Engineering",
@@ -250,27 +265,10 @@ const PROGRAMS_BY_FACULTY_ID: Partial<Record<AcademicUnitId, readonly string[]>>
   "vancouver-school-economics": ["Economics", "International Economics"],
 };
 
-const LEGACY_FACULTY_IDS: Record<string, AcademicUnitId> = {
-  "Applied Science (Engineering)": "applied-science",
-  Architecture: "architecture-landscape-architecture",
-  Arts: "arts",
-  Education: "education",
-  Forestry: "forestry-environmental-stewardship",
-  Kinesiology: "kinesiology",
-  "Land & Food Systems": "land-food-systems",
-  Music: "music",
-  "Pharmaceutical Sciences": "pharmaceutical-sciences",
-  "Sauder · Business": "sauder",
-  Science: "science",
-  "Vancouver School of Economics": "vancouver-school-economics",
-};
-
-export function getProgramSuggestions(faculty: string): readonly string[] {
-  if (!faculty) return [];
-  const facultyId =
-    LEGACY_FACULTY_IDS[faculty] ?? ACADEMIC_UNITS.find(({ label }) => label === faculty)?.id;
+export function getProgramSuggestions(facultyId: string): readonly string[] {
+  if (!facultyId) return [];
   return [
     "Undeclared / not yet selected",
-    ...(facultyId ? (PROGRAMS_BY_FACULTY_ID[facultyId] ?? []) : []),
+    ...(PROGRAMS_BY_FACULTY_ID[facultyId as FacultyId] ?? []),
   ];
 }

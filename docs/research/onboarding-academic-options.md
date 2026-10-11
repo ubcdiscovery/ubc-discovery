@@ -30,9 +30,18 @@ that a deliberately shortened list represents every valid UBC specialization.
 It also avoids silently converting a combined or double major into something
 the member did not say.
 
-Keep the data in a frontend constant rather than adding a backend endpoint.
-Record stable machine IDs separately from display labels in the frontend data
-so a future display-name change does not require changing every relationship.
+Keep the stable option IDs and display data in frontend constants rather than
+adding a runtime lookup endpoint. The backend is still the persistence source
+of truth: its request schema validates the closed faculty/school and academic
+level ID sets, and database check constraints protect those values outside the
+API. Record stable machine IDs separately from display labels so a future
+display-name change does not require migrating stored profiles.
+
+Keep `Program or major` as normalized free text. The backend trims it, rejects
+empty strings and values longer than 255 characters, but does not constrain it
+to the curated suggestions or enforce a faculty/program pairing. This preserves
+valid combined, joint, new, and cross-faculty programs that are intentionally
+absent from the short suggestion list.
 
 ## Scope: campus must not be implicit
 
