@@ -48,3 +48,18 @@ DATABASE_URL='<direct production database URL>' pnpm run db:migrate
 ```
 
 Take a Neon restore point first for migrations that rewrite or drop data.
+
+## RDS cutover backup
+
+The RDS-to-Neon cutover retained a private custom-format PostgreSQL dump,
+original deployment configuration, and table count/checksum manifests under
+`~/projects/neon-migration-20261011T085552Z/` on the migration
+operator's machine. These artifacts contain sensitive data and must stay out of
+Git. The old RDS instance and its automated backups were retired after cutover;
+no final AWS snapshot was requested. The local dump is the retained backup.
+
+For recovery, restore the local custom-format dump into an empty PostgreSQL
+database with `pg_restore --no-owner --no-acl --exit-on-error`, verify it, and
+update the local, GitHub, and deployed database connection settings. The original
+RDS endpoint no longer exists. After Neon has accepted writes, use a fresh Neon
+backup or reconcile those writes first; the cutover dump alone would lose them.
