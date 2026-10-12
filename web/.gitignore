@@ -9,3 +9,6 @@
 
 .vercel/
 test-results/
+.wrangler/
+worker-configuration.d.ts
+.dev.vars*

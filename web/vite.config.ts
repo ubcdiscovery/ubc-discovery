@@ -1,4 +1,5 @@
 import { reactRouter } from "@react-router/dev/vite";
+import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
@@ -12,7 +13,7 @@ export default defineConfig({
     env: {
       builtin: true,
     },
-    ignorePatterns: [".react-router/", ".vercel/", "build/", "test-results/"],
+    ignorePatterns: [".react-router/", ".wrangler/", "worker-configuration.d.ts", "build/", "test-results/"],
     settings: {
       "better-tailwindcss": {
         entryPoint: "./app/app.css",
@@ -169,7 +170,7 @@ export default defineConfig({
       },
     ],
   },
-  plugins: lazyPlugins(() => [tailwindcss(), reactRouter()]),
+  plugins: lazyPlugins(() => [cloudflare({ viteEnvironment: { name: "ssr" } }), tailwindcss(), reactRouter()]),
   resolve: {
     tsconfigPaths: true,
   },

@@ -6,18 +6,18 @@
     "build": "react-router build",
     "deadcode": "knip",
     "dev": "react-router dev",
-    "lint": "vp lint .",
-    "start": "react-router-serve ./build/server/*/index.js",
-    "typecheck": "react-router typegen && tsc",
+    "lint": "pnpm run types && vp lint .",
+    "start": "vp preview --host 127.0.0.1 --port 4173",
+    "types": "wrangler types worker-configuration.d.ts --env-interface CloudflareEnvironment",
+    "typecheck": "pnpm run types && react-router typegen && tsc",
+    "deploy:staging": "VITE_AUTH_TEST_MODE=false pnpm run build && wrangler deploy",
+    "deploy:dry-run": "pnpm run build && wrangler deploy --dry-run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
-    "@react-router/node": "8.2.0",
-    "@react-router/serve": "8.2.0",
     "@tanstack/react-query": "^5.100.14",
-    "@vercel/react-router": "^1.3.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "firebase": "^12.13.0",
@@ -29,6 +29,7 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "1.63.1",
     "@playwright/test": "^1.60.0",
     "@react-router/dev": "8.2.0",
     "@tailwindcss/vite": "^4.2.2",
@@ -41,7 +42,8 @@
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "wrangler": "4.149.0"
   },
   "engines": {
     "node": "24.x"

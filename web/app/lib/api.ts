@@ -58,22 +58,28 @@ async function apiFetch<T>(
   }
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const payload: unknown = await res.json().catch(() => ({}));
+    const body = isRecord(payload) ? payload : {};
     const detail = body.detail;
     const validationMessage = Array.isArray(detail)
-      ? detail.find((item) => typeof item?.msg === "string")?.msg
+      ? detail.find((item: unknown) => isRecord(item) && typeof item.msg === "string")?.msg
       : undefined;
-    const objectMessage =
-      detail && !Array.isArray(detail) && typeof detail === "object" ? detail.message : undefined;
+    const detailObject = isRecord(detail) ? detail : {};
+    const objectMessage = typeof detailObject.message === "string" ? detailObject.message : undefined;
     const message =
       validationMessage ??
       objectMessage ??
       (typeof detail === "string" ? detail : `API error ${res.status}`);
-    const code = typeof detail === "object" && detail ? detail.code : body.code;
+    const errorCode = isRecord(detail) ? detail.code : body.code;
+    const code = typeof errorCode === "string" ? errorCode : undefined;
     throw new ApiError(res.status, message, code);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export async function authenticatedApiFetch<T>(path: string, options: RequestInit = {}) {

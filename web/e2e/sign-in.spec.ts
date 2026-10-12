@@ -98,7 +98,7 @@ test("normalizes email and submits both forms with Enter", async ({ page }) => {
   await code.fill("12ab3456");
   await expect(code).toHaveValue("123456");
   await code.press("Enter");
-  expect(verifiedCode).toBe("123456");
+  await expect.poll(() => verifiedCode).toBe("123456");
 });
 
 test("uses OTP autocomplete and numeric keyboard attributes", async ({ page }) => {
