@@ -10,6 +10,8 @@ Run `pnpm check` and `pnpm build`. Database integration tests run when `TEST_DAT
 
 The default configuration names a staging Worker and a staging R2 bucket. It does not alter the production API, the extraction Worker or its queue. Local Wrangler R2 operations use local storage unless remote bindings are explicitly configured.
 
+Direct database origins use TLS with certificate verification by default, retaining the Python API's `DATABASE_SSL=true` behavior even when a Neon URL has no `sslmode`. Set `DATABASE_SSL=false` in `.dev.vars` for the disposable local database; without a setting, localhost connections use plain TCP. Explicit URL TLS parameters take precedence according to [node-postgres SSL configuration](https://node-postgres.com/features/ssl). Ordinary Hyperdrive connections ignore this origin setting because Hyperdrive manages origin TLS; `DIRECT_DATABASE_URL` publication connections still use it.
+
 ## Compatibility gates
 
 - Preserve REST paths, snake_case JSON, authorization, candidate state transitions and audit identity. Validation differences must be tested before any caller switches.

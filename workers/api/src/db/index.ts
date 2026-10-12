@@ -18,14 +18,35 @@ export function databaseConnectionString(env: ApiEnv, options: { direct?: boolea
   return url.replace(/^postgresql\+asyncpg:/, 'postgresql:');
 }
 
+function databaseSsl(env: ApiEnv, connectionString: string, options: { direct?: boolean }) {
+  const url = new URL(connectionString);
+  // pg parses these URL options itself, replacing any supplied SSL object.
+  // Preserve explicit URL choices, including custom certificates and disabling TLS.
+  if (['ssl', 'sslmode', 'sslcert', 'sslkey', 'sslrootcert'].some(key => url.searchParams.has(key)) ||
+    url.searchParams.get('sslnegotiation') === 'direct') return undefined;
+
+  // Hyperdrive manages origin TLS. DATABASE_SSL applies only to direct origins,
+  // including publication transactions that bypass Hyperdrive.
+  if (env.HYPERDRIVE && !options.direct) return false;
+
+  const setting = env.DATABASE_SSL?.trim().toLowerCase();
+  if (setting && setting !== 'true' && setting !== 'false') throw new Error('Invalid DATABASE_SSL setting');
+  const host = url.searchParams.get('host') ?? url.hostname;
+  const local = ['', 'localhost', '127.0.0.1', '::1', '[::1]'].includes(host);
+  const enabled = setting ? setting === 'true' : !local;
+  return enabled ? { rejectUnauthorized: true } : false;
+}
+
 /** Clients cannot cross Workers request contexts; Hyperdrive supplies the shared pool. */
 export async function withDatabase<T>(
   env: ApiEnv,
   callback: (db: Db) => Promise<T>,
   options: { direct?: boolean } = {},
 ): Promise<T> {
+  const connectionString = databaseConnectionString(env, options);
   const client = new Client({
-    connectionString: databaseConnectionString(env, options),
+    connectionString,
+    ssl: databaseSsl(env, connectionString, options),
     connectionTimeoutMillis: 10_000,
   });
   try {

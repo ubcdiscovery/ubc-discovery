@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import type { ClientConfig } from 'pg';
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiEnv } from '../src/env';
 
@@ -6,6 +7,7 @@ const clients = vi.hoisted(() => [] as {
   connect: ReturnType<typeof vi.fn>;
   end: ReturnType<typeof vi.fn>;
   query: ReturnType<typeof vi.fn>;
+  configuration: ClientConfig;
 }[]);
 
 vi.mock('pg', () => ({
@@ -13,7 +15,7 @@ vi.mock('pg', () => ({
     connect = vi.fn(async () => {});
     end = vi.fn(async () => {});
     query = vi.fn(async () => ({ rows: [], rowCount: 0 }));
-    constructor() { clients.push(this); }
+    constructor(public configuration: ClientConfig) { clients.push(this); }
   },
 }));
 
@@ -22,6 +24,54 @@ import { databaseConnectionString, withDatabase, withTransaction } from '../src/
 const env = (settings: Partial<ApiEnv>): ApiEnv => settings as ApiEnv;
 
 describe('request-scoped database connections', () => {
+  it('enables certificate-verified TLS for remote origins without URL TLS options', async () => {
+    await withDatabase(env({ DATABASE_URL: 'postgresql+asyncpg://origin.example.com/app' }), async () => {});
+    expect(clients.at(-1)!.configuration.ssl).toEqual({ rejectUnauthorized: true });
+  });
+
+  it.each(['localhost', '127.0.0.1', '[::1]'])('keeps disposable %s databases on plain TCP by default', async host => {
+    await withDatabase(env({ DATABASE_URL: `postgresql://${host}/app` }), async () => {});
+    expect(clients.at(-1)!.configuration.ssl).toBe(false);
+  });
+
+  it('supports explicit origin TLS settings without permitting verification bypass', async () => {
+    await withDatabase(env({ DATABASE_URL: 'postgresql://localhost/app', DATABASE_SSL: 'true' }), async () => {});
+    expect(clients.at(-1)!.configuration.ssl).toEqual({ rejectUnauthorized: true });
+    await withDatabase(env({ DATABASE_URL: 'postgresql://origin.example.com/app', DATABASE_SSL: 'false' }), async () => {});
+    expect(clients.at(-1)!.configuration.ssl).toBe(false);
+    await expect(withDatabase(env({ DATABASE_URL: 'postgresql://origin.example.com/app', DATABASE_SSL: 'no-verify' }), async () => {}))
+      .rejects.toThrow('Invalid DATABASE_SSL setting');
+  });
+
+  it.each(['sslmode=verify-full', 'sslmode=disable', 'ssl=0', 'sslrootcert=/custom/ca.pem', 'sslnegotiation=direct'])
+    ('leaves explicit URL TLS configuration %s to pg', async tlsOption => {
+      const connectionString = `postgresql://origin.example.com/app?${tlsOption}`;
+      await withDatabase(env({ DATABASE_URL: connectionString, DATABASE_SSL: 'false' }), async () => {});
+      expect(clients.at(-1)!.configuration.connectionString).toBe(connectionString);
+      expect(clients.at(-1)!.configuration.ssl).toBeUndefined();
+    });
+
+  it('lets the real pg parser honor URL TLS overrides', async () => {
+    const actualPg = await vi.importActual<typeof import('pg')>('pg');
+    for (const [mode, enabled] of [['disable', false], ['verify-full', true]] as const) {
+      await withDatabase(env({ DATABASE_URL: `postgresql://origin.example.com/app?sslmode=${mode}`, DATABASE_SSL: String(!enabled) }), async () => {});
+      const actualClient = new actualPg.Client(clients.at(-1)!.configuration);
+      expect(Boolean(actualClient.ssl)).toBe(enabled);
+    }
+  });
+
+  it('applies origin TLS only when bypassing Hyperdrive', async () => {
+    const settings = env({
+      DATABASE_SSL: 'true',
+      DIRECT_DATABASE_URL: 'postgresql://origin.example.com/direct',
+      HYPERDRIVE: { connectionString: 'postgresql://hyperdrive.example.com/pool' } as Hyperdrive,
+    });
+    await withDatabase(settings, async () => {});
+    expect(clients.at(-1)!.configuration.ssl).toBe(false);
+    await withDatabase(settings, async () => {}, { direct: true });
+    expect(clients.at(-1)!.configuration.ssl).toEqual({ rejectUnauthorized: true });
+  });
+
   it('prefers Hyperdrive for ordinary requests and the direct origin for publication', () => {
     const settings = env({
       DATABASE_URL: 'postgresql://localhost/app',
