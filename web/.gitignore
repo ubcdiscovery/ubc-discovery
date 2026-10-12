@@ -7,7 +7,6 @@
 /.react-router/
 /build/
 
-.vercel/
 test-results/
 .wrangler/
 worker-configuration.d.ts

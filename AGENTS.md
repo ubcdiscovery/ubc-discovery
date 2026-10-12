@@ -19,7 +19,7 @@ This is a single-context repository using the root domain glossary and root ADR 
 ## Architecture
 
 - **Backend**: Python FastAPI in `backend/` — async SQLAlchemy + asyncpg
-- **Frontend**: React web app in `web/` — React Router 7 + React 19 + Tailwind CSS
+- **Frontend**: React web app in `web/` — React Router 8 SSR + React 19 + Tailwind CSS, hosted on Cloudflare Workers
 - **Database**: PostgreSQL 18.4 on AWS RDS
 - **AI**: AWS Bedrock Titan Embeddings for content-based event recommendations
 
@@ -74,6 +74,8 @@ web/
 │   ├── routes/                  # Discover, event detail, organizers, profile, saved, auth/onboarding
 │   ├── components/              # Web UI components
 │   └── lib/                     # API client, constants, date utilities
+├── workers/app.ts               # Cloudflare Worker SSR entry
+├── wrangler.jsonc               # Staging default + production (ubcdiscovery.com) Worker config
 ├── package.json
 └── vite.config.ts
 ```
@@ -90,7 +92,7 @@ web/
 - Recommender: Content-based event similarity using Bedrock Titan embeddings + vibe Jaccard weighted blend. Embeddings are pre-computed at event creation and stored as 1024-dimensional pgvector values.
 
 ### Frontend (Web)
-- React Router 7 routes live in `web/app/routes/`; shared web UI lives in `web/app/components/`.
+- React Router 8 routes live in `web/app/routes/`; shared web UI lives in `web/app/components/`.
 - Use PascalCase for shared component filenames and exported component identifiers in `web/app/components/` (for example, `EventCard.tsx` exports `EventCard`). Keep route module filenames in `web/app/routes/` lowercase/kebab-case.
 - Use pnpm for web dependencies and scripts (`pnpm install`, `pnpm run dev`, `pnpm run typecheck`).
 - Tailwind CSS is available through the React Router/Vite setup.
@@ -108,6 +110,8 @@ Tests use `DATABASE_URL` from `backend/.env`. Use a dedicated, empty test databa
 ## Deployment
 
 Pushes to `main` build the backend image in GitHub Actions and deploy it to AWS Lightsail. Infrastructure configuration lives in `infra/prod/`.
+
+The web frontend is a Cloudflare Worker, deployed only by the manual **Deploy Cloudflare production** workflow; merges never deploy it. See `docs/operations/cloudflare-production.md`.
 
 ## DB Credentials
 

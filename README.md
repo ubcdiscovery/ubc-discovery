@@ -34,7 +34,7 @@ Interests describe what a Member wants to explore. Vibes describe the feel or in
 ## Tech Stack
 
 - **Backend**: FastAPI, async SQLAlchemy, asyncpg, PostgreSQL
-- **Web frontend**: React Router 7, React 19, Tailwind CSS, Vite
+- **Web frontend**: React Router 8 SSR, React 19, Tailwind CSS, Vite+, hosted on Cloudflare Workers
 - **AI**: AWS titan embedding
 - **AWS**: S3, RDS, LightSail container
 

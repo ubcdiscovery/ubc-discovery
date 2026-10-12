@@ -37,10 +37,11 @@ pnpm run deploy:dry-run
 pnpm run deploy:staging
 ```
 
-The source Wrangler configuration targets **`ubc-discovery-web-staging`** only.
-It contains no production routes or custom domains. The Vite plugin generates
-`build/server/wrangler.json` and `.wrangler/deploy/config.json`; Wrangler deploys
-that generated build, not the uncompiled Worker source.
+The default Wrangler configuration targets **`ubc-discovery-web-staging`** on its
+Workers address, with no routes or custom domains. The `production` environment
+targets `ubc-discovery-web` and owns the `ubcdiscovery.com` custom domain. The Vite
+plugin generates `build/server/wrangler.json` and `.wrangler/deploy/config.json`;
+Wrangler deploys that generated build, not the uncompiled Worker source.
 
 Set the public `VITE_API_URL` and Firebase `VITE_*` values for staging before the
 build, and keep `VITE_AUTH_TEST_MODE` disabled. The manual **Deploy web Worker
@@ -51,8 +52,13 @@ staging** workflow uses the `cloudflare-staging` GitHub environment:
   `VITE_FIREBASE_APP_ID`.
 - Secret: `CLOUDFLARE_API_TOKEN`, scoped to deploying this account's Workers.
 
-Production deployment remains a separate coordinated cutover with API CORS, API
-URL, Firebase authorized domains and storage configuration verification.
+## Production
+
+Production is served only by the `ubc-discovery-web` Worker at
+`https://ubcdiscovery.com`. `www.ubcdiscovery.com` never reaches the Worker: a
+Cloudflare redirect rule on the zone sends it to the bare domain. Production is
+deployed with the API by the manual **Deploy Cloudflare production** workflow; see
+[Cloudflare production deployment](../docs/operations/cloudflare-production.md).
 
 See [Cloudflare React Router integration](https://developers.cloudflare.com/workers/framework-guides/web-apps/react-router/),
 [Vite plugin environment selection](https://developers.cloudflare.com/workers/vite-plugin/reference/cloudflare-environments/),
