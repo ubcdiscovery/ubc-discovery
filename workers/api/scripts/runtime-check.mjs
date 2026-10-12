@@ -53,7 +53,7 @@ try {
     signal: AbortSignal.timeout(30_000),
   });
   assert.equal(response.status, 200, `Runtime probe failed: ${output}`);
-  assert.deepEqual(await response.json(), { database: true, r2: true, auth: true, firebase: true });
+  assert.deepEqual(await response.json(), { database: true, r2: true, auth: true, vancouver: true, firebase: true });
   console.log('Workers runtime: pgvector transaction, Firebase X509/RS256, secret comparison, and local R2 passed.');
 } finally {
   if (worker && worker.exitCode === null) {

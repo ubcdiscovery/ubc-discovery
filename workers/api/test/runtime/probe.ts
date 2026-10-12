@@ -6,6 +6,7 @@ import { withDatabase, withTransaction } from '../../src/db';
 import { createFirebase } from '../../src/services/firebase';
 import { R2Storage } from '../../src/services/storage';
 import { hashSecret, verifySecret } from '../../src/http/auth';
+import { localDayBounds } from '../../src/services/candidate-publication';
 
 export default {
   async fetch(request: Request, env: ApiEnv): Promise<Response> {
@@ -39,6 +40,8 @@ export default {
       }), 'image/webp', 512);
       r2 = await storage.objectExists(key) && (await storage.getObjectBytes(key)).length === 3;
     } finally { await storage.deleteObject(key); }
-    return Response.json({ database, r2, auth, firebase: identity.uid === 'local-user' && customToken.uid === 'local-user' });
+    const [start, end] = localDayBounds(new Date('2026-11-01T20:00:00Z'));
+    const vancouver = start.toISOString() === '2026-11-01T07:00:00.000Z' && end.toISOString() === '2026-11-02T07:00:00.000Z';
+    return Response.json({ database, r2, auth, vancouver, firebase: identity.uid === 'local-user' && customToken.uid === 'local-user' });
   },
 } satisfies ExportedHandler<ApiEnv>;

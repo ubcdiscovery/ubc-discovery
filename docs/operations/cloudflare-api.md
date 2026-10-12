@@ -6,7 +6,7 @@ The new API is an Elysia TypeScript Worker in `workers/api/`. The first migratio
 
 Use Node 24 and pnpm. In `workers/api/`, run `pnpm install`, copy `.dev.vars.example` to `.dev.vars`, and run `pnpm dev`. Secrets and local Wrangler state are ignored. Use a disposable PostgreSQL database with pgvector, initialized using the existing Alembic migrations; never use the production database for tests.
 
-Run `pnpm check` and `pnpm build`. Database integration tests run when `TEST_DATABASE_URL` names a disposable database with the existing migrated schema. The schema is mapped into Drizzle without generating or applying a new migration. Existing Alembic migrations remain authoritative until an explicit migration-tool handoff.
+Run `pnpm check` and `pnpm build`. Database integration tests run when `TEST_DATABASE_URL` names a disposable localhost database with the existing migrated schema. With that same setting, run `pnpm test:runtime` to validate PostgreSQL/pgvector transactions, Firebase X509 verification and RS256 signing, secret comparison, R2 bindings and Vancouver calendar boundaries inside workerd. The harness uses synthetic keys and an isolated local R2 store, and is not a deployable entry point. The schema is mapped into Drizzle without generating or applying a new migration. Existing Alembic migrations remain authoritative until an explicit migration-tool handoff.
 
 The default configuration names a staging Worker and a staging R2 bucket. It does not alter the production API, the extraction Worker or its queue. Local Wrangler R2 operations use local storage unless remote bindings are explicitly configured.
 
@@ -20,6 +20,8 @@ Direct database origins use TLS with certificate verification by default, retain
 - Candidate publication currently uses a transaction-scoped advisory lock. Hyperdrive does not support advisory locks; publication must use the direct database connection, or an independently validated locking replacement, before cutover.
 - SES and Bedrock use signed HTTPS requests. Never log request bodies, authorization headers, private keys, OTPs or provider credentials.
 - S3's signed POST upload contract remains available during the API port. R2 upload and private-download contracts must be implemented and integrated with frontend and scraper callers before setting `STORAGE_PROVIDER=r2`.
+- Scalar query parameters retain the last repeated value and ignore unrelated parameters. Malformed JSON and validation failures return 422. Profile/candidate models that forbid extra fields remain strict; permissive Python models continue to ignore extras.
+- The Worker uses current `America/Vancouver` timezone data, including permanent UTC-7 after March 2026. Verify the old runtime's timezone data before comparing same-club calendar-day boundaries near midnight; stored event timestamps remain UTC.
 
 ## Delivery and cutover
 
@@ -39,3 +41,4 @@ Direct database origins use TLS with certificate verification by default, retain
 - [R2 presigned URL support](https://developers.cloudflare.com/r2/api/s3/presigned-urls/)
 - [Firebase token verification](https://firebase.google.com/docs/auth/admin/verify-id-tokens)
 - [Workers observability](https://developers.cloudflare.com/workers/observability/)
+- [B.C. permanent daylight saving time](https://news.gov.bc.ca/releases/2026AG0013-000209)
