@@ -115,7 +115,7 @@ export default function EventDetail() {
       )}
 
       {/* Mobile */}
-      <div className="md:hidden">
+      <div className="pb-24 md:hidden">
         <div className="px-4.5 pt-4.5">
           <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
           <h1 className="mt-3 mb-1.5 font-display font-extrabold text-4xl text-ink tracking-tight leading-none text-balance">
@@ -179,8 +179,8 @@ export default function EventDetail() {
           </span>
         </div>
 
-        {/* Bottom action bar */}
-        <div className="fixed bottom-0 inset-x-0 bg-bg border-t-2 border-ink px-4.5 py-3 pb-7 flex gap-2 md:hidden z-50">
+        {/* Reserve BottomTabs: 3.125rem controls/border plus its safe-area padding. */}
+        <div className="fixed bottom-[calc(3.125rem+max(1.75rem,env(safe-area-inset-bottom)))] inset-x-0 bg-bg border-t-2 border-ink px-4.5 py-3 pb-7 flex gap-2 md:hidden z-50">
           <SaveEventButton eventId={event.id} event={event} variant="bar" />
           {event.source_url && (
             <a

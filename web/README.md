@@ -1,33 +1,59 @@
-# UBC Discovery Frontend
+# UBC Discovery frontend
 
-React Router frontend
+React Router 8 with SSR, React 19 and Vite Plus. Both development and build preview
+run the server in the Cloudflare Workers runtime through the Cloudflare Vite plugin.
 
-## Getting Started
-
-### Installation
-
-Install the dependencies:
+## Local development
 
 ```bash
-pnpm install
-```
-
-### Development
-
-```bash
+pnpm install --frozen-lockfile
+cp .env.example .env
 pnpm dev
 ```
 
-Your application will be available at `http://localhost:5173`.
+The frontend runs at `http://localhost:5173`. Fill in the public Firebase web app
+configuration in `.env`; `VITE_API_URL` selects the existing HTTP API contract.
+These `VITE_*` settings are compiled into the browser assets at build time, so
+changing a Worker binding after deployment does not change the API URL or Firebase
+configuration.
 
-## Building for Production
+## Validation and preview
 
 ```bash
-pnpm build
+pnpm run lint
+pnpm run typecheck
+pnpm run build
+pnpm start
 ```
 
+`pnpm start` serves the built application locally at `http://127.0.0.1:4173`, including
+its Worker SSR entry and static assets. The existing `pnpm run test:e2e` suite builds
+and starts this same runtime with mocked API requests and explicit auth test mode.
 
-## Styling
+## Staging deployment
 
-Use [Tailwind CSS](https://tailwindcss.com/) 
+```bash
+pnpm run deploy:dry-run
+pnpm run deploy:staging
+```
 
+The source Wrangler configuration targets **`ubc-discovery-web-staging`** only.
+It contains no production routes or custom domains. The Vite plugin generates
+`build/server/wrangler.json` and `.wrangler/deploy/config.json`; Wrangler deploys
+that generated build, not the uncompiled Worker source.
+
+Set the public `VITE_API_URL` and Firebase `VITE_*` values for staging before the
+build, and keep `VITE_AUTH_TEST_MODE` disabled. The manual **Deploy web Worker
+staging** workflow uses the `cloudflare-staging` GitHub environment:
+
+- Variables: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_STAGING_API_URL`,
+  `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`,
+  `VITE_FIREBASE_APP_ID`.
+- Secret: `CLOUDFLARE_API_TOKEN`, scoped to deploying this account's Workers.
+
+Production deployment remains a separate coordinated cutover with API CORS, API
+URL, Firebase authorized domains and storage configuration verification.
+
+See [Cloudflare React Router integration](https://developers.cloudflare.com/workers/framework-guides/web-apps/react-router/),
+[Vite plugin environment selection](https://developers.cloudflare.com/workers/vite-plugin/reference/cloudflare-environments/),
+and [React Router typed context](https://reactrouter.com/api/utils/RouterContextProvider).
