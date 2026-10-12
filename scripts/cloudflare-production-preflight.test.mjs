@@ -87,7 +87,8 @@ test('web build defaults remain staged and extractor callback is deployable', ()
   assert.equal(web.env.production.name, 'ubc-discovery-web');
   assert.equal(web.env.production.account_id, account);
   assert.equal(web.env.production.assets.binding, 'ASSETS');
-  assert.equal(web.env.production.routes, undefined);
+  assert.equal(web.routes, undefined);
+  assert.deepEqual(web.env.production.routes, [{ pattern: 'ubcdiscovery.com', custom_domain: true, zone_id: 'bcd291566a7b602657d980a51d542c5f' }]);
   const extraction = JSON.parse(readFileSync(new URL('../workers/extraction/wrangler.jsonc', import.meta.url), 'utf8'));
   assert.equal(extraction.vars.DISCOVERY_API_URL, apiOrigin);
   assert.equal(extraction.name, 'ubc-discovery-extraction');

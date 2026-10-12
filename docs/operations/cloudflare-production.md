@@ -2,8 +2,8 @@
 
 The default API and web configurations remain staging. Production uses API
 `ubc-discovery-api`, web `ubc-discovery-web`, and private R2 bucket
-`ubc-discovery-media` in account `5637cded1864726ba930947d2f6138af`. No custom
-domain routes are configured yet. The production API origin is
+`ubc-discovery-media` in account `5637cded1864726ba930947d2f6138af`. The production web Worker owns the custom domain `ubcdiscovery.com`; staging
+remains on its own Workers address. The production API origin is
 `https://ubc-discovery-api.ubcdiscovery.workers.dev`; the shadow frontend is
 `https://ubc-discovery-web.ubcdiscovery.workers.dev`.
 
@@ -36,8 +36,10 @@ Dispatch the reviewed revision only after the coordinated write pause, database
 backup and final S3-to-R2 verification described in
 [the migration runbook](cloudflare-api.md#delivery-and-cutover). Bucket CORS,
 Firebase authorized domains and the production API's existing custom-token
-credentials must already be ready. The workflow does not copy data, apply schema
-migrations, change DNS, or retarget extraction consumers or scraper producers.
+credentials must already be ready. The workflow does not copy data, apply schema migrations, or retarget extraction
+consumers or scraper producers. Web deployment reconciles the checked-in
+`ubcdiscovery.com` custom domain; preserve the prior DNS records before the initial
+cutover and verify browser traffic against the production API afterward.
 Coordinate the existing extraction Worker separately after the API is ready:
 its checked-in callback now names the production API, and its existing queues,
 retry policy, cron and deployed secrets remain in place.
@@ -53,8 +55,9 @@ aws iam put-user-policy --user-name ubcdiscovery-backend \
 Validate a real 1024-dimensional embedding before cutover. IAM simulation alone does not prove runtime provider access. See [AWS identity policies](https://docs.aws.amazon.com/bedrock/latest/userguide/security_iam_id-based-policy-examples.html).
 
 Keep Lightsail/S3 available for the rollback window. The existing Lightsail
-deployment workflow remains in the repository and still responds to backend
-builds on main; avoid those deployments during cutover and the rollback window.
+deployment workflow remains in the repository but is disabled in GitHub for the
+rollback window. Keep it disabled while Cloudflare serves production; enable it
+only as part of a coordinated return to Python.
 Cloudflare production deployment is manual and never runs merely because a PR
 merges. Restore newly written R2 objects to S3 and verify them before routing
 writers back to Python, as described in the storage rollback procedure.
