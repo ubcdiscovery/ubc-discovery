@@ -242,22 +242,95 @@ describe('bounded migration concurrency', () => {
     const f = await concurrentFixture(8, index => new Promise((resolve, reject) => {
       controls.set(index, { resolve, reject }); if (controls.size === 2) waveReady();
     }));
+    const fetcher = f.deps.fetcher;
+    f.deps.fetcher = async (input, options) => {
+      const response = await fetcher(input, options);
+      if (input instanceof Request && new URL(input.url).pathname.endsWith('/0.webp')) return new Response(null, { status: 403 });
+      return response;
+    };
     let settled = false;
     const completion = migrateStorage({ ...f.options, concurrency: 2 }, f.deps).then(
       report => { settled = true; return { report }; }, error => { settled = true; return { error }; },
     );
-    await ready; controls.get(0).reject(new Error('private error from failed R2 request'));
+    await ready; controls.get(0).resolve();
     await new Promise(resolve => setTimeout(resolve, 20));
     expect(settled).toBe(false); expect(f.started).toEqual([0, 1]);
     expect(await readFile(f.sourceFiles.get(1))).toEqual(Buffer.from([1, 2, 3]));
     controls.get(1).resolve();
     const result = await completion;
-    expect(result.error.message).toBe('R2 S3 request failed; check credentials and connectivity');
+    expect(result.error.message).toBe('R2 S3 request failed (HTTP 403); check object and permissions');
     expect(f.started).toEqual([0, 1]);
     await expect(readFile(f.sourceFiles.get(1))).rejects.toMatchObject({ code: 'ENOENT' });
     const manifest = JSON.parse(await readFile(f.manifest, 'utf8'));
     expect(manifest.allVerified).toBe(false); expect(manifest.verifiedAt).toBeNull();
     expect(manifest.objects[f.items[1].Key].verified).toBe(true);
+    expect(f.deps.execute.mock.calls.filter(([, args]) => args[1] === 'list-objects-v2')).toHaveLength(1);
+  });
+});
+
+async function asyncSourceFixture(count, control) {
+  const f = await concurrentFixture(count);
+  const synchronousExecute = f.deps.execute;
+  const started = [], files = new Map();
+  let active = 0, peak = 0;
+  f.deps.executeAsync = vi.fn(async (program, args, options) => {
+    expect(program).toBe('aws'); expect(args.slice(0, 2)).toEqual(['s3api', 'get-object']);
+    expect(args[args.indexOf('--expected-bucket-owner') + 1]).toBe('123456789012');
+    expect(args[args.indexOf('--range') + 1]).toBe('bytes=0-5242880');
+    expect(options).toEqual({ encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+    const index = Number(args[args.indexOf('--key') + 1].match(/\/(\d+)\.webp$/)[1]);
+    expect(args[args.indexOf('--if-match') + 1]).toBe(f.items[index].ETag);
+    const path = args[args.indexOf('--output') - 1]; files.set(index, path);
+    started.push(index); active++; peak = Math.max(peak, active);
+    try {
+      // Emulate a subprocess creating its output before it has completed.
+      await writeFile(path, Buffer.from([index]));
+      if (control) await control(index);
+      else await new Promise(resolve => setTimeout(resolve, 8 - index % 5));
+      expect(await readFile(path)).toEqual(Buffer.from([index]));
+      return { stdout: synchronousExecute(program, args, options), stderr: '' };
+    } finally { active--; }
+  });
+  return { ...f, sourceStarted: started, asyncFiles: files, sourcePeak: () => peak };
+}
+
+describe('asynchronous source subprocesses', () => {
+  it.each([1, 4])('bounds concurrent AWS downloads to %s and retains complete verification', async concurrency => {
+    const f = await asyncSourceFixture(9);
+    const report = await migrateStorage({ ...f.options, concurrency }, f.deps);
+    expect(f.sourcePeak()).toBe(concurrency);
+    expect(f.sourceStarted).toHaveLength(9);
+    expect(new Set(f.asyncFiles.values()).size).toBe(9);
+    expect(f.deps.executeAsync).toHaveBeenCalledTimes(9);
+    expect(report).toMatchObject({ mode: 'verify', sourceStable: true, allVerified: true });
+    expect(report.verifiedAt).not.toBeNull();
+    expect(JSON.parse(await readFile(f.manifest, 'utf8'))).toEqual(report);
+    for (const path of f.asyncFiles.values()) await expect(readFile(path)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+  it('stops assignments on AWS failure and drains source subprocesses before removing files or rejecting', async () => {
+    const controls = new Map(); let waveReady;
+    const ready = new Promise(resolve => { waveReady = resolve; });
+    const f = await asyncSourceFixture(8, index => new Promise((resolve, reject) => {
+      controls.set(index, { resolve, reject }); if (controls.size === 2) waveReady();
+    }));
+    let settled = false;
+    const completion = migrateStorage({ ...f.options, concurrency: 2 }, f.deps).then(
+      report => { settled = true; return { report }; }, error => { settled = true; return { error }; },
+    );
+    await ready; controls.get(0).reject(new Error('private credentials captured in AWS stderr'));
+    await new Promise(resolve => setTimeout(resolve, 20));
+    expect(settled).toBe(false); expect(f.sourceStarted).toEqual([0, 1]);
+    expect(await readFile(f.asyncFiles.get(1))).toEqual(Buffer.from([1]));
+    controls.get(1).resolve();
+    const result = await completion;
+    expect(result.error.message).toBe('AWS command failed; check authentication and permissions');
+    expect(f.sourceStarted).toEqual([0, 1]);
+    expect(f.started).toEqual([1]);
+    for (const path of f.asyncFiles.values()) await expect(readFile(path)).rejects.toMatchObject({ code: 'ENOENT' });
+    const manifest = JSON.parse(await readFile(f.manifest, 'utf8'));
+    expect(manifest).toMatchObject({ allVerified: false, sourceStable: false, verifiedAt: null });
+    expect(manifest.objects[f.items[1].Key].verified).toBe(true);
+    expect(JSON.stringify(manifest) + JSON.stringify(f.log.mock.calls)).not.toContain('private credentials');
     expect(f.deps.execute.mock.calls.filter(([, args]) => args[1] === 'list-objects-v2')).toHaveLength(1);
   });
 });

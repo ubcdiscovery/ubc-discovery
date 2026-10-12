@@ -1,14 +1,15 @@
 // Explicit, resumable S3 -> R2 copy. Never deletes source or destination objects.
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdtemp, readFile, writeFile, rename, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { parseArgs } from 'node:util';
+import { parseArgs, promisify } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import { r2S3Transport } from './r2-s3.mjs';
 
 const maxBytes = 5 * 1024 * 1024;
+const execFileAsync = promisify(execFile);
 const metadataProperties = { ContentType: ['--content-type', 'content-type'], CacheControl: ['--cache-control', 'cache-control'],
   ContentDisposition: ['--content-disposition', 'content-disposition'], ContentEncoding: ['--content-encoding', 'content-encoding'],
   ContentLanguage: ['--content-language', 'content-language'], Expires: ['--expires', 'expires'] };
@@ -68,7 +69,7 @@ async function boundedDigest(response, limit) {
   return { size, sha256: digest.digest('hex') };
 }
 
-export async function migrateStorage(options, { execute = execFileSync, fetcher = fetch, environment = process.env, log = console.log } = {}) {
+export async function migrateStorage(options, { execute = execFileSync, executeAsync, fetcher = fetch, environment = process.env, log = console.log } = {}) {
   const { source, target, manifest, mode = 'inspect', 'cf-account': cfAccount } = options;
   const concurrency = Number(options.concurrency ?? 1);
   if (!Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 4) throw new Error('--concurrency must be an integer from 1 to 4');
@@ -82,6 +83,10 @@ export async function migrateStorage(options, { execute = execFileSync, fetcher 
   if (environment.CF_API_TOKEN) wranglerEnvironment.CLOUDFLARE_API_TOKEN = environment.CF_API_TOKEN;
   let token;
   let r2;
+  // Existing synchronous test executors remain usable. Real object downloads
+  // use asynchronous subprocesses within the same bounded worker pool.
+  const sourceExecute = executeAsync ?? (execute === execFileSync ? execFileAsync
+    : async (...args) => ({ stdout: execute(...args) }));
   function command(program, args, commandOptions) {
     // Never propagate captured credentials or CLI stderr in subprocess exceptions.
     try { return execute(program, args, commandOptions); }
@@ -91,6 +96,15 @@ export async function migrateStorage(options, { execute = execFileSync, fetcher 
     const output = command('aws', [...args, '--output', 'json', '--no-cli-pager'], {
       encoding: 'utf8', maxBuffer: 16 * 1024 * 1024,
     });
+    try { return output.trim() ? JSON.parse(output) : {}; } catch { throw new Error('Invalid AWS CLI response'); }
+  }
+  async function awsSource(args) {
+    let output;
+    try {
+      ({ stdout: output } = await sourceExecute('aws', [...args, '--output', 'json', '--no-cli-pager'], {
+        encoding: 'utf8', maxBuffer: 16 * 1024 * 1024,
+      }));
+    } catch { throw new Error('AWS command failed; check authentication and permissions'); }
     try { return output.trim() ? JSON.parse(output) : {}; } catch { throw new Error('Invalid AWS CLI response'); }
   }
   function wrangler(args) {
@@ -185,7 +199,7 @@ export async function migrateStorage(options, { execute = execFileSync, fetcher 
             return;
           }
         }
-        const metadata = aws(['s3api', 'get-object', ...sourceOwner, '--key', item.Key, '--if-match', item.ETag, '--range', `bytes=0-${maxBytes}`, sourceFile]);
+        const metadata = await awsSource(['s3api', 'get-object', ...sourceOwner, '--key', item.Key, '--if-match', item.ETag, '--range', `bytes=0-${maxBytes}`, sourceFile]);
         if (metadata.ETag !== item.ETag || metadata.ContentLength !== item.Size || metadata.LastModified !== item.LastModified) {
           throw new Error(`Source changed during copy: ${item.Key}; refresh inventory and retry`);
         }
