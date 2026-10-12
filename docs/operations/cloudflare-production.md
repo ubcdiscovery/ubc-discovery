@@ -38,11 +38,13 @@ backup and final S3-to-R2 verification described in
 Firebase authorized domains and the production API's existing custom-token
 credentials must already be ready. The workflow does not copy data, apply schema migrations, or retarget extraction
 consumers or scraper producers. Web deployment reconciles the checked-in
-`ubcdiscovery.com` custom domain; preserve the prior DNS records before the initial
-cutover and verify browser traffic against the production API afterward.
+`ubcdiscovery.com` custom domain; verify browser traffic against the production API
+afterward.
 Coordinate the existing extraction Worker separately after the API is ready:
 its checked-in callback now names the production API, and its existing queues,
 retry policy, cron and deployed secrets remain in place.
+
+`www.ubcdiscovery.com` is configured as Cloudflare rule to redirect to `ubcdiscovery.com`
 
 The retained AWS runtime identity needs `bedrock:InvokeModel` for the existing Titan embedding model. Its least-privilege policy is [titan-embeddings.json](../../infra/prod/policies/titan-embeddings.json); apply it separately from the existing SES/S3 policies:
 
