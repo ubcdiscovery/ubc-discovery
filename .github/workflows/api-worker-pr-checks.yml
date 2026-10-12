@@ -1,0 +1,62 @@
+name: API Worker PR checks
+
+on:
+  pull_request:
+    paths:
+      - workers/api/**
+      - backend/alembic/**
+      - .github/workflows/api-worker-pr-checks.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-worker-pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: API typecheck, tests, and Worker build
+    runs-on: ubuntu-24.04
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ubc_discovery_test
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18@sha256:2358fcba361ed2233a5ed81b5fe4ca779ccb304120ce531a3bf51c0ed7e2bc11
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ubc_discovery_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ubc_discovery_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: workers/api
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 12.11.2
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: workers/api/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.13.0"
+          enable-cache: true
+      - name: Apply existing schema to disposable test database
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/ubc_discovery_test
+          DATABASE_SSL: "false"
+        run: uv run --locked alembic upgrade head
+      - run: pnpm run check
+      - run: pnpm run build

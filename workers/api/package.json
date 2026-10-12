@@ -1,0 +1,33 @@
+{
+  "name": "ubc-discovery-api",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.11.2",
+  "engines": { "node": "24.x" },
+  "scripts": {
+    "dev": "wrangler dev",
+    "types": "wrangler types worker-configuration.d.ts --env-interface CloudflareBindings --include-runtime=false --strict-vars=false",
+    "typecheck": "pnpm run types && tsc --noEmit",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm test",
+    "build": "wrangler deploy --dry-run",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@elysiajs/openapi": "1.4.16",
+    "@sinclair/typebox": "0.34.52",
+    "aws4fetch": "1.0.20",
+    "drizzle-orm": "0.45.4",
+    "elysia": "1.4.30",
+    "jose": "6.2.12",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261012.1",
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "0.31.11",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3",
+    "wrangler": "4.149.0"
+  }
+}
