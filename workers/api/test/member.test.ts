@@ -311,6 +311,22 @@ describe.skipIf(!testUrl)('member authentication, onboarding and profile contrac
     expect(value.ubc_verified).toBe(true);
   });
 
+  it('returns a conflict for another Firebase identity using an existing member email without changing that member', async () => {
+    const existing = await member();
+    const conflicting = identity(existing.identity.email);
+    const response = await app(serviceMocks().factory).handle(request('/users/onboarding', {
+      method: 'POST', uid: conflicting.uid, body: { preferred_name: 'Conflicting Member' },
+    }));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ detail: 'User already exists' });
+    await withDatabase(env, async db => {
+      const matching = await db.select().from(users).where(eq(users.email, existing.identity.email));
+      expect(matching).toHaveLength(1);
+      expect(matching[0]).toMatchObject({ id: existing.row.id, firebaseUid: existing.identity.uid, preferredName: 'Fixture Member' });
+      expect(await db.select().from(users).where(eq(users.firebaseUid, conflicting.uid))).toHaveLength(0);
+    });
+  });
+
   it('creates exactly one profile when onboarding requests race', async () => {
     const who = identity();
     const api = app(serviceMocks().factory);
