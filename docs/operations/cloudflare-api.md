@@ -35,16 +35,30 @@ Upload targets return `method: "PUT"`, empty `fields`, and a required content-ty
 
 Configure `R2_ACCOUNT_ID` and `R2_BUCKET_NAME` for the same account/bucket as the `R2_BUCKET` binding. Store dedicated, bucket-scoped Object Read & Write credentials in Wrangler secrets `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`; never use AWS S3 credentials for R2. Configure [bucket CORS](https://developers.cloudflare.com/r2/buckets/cors/) to allow PUT and Content-Type from the deployed frontend origin and the documented local development origins. Presigned URLs can be reused until expiry, so image keys and existing ownership/publication checks continue to define the authorization boundary.
 
-The resumable copy helper runs from `workers/api/` using the logged-in AWS and Wrangler CLIs:
+The resumable copy runs locally from `workers/api/`. Use the logged-in AWS and Wrangler CLIs and supply bucket-scoped `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` through the process environment. Neither credentials nor signed URLs belong in the manifest or logs.
 
 ```bash
 node scripts/migrate-storage.mjs --source S3_BUCKET --target R2_BUCKET \
-  --manifest /private/path/storage-manifest.json --mode inspect \
-  --cf-account CLOUDFLARE_ACCOUNT_ID
-# Repeat with --mode copy, then --mode verify after the final write pause.
+  --manifest /private/path/storage-manifest.json --mode copy \
+  --cf-account CLOUDFLARE_ACCOUNT_ID --concurrency 4
+# Repeat with --mode verify after all writers are paused.
 ```
 
-The helper preserves image keys and supported HTTP metadata, compares object bytes using SHA-256, checkpoints a private manifest, checks that the source inventory stayed stable, and never deletes objects. Zero-byte S3 folder markers are listed separately and skipped. Custom S3 metadata and unsupported image types/sizes require explicit handling instead of silent loss. Copy and verify require an explicit 32-character Cloudflare account ID, confirm that account through the API, and pin Wrangler and REST reads to the same captured bearer token. The manifest records the account and verifies bytes, size, MIME and supported HTTP metadata through the [R2 object REST API](https://developers.cloudflare.com/api/resources/r2/subresources/buckets/subresources/objects/methods/get/). Encoded images are rejected because the serving route does not support them. Source modification timestamps participate in resume and inventory checks, including metadata-only updates. Authentication uses the logged-in [Wrangler bearer token](https://developers.cloudflare.com/workers/wrangler/commands/general/#auth-token) or `CLOUDFLARE_API_TOKEN` (also accepts `CF_API_TOKEN`); it requires account read and R2 object read/write permissions. Tokens are captured privately and never written to the manifest or logs. A resumed copy skips previously verified unchanged source entries; the final `verify` always reads both stores again. Require a successful final `verify` run with `mode: "verify"`, `allVerified: true`, and its new `verifiedAt` timestamp as the cutover gate. Every new attempt invalidates an earlier gate before external calls; a copy checkpoint has no final verification timestamp.
+The helper preserves keys and supported HTTP metadata, verifies SHA-256 and size through the R2 S3 endpoint, and checkpoints privately without deleting objects. It skips zero-byte folder markers and rejects unsupported image types, sizes, encodings and custom metadata. Concurrency defaults to one and is bounded at four; a failed task stops new assignments and waits for active tasks before cleanup. Resume re-reads previously copied destination objects. Final verification re-reads both stores and checks the source inventory again.
+
+Keep S3 and R2 writers paused throughout final verification and cutover, including scraper triggers, extraction consumers and API writes. Wait for previously issued upload URLs to expire before the final copy. A valid cutover manifest requires `verificationVersion: 3`, `mode: "verify"`, `sourceStable: true`, `allVerified: true` and a fresh `verifiedAt`. Every new attempt invalidates the old gate before external calls. Management download headers are unsuitable for metadata verification; both helpers use the [R2 S3 API](https://developers.cloudflare.com/r2/api/s3/api/) to read stored metadata.
+
+Rollback uses the current R2 inventory, including images uploaded after cutover. Pause all writers, wait for upload URLs to expire, and run:
+
+```bash
+node scripts/restore-storage.mjs --source ubc-discovery-media --target S3_BUCKET \
+  --manifest /private/path/rollback-manifest.json --mode copy \
+  --cf-account CLOUDFLARE_ACCOUNT_ID \
+  --aws-account 144410073872 --aws-region us-west-2
+# Repeat with --mode verify before restoring Python callers.
+```
+
+The rollback helper preserves bytes and supported metadata, verifies every destination image and fences the final R2 inventory. Restore the old API/caller versions only after successful verification. Storage copies leave both buckets intact; application writes use the same production Neon database, so no database restore is required for a hosting rollback.
 
 ## Delivery and cutover
 

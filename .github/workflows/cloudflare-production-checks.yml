@@ -1,0 +1,27 @@
+name: Cloudflare production configuration checks
+
+on:
+  pull_request:
+    paths:
+      - scripts/cloudflare-production-*.mjs
+      - workers/api/wrangler.jsonc
+      - web/wrangler.jsonc
+      - workers/extraction/wrangler.jsonc
+      - .github/workflows/cloudflare-production-*.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-production-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: node --test scripts/cloudflare-production-preflight.test.mjs
