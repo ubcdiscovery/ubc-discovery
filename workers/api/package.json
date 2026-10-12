@@ -12,6 +12,9 @@
     "test:runtime": "node scripts/runtime-check.mjs",
     "check": "pnpm typecheck && pnpm test",
     "build": "wrangler deploy --dry-run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:check": "drizzle-kit check",
     "deploy": "wrangler deploy"
   },
   "dependencies": {
