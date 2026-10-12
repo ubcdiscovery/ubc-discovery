@@ -1,4 +1,5 @@
 import { Elysia, t } from 'elysia';
+import { presentUpload } from '../../presenters/storage';
 import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker';
 import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { events, eventAuditLogs as audits, type Event } from '../../db/schema';
@@ -6,6 +7,7 @@ import { integerSetting, type ApiEnv } from '../../env';
 import { ApiError } from '../../http/errors';
 import { presentAdminEvent, eventImageKey } from '../../presenters/events';
 import { createEventSchema, updateEventSchema, parseDate, checkEndDate, type EventUpdate } from '../../schemas/events';
+import { uploadFileSize } from '../../schemas/upload-size';
 import type { ServicesFactory } from '../../services';
 import { createCanonicalEvent, addEventAudit, eventSnapshot, embeddingFor } from '../../services/event-administration';
 import { adminTransaction } from './common';
@@ -61,9 +63,10 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
   const [event] = await tx.select().from(events).where(eq(events.id, params.event_id));
   if (!event) throw new ApiError(404, 'Event not found');
   const maxBytes = integerSetting(env.EVENT_IMAGE_MAX_BYTES, 3 * 1024 * 1024);
-  const upload = await services.storage.generatePresignedUpload({ fileKey: eventImageKey(event.id), contentType: 'image/webp', maxFileSizeBytes: maxBytes });
+  const fileSizeBytes = uploadFileSize(request, maxBytes, env.STORAGE_PROVIDER === 'r2');
+  const upload = await services.storage.generatePresignedUpload({ fileKey: eventImageKey(event.id), contentType: 'image/webp', maxFileSizeBytes: maxBytes, fileSizeBytes });
   await addEventAudit(tx, event, actor, 'image_upload', null, { event_picture_key: upload.file_key }, services.now());
-  return { upload_url: upload.url, fields: upload.fields, file_key: upload.file_key, max_file_size_bytes: maxBytes };
+  return presentUpload(upload, maxBytes);
  }), { parse: 'none', detail: { tags: ['Admin Events'] } });
  for (const [path, archived] of [['archive', true], ['restore', false]] as const) {
   routes.post(`/:event_id/${path}`, ({ request, params }) => adminTransaction(env, request, servicesFactory, async (tx, actor, services) => {

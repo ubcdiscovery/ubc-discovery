@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm';
+import { presentUpload } from '../presenters/storage';
 import { eventListingCandidates as candidates, eventListingCandidateIngestionAudits as audits, type EventListingCandidate } from '../db/schema';
 import type { DbTransaction } from '../db';
 import type { CandidateIngestionInput } from '../schemas/candidates';
@@ -15,7 +16,7 @@ export function candidateImageKey(id: string, index: number, type: keyof typeof 
  if (index < 0 || index >= 10 || !Number.isInteger(index)) throw new ApiError(422, 'image index is out of range');
  return `candidates/${id}/${String(index).padStart(2, '0')}.${extensions[type]}`;
 }
-export async function ingestCandidate(tx: DbTransaction, body: CandidateIngestionInput, credential: IngestionCredential, services: RequestServices, env: ApiEnv) {
+export async function ingestCandidate(tx: DbTransaction, body: CandidateIngestionInput, credential: IngestionCredential, services: RequestServices, env: ApiEnv, fileSizes?: number[]) {
  const values = { description: (body.description ?? '').trim(), sourceType: body.source_type.trim(), externalSourceId: body.external_source_id.trim(),
   sourceAccount: body.source_account.trim(), sourceUrl: body.source_url?.trim() ?? null, postedAt: parseDate(body.posted_at) };
  if (!values.sourceType || !values.externalSourceId || !values.sourceAccount) throw new ApiError(422, 'field must contain text');
@@ -49,8 +50,8 @@ export async function ingestCandidate(tx: DbTransaction, body: CandidateIngestio
  }
  const maxFileSizeBytes = integerSetting(env.CANDIDATE_IMAGE_MAX_BYTES, 5 * 1024 * 1024);
  const uploads = candidate!.extractedAt ? [] : await Promise.all((candidate!.imageKeys ?? []).map(async (key, index) => {
-  const upload = await services.storage.generatePresignedUpload({ fileKey: key, contentType: body.image_content_types[index]!, maxFileSizeBytes });
-  return { upload_url: upload.url, fields: upload.fields, file_key: upload.file_key, max_file_size_bytes: maxFileSizeBytes };
+  const upload = await services.storage.generatePresignedUpload({ fileKey: key, contentType: body.image_content_types[index]!, maxFileSizeBytes, fileSizeBytes: fileSizes?.[index] });
+  return presentUpload(upload, maxFileSizeBytes);
  }));
  const [audit] = await tx.insert(audits).values({ candidateId: candidate!.id, sourceType: values.sourceType, externalSourceId: values.externalSourceId,
   outcome, actorType: 'api_key', actorId: credential.actorId, credentialLabel: credential.name, receivedAt: services.now() }).returning();

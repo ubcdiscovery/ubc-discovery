@@ -131,8 +131,11 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(data),
       }),
-    presignedUpload: () =>
-      authenticatedApiFetch<PresignedUploadResponse>("/users/me/presigned-upload", {}),
+    presignedUpload: (fileSizeBytes: number) =>
+      authenticatedApiFetch<PresignedUploadResponse>(
+        `/users/me/presigned-upload?file_size_bytes=${fileSizeBytes}`,
+        {},
+      ),
   },
   admin: {
     events: {
@@ -173,9 +176,9 @@ export const api = {
             created_at: string;
           }>;
         }>(`/admin/events/${encodeURIComponent(id)}/audit`),
-      presignedUpload: (id: string) =>
+      presignedUpload: (id: string, fileSizeBytes: number) =>
         authenticatedApiFetch<PresignedUploadResponse>(
-          `/admin/events/${encodeURIComponent(id)}/presigned-upload`,
+          `/admin/events/${encodeURIComponent(id)}/presigned-upload?file_size_bytes=${fileSizeBytes}`,
           { method: "POST" },
         ),
     },

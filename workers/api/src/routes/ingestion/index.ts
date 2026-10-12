@@ -3,10 +3,11 @@ import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker';
 import { and, eq, isNull } from 'drizzle-orm';
 import { withDatabase } from '../../db';
 import { eventListingCandidates as candidates } from '../../db/schema';
-import type { ApiEnv } from '../../env';
+import { integerSetting, type ApiEnv } from '../../env';
 import { requireApiCredential } from '../../http/auth';
 import { ApiError } from '../../http/errors';
 import { candidateIngestionSchema } from '../../schemas/candidates';
+import { candidateImageFileSizes } from '../../schemas/upload-size';
 import { createServices, type ServicesFactory } from '../../services';
 import { ingestCandidate } from '../../services/candidate-ingestion';
 import { captureTimedOut, dispatchCandidates } from '../../services/extraction-queue';
@@ -18,7 +19,9 @@ export function createIngestionRoutes(env: ApiEnv, servicesFactory: ServicesFact
   return withDatabase(env, async db => {
    const result = await db.transaction(async tx => {
     const credential = await requireApiCredential(tx, request, 'candidates:ingest', services.now());
-    return ingestCandidate(tx, body, credential, services, env);
+    const sizes = candidateImageFileSizes(request, body.image_content_types.length,
+     integerSetting(env.CANDIDATE_IMAGE_MAX_BYTES, 5 * 1024 * 1024), env.STORAGE_PROVIDER === 'r2');
+    return ingestCandidate(tx, body, credential, services, env, sizes);
    });
    set.status = result.outcome === 'created' ? 201 : 200;
    return result;

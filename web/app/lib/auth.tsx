@@ -10,6 +10,7 @@ import {
 } from "react";
 import { api, ApiError, type UserResponse } from "~/lib/api";
 import { resizeImage } from "~/lib/image";
+import { uploadImage } from "~/lib/image-upload";
 import {
   getFirebaseConfigError,
   signInWithCustomToken as firebaseSignInWithCustomToken,
@@ -191,23 +192,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (state.status !== "member") {
         throw new Error("Sign in before updating your profile photo.");
       }
+      if (!file.size) throw new Error("Choose a non-empty image file.");
       const resized = await resizeImage(file);
-      const { upload_url, fields, max_file_size_bytes } = await api.users.presignedUpload();
-      if (resized.size > max_file_size_bytes) {
+      if (!resized.size) throw new Error("Profile photo is empty after compression.");
+      const target = await api.users.presignedUpload(resized.size);
+      if (resized.size > target.max_file_size_bytes) {
         throw new Error("Profile photo is too large after compression.");
       }
-      const formData = new FormData();
-      for (const [key, value] of Object.entries(fields)) {
-        formData.append(key, value);
-      }
-      formData.append("file", resized);
-      const upload = await fetch(upload_url, {
-        method: "POST",
-        body: formData,
-      });
-      if (!upload.ok) {
-        const text = await upload.text();
-        console.error("S3 upload failed:", upload.status, text);
+      try { await uploadImage(target, resized); }
+      catch {
         throw new Error("Profile photo upload failed.");
       }
       return refreshProfile();

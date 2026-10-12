@@ -81,6 +81,8 @@ export interface PresignedUploadResponse {
   fields: Record<string, string>;
   file_key: string;
   max_file_size_bytes: number;
+  method?: "POST" | "PUT";
+  headers?: Record<string, string>;
 }
 
 export interface SavedEventResponse {

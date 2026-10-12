@@ -9,6 +9,7 @@ import { createMemberRoutes } from "./routes/users";
 import { createAdminRoutes } from "./routes/admin";
 import { createIngestionRoutes } from "./routes/ingestion";
 import { createExtractionRoutes } from "./routes/extraction";
+import { createStorageRoutes } from "./routes/storage";
 import { createServices, type ServicesFactory } from "./services";
 
 function corsOrigin(env: ApiEnv, request: Request): string | null {
@@ -65,5 +66,6 @@ export function createApp(env: ApiEnv, servicesFactory: ServicesFactory = () => 
     .use(createAdminRoutes(env, servicesFactory))
     .use(createIngestionRoutes(env, servicesFactory))
     .use(createExtractionRoutes(env, servicesFactory))
+    .use(createStorageRoutes(env))
     .compile();
 }

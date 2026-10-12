@@ -1,6 +1,8 @@
+import { AwsClient } from 'aws4fetch';
 import type { ApiEnv } from '../env';
 import { ApiError } from '../http/errors';
 import { awsCredentials, awsRequest, createAwsClient, readBoundedBytes, signPostPolicy, type Fetcher } from './aws';
+import { signStorageCapability, storageApiBase } from './storage-capabilities';
 
 export const PRESIGNED_DOWNLOAD_EXPIRES_IN = 3600;
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -8,11 +10,14 @@ export interface PresignedUpload {
   url: string;
   fields: Record<string, string>;
   file_key: string;
+  method?: 'POST' | 'PUT';
+  headers?: Record<string, string>;
 }
 export interface UploadOptions {
   contentType: string;
   fileKey: string;
   maxFileSizeBytes: number;
+  fileSizeBytes?: number;
 }
 export interface ObjectStorage {
   publicUrl(fileKey: string): string;
@@ -158,7 +163,9 @@ export class R2Storage implements ObjectStorage {
     return this.env.R2_BUCKET;
   }
 
-  publicUrl(fileKey: string) { return publicObjectUrl(this.env.R2_PUBLIC_BASE_URL, fileKey); }
+  publicUrl(fileKey: string) {
+    return publicObjectUrl(`${storageApiBase(this.env)}/media/public`, fileKey);
+  }
 
   async objectExists(fileKey: string) {
     validateStorageKey(fileKey);
@@ -197,35 +204,33 @@ export class R2Storage implements ObjectStorage {
     if (!result) throw new ApiError(502, 'Storage copy failed');
   }
 
-  async putUploadedImage(fileKey: string, request: Request, contentType: string, maxFileSizeBytes: number): Promise<void> {
+  async generatePresignedDownloadUrl(fileKey: string, expiresIn = PRESIGNED_DOWNLOAD_EXPIRES_IN): Promise<string> {
+    validateStorageKey(fileKey);
+    const token = await signStorageCapability(this.env, { operation: 'download', key: fileKey }, expiresIn);
+    return `${storageApiBase(this.env)}/media/private?token=${encodeURIComponent(token)}`;
+  }
+
+  async generatePresignedUpload({ contentType, fileKey, maxFileSizeBytes, fileSizeBytes }: UploadOptions): Promise<PresignedUpload> {
     validateStorageKey(fileKey);
     imageLimit(maxFileSizeBytes);
-    const mimeType = request.headers.get('Content-Type')?.split(';', 1)[0]?.trim().toLowerCase();
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(contentType) || mimeType !== contentType) {
-      await request.body?.cancel();
-      throw new ApiError(400, 'Invalid image content type');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(contentType)) throw new ApiError(400, 'Invalid image content type');
+    if (!Number.isSafeInteger(fileSizeBytes) || fileSizeBytes! < 1 || fileSizeBytes! > maxFileSizeBytes) {
+      throw new ApiError(400, 'Invalid image file size');
     }
-    const declaredLength = request.headers.get('Content-Length');
-    if (declaredLength !== null && (!/^\d+$/.test(declaredLength) || Number(declaredLength) > maxFileSizeBytes)) {
-      await request.body?.cancel();
-      throw new ApiError(413, 'File exceeds the allowed size');
-    }
-    // Buffer only the bounded image (at most 5 MiB) so rejected streams never
-    // leave an uploaded object. Declared Content-Length is never trusted alone.
-    const bytes = await readBoundedBytes(request.body, maxFileSizeBytes);
-    if (bytes.length === 0) throw new ApiError(400, 'Image must not be empty');
-    const result = await this.bucket().put(fileKey, bytes, { httpMetadata: { contentType } });
-    if (!result) throw new ApiError(502, 'Storage upload failed');
-  }
-
-  generatePresignedDownloadUrl(_fileKey: string, _expiresIn = PRESIGNED_DOWNLOAD_EXPIRES_IN): Promise<string> {
-    // A Workers binding has no S3 signing credential. The private download route
-    // and its short-lived capability must be implemented before R2 cutover.
-    throw new ApiError(501, 'R2 private download endpoint is not configured');
-  }
-
-  generatePresignedUpload(_options: UploadOptions): Promise<PresignedUpload> {
-    throw new ApiError(501, 'R2 upload endpoint is not configured');
+    const { R2_ACCOUNT_ID: account, R2_BUCKET_NAME: bucket, R2_ACCESS_KEY_ID: accessKeyId, R2_SECRET_ACCESS_KEY: secretAccessKey } = this.env;
+    if (!account || !/^[a-f0-9]{32}$/.test(account) || !bucket || !/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(bucket)
+      || !accessKeyId || !secretAccessKey) throw new ApiError(503, 'R2 upload signing is not configured');
+    const url = new URL(`https://${account}.r2.cloudflarestorage.com/${bucket}/${encodeKey(fileKey)}`);
+    url.searchParams.set('X-Amz-Expires', '300');
+    const signed = await new AwsClient({ accessKeyId, secretAccessKey, service: 's3', region: 'auto' }).sign(url.toString(), {
+      method: 'PUT', headers: { 'content-type': contentType, 'content-length': String(fileSizeBytes) },
+      // aws4fetch otherwise excludes Content-Length. R2 must verify the exact
+      // length, not merely trust the size supplied by an authorized client.
+      aws: { signQuery: true, allHeaders: true },
+    });
+    // Browsers forbid explicitly setting Content-Length; their Blob/File body
+    // supplies it automatically. Return only the header the caller must set.
+    return { url: signed.url, fields: {}, file_key: fileKey, method: 'PUT', headers: { 'content-type': contentType } };
   }
 }
 

@@ -45,29 +45,41 @@ describe('S3 rollback storage', () => {
   });
 });
 
-describe('R2 bounded image upload', () => {
-  function setup() {
+describe('R2 bounded image reads and publication copies', () => {
+  function setup(bytes: Uint8Array<ArrayBuffer>, reportedSize = bytes.length) {
     const put = vi.fn<R2Bucket['put']>().mockResolvedValue({ key: 'image.jpg' } as R2Object);
+    const response = new Response(bytes);
+    const body = response.body!;
+    const cancel = vi.spyOn(body, 'cancel');
+    const object: R2ObjectBody = {
+      key: 'image.png', version: 'fixture', size: reportedSize, etag: 'fixture', httpEtag: '"fixture"',
+      uploaded: new Date(), storageClass: 'Standard', checksums: { toJSON: () => ({}) }, body,
+      get bodyUsed() { return response.bodyUsed; },
+      arrayBuffer: () => response.arrayBuffer(), bytes: () => response.bytes(), text: () => response.text(),
+      json: <T>() => response.json() as Promise<T>, blob: () => response.blob(),
+      writeHttpMetadata: headers => headers.set('content-type', 'image/png'),
+      httpMetadata: { contentType: 'image/png', cacheControl: 'max-age=60' }, customMetadata: { provenance: 'fixture' },
+    };
+    const get = vi.fn<R2Bucket['get']>().mockResolvedValue(object);
     const unused = () => { throw new Error('Unexpected R2 operation'); };
-    const bucket: R2Bucket = { put, head: unused, get: unused, delete: unused, list: unused, createMultipartUpload: unused, resumeMultipartUpload: unused };
-    return { storage: new R2Storage({ ...env, R2_BUCKET: bucket }), put };
+    const bucket: R2Bucket = { put, head: unused, get, delete: unused, list: unused, createMultipartUpload: unused, resumeMultipartUpload: unused };
+    return { storage: new R2Storage({ ...env, R2_BUCKET: bucket }), put, get, cancel, body };
   }
-  it('checks actual bytes rather than trusting a forged length header', async () => {
-    const { storage, put } = setup();
-    const request = new Request('https://api.example.com/upload', { method: 'PUT', headers: { 'Content-Type': 'image/jpeg', 'Content-Length': '1' }, body: new Uint8Array(10) });
-    await expect(storage.putUploadedImage('image.jpg', request, 'image/jpeg', 5)).rejects.toMatchObject({ status: 413 });
-    expect(put).not.toHaveBeenCalled();
+  it('bounds actual downloaded bytes even when storage metadata understates size', async () => {
+    const { storage } = setup(new Uint8Array(10), 1);
+    await expect(storage.getObjectBytes('image.jpg', 5)).rejects.toMatchObject({ status: 413 });
   });
-  it('rejects empty bodies and mismatched content types before writing', async () => {
-    const { storage, put } = setup();
-    await expect(storage.putUploadedImage('image.jpg', new Request('https://api.example.com/upload', { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' } }), 'image/jpeg', 5)).rejects.toMatchObject({ status: 400 });
-    await expect(storage.putUploadedImage('image.jpg', new Request('https://api.example.com/upload', { method: 'PUT', headers: { 'Content-Type': 'image/svg+xml' }, body: '<svg/>' }), 'image/jpeg', 100)).rejects.toMatchObject({ status: 400 });
+  it('rejects oversized publication copies before writing and releases the source stream', async () => {
+    const { storage, put, cancel } = setup(new Uint8Array([1]), 5 * 1024 * 1024 + 1);
+    await expect(storage.copyObject('candidates/one.png', 'event-pictures/one.png')).rejects.toMatchObject({ status: 413 });
     expect(put).not.toHaveBeenCalled();
+    expect(cancel).toHaveBeenCalledOnce();
   });
-  it('writes a validated bounded image with its expected metadata', async () => {
-    const { storage, put } = setup();
-    const request = new Request('https://api.example.com/upload', { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: new Uint8Array([1, 2, 3]) });
-    await storage.putUploadedImage('image.png', request, 'image/png', 3);
-    expect(put).toHaveBeenCalledWith('image.png', new Uint8Array([1, 2, 3]), { httpMetadata: { contentType: 'image/png' } });
+  it('preserves HTTP and custom metadata when publishing private evidence', async () => {
+    const { storage, put, body } = setup(new Uint8Array([1, 2, 3]));
+    await storage.copyObject('candidates/one.png', 'event-pictures/one.png');
+    expect(put).toHaveBeenCalledWith('event-pictures/one.png', body, {
+      httpMetadata: { contentType: 'image/png', cacheControl: 'max-age=60' }, customMetadata: { provenance: 'fixture' },
+    });
   });
 });
