@@ -31,30 +31,10 @@ Interests describe what a Member wants to explore. Vibes describe the feel or in
 - **Saved**: member-only saved Event Listings.
 - **Profile**: member profile, interests, UBC verification, and settings.
 
-## Tech Stack
+## How It Works
 
-- **Backend**: FastAPI, async SQLAlchemy, asyncpg, PostgreSQL
-- **Web frontend**: React Router 8 SSR, React 19, Tailwind CSS, Vite+, hosted on Cloudflare Workers
-- **AI**: AWS titan embedding
-- **AWS**: S3, RDS, LightSail container
+UBC Discovery is a web app at [ubcdiscovery.com](https://ubcdiscovery.com). It runs on Cloudflare Workers, stores data in PostgreSQL, and gathers club events from public posts that are extracted with AI and then published automatically or reviewed by an administrator. Recommendations compare events by their content and vibes.
 
-## Development
+## Contributing
 
-See [`backend/README.md`](backend/README.md) for backend setup, AWS credentials, Git hooks, and development commands.
-
-### Web
-
-```bash
-cd web
-pnpm install
-pnpm dev
-```
-
-The web app runs at `http://localhost:5173`.
-
-## Testing
-
-```bash
-cd backend
-uv run pytest tests/ -v
-```
+See [`AGENTS.md`](AGENTS.md) to set up the project and start working on it. Domain vocabulary lives in [`CONTEXT.md`](CONTEXT.md).
