@@ -54,11 +54,7 @@ staging** workflow uses the `cloudflare-staging` GitHub environment:
 
 ## Production
 
-Production is served only by the `ubc-discovery-web` Worker at
-`https://ubcdiscovery.com`. `www.ubcdiscovery.com` never reaches the Worker: a
-Cloudflare redirect rule on the zone sends it to the bare domain. Production is
-deployed with the API by the manual **Deploy Cloudflare production** workflow; see
-[Cloudflare production deployment](../docs/operations/cloudflare-production.md).
+See [Cloudflare production deployment](../docs/operations/cloudflare-production.md).
 
 See [Cloudflare React Router integration](https://developers.cloudflare.com/workers/framework-guides/web-apps/react-router/),
 [Vite plugin environment selection](https://developers.cloudflare.com/workers/vite-plugin/reference/cloudflare-environments/),
