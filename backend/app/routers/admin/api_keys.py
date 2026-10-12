@@ -41,6 +41,7 @@ def _credential_response(
     return ApiCredentialResponse(
         id=credential.id,
         label=credential.label,
+        scopes=credential.scopes,
         created_by_user_id=credential.created_by_user_id,
         created_by_name=creator.preferred_name,
         created_by_email=creator.email,
@@ -120,6 +121,7 @@ async def create_api_credential(
     secret = api_credentials.generate_secret()
     credential = ApiCredential(
         label=body.label,
+        scopes=list(dict.fromkeys(body.scopes)),
         secret_hash=api_credentials.hash_secret(secret),
         created_by_user_id=admin.id,
         expires_at=body.expires_at,
@@ -131,7 +133,7 @@ async def create_api_credential(
         credential,
         actor,
         ApiCredentialAuditAction.CREATE,
-        {"label": credential.label},
+        {"label": credential.label, "scopes": credential.scopes},
     )
     await db.commit()
     await db.refresh(credential)

@@ -1,0 +1,4 @@
+# Use a candidates:extract managed API credential from the local API.
+DISCOVERY_API_KEY=replace-with-local-extraction-credential
+EXTRACTION_DISPATCH_SECRET=replace-with-local-producer-secret
+OPENAI_API_KEY=replace-for-opt-in-real-extraction

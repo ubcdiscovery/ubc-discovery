@@ -1,0 +1,60 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ubc-discovery-extraction",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-11",
+  "compatibility_flags": [
+    "global_fetch_strictly_public"
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  },
+  "vars": {
+    "DISCOVERY_API_URL": "http://localhost:8000",
+    "MAX_ATTEMPTS": "5",
+    "OPENAI_TIMEOUT_MS": "60000"
+  },
+  "queues": {
+    "producers": [
+      {
+        "binding": "EXTRACTION_QUEUE",
+        "queue": "ubc-discovery-extraction"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "ubc-discovery-extraction",
+        "max_batch_size": 10,
+        "max_batch_timeout": 60,
+        "max_concurrency": 1,
+        "max_retries": 4,
+        "dead_letter_queue": "ubc-discovery-extraction-dlq"
+      },
+      {
+        "queue": "ubc-discovery-extraction-dlq",
+        "max_batch_size": 10,
+        "max_retries": 20
+      }
+    ]
+  },
+  "triggers": {
+    "crons": [
+      "*/15 * * * *"
+    ]
+  },
+  "secrets": {
+    "required": [
+      "DISCOVERY_API_KEY",
+      "EXTRACTION_DISPATCH_SECRET",
+      "OPENAI_API_KEY"
+    ]
+  }
+}

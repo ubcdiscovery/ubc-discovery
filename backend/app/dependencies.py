@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.api_credential import ApiCredential
+from app.models.api_credential import ApiCredential, ApiCredentialScope
 from app.models.audit_actor import AuditActorType
 from app.models.user import User
 from app.services import api_credentials, firebase_auth
@@ -28,9 +28,10 @@ class CandidateIngestionCredential:
     actor_id: uuid.UUID
     name: str
     credential_id: uuid.UUID | None = None
+    scopes: tuple[str, ...] = ()
 
 
-async def require_candidate_ingester(
+async def _require_api_credential(
     authorization: str | None = Header(
         None, description="Api-Key ubc_live_<credential-id>.<random-secret>"
     ),
@@ -69,7 +70,30 @@ async def require_candidate_ingester(
         actor_id=credential.id,
         name=credential.label,
         credential_id=credential.id,
+        scopes=tuple(credential.scopes),
     )
+
+
+async def require_candidate_ingester(
+    authorization: str | None = Header(None),
+    db: AsyncSession = Depends(get_db),
+) -> CandidateIngestionCredential:
+    credential = await _require_api_credential(authorization, db)
+    if ApiCredentialScope.INGEST not in credential.scopes:
+        raise HTTPException(
+            status_code=403, detail="Candidate ingestion scope required"
+        )
+    return credential
+
+
+async def require_candidate_extractor(
+    credential: CandidateIngestionCredential = Depends(_require_api_credential),
+) -> CandidateIngestionCredential:
+    if ApiCredentialScope.EXTRACT not in credential.scopes:
+        raise HTTPException(
+            status_code=403, detail="Candidate extraction scope required"
+        )
+    return credential
 
 
 @dataclass(frozen=True)

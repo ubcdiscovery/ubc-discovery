@@ -89,6 +89,14 @@ class EventListingCandidate(Base):
     extracted_original: Mapped[dict | list | None] = mapped_column(JSON)
     extraction_model: Mapped[str | None] = mapped_column(String(100))
     extracted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    capture_ready_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    processing_dispatched_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    processing_completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    processing_error: Mapped[str | None] = mapped_column(Text)
 
     status: Mapped[CandidateStatus] = mapped_column(
         String(32),

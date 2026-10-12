@@ -1,3 +1,5 @@
+from asyncio import Event
+
 from app.services.extraction.jobs import (
     claim_jobs,
     complete_job,
@@ -11,7 +13,6 @@ from app.services.extraction.jobs import (
 )
 from app.services.extraction.pipeline import process_claimed_jobs
 from app.services.extraction.types import ExtractionResult, Extractor
-from app.services.extraction.worker import run_extraction_worker, run_once
 
 __all__ = [
     "ExtractionResult",
@@ -29,3 +30,16 @@ __all__ = [
     "run_extraction_worker",
     "run_once",
 ]
+
+
+async def run_extraction_worker(stop: Event) -> None:
+    """Load the legacy SDK only when the polling worker actually runs."""
+    from app.services.extraction.worker import run_extraction_worker as run_worker
+
+    await run_worker(stop)
+
+
+async def run_once(extractor: Extractor | None = None) -> int:
+    from app.services.extraction.worker import run_once as run_legacy_once
+
+    return await run_legacy_once(extractor)
