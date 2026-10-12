@@ -26,13 +26,15 @@ export function createUserRoutes(env: ApiEnv, servicesFactory: ServicesFactory =
       const services = servicesFactory();
       const identity = await requireIdentity(request, services.firebase);
       return withDatabase(env, async db => {
+        // Firebase UID and email are both unique. A concurrent insert can hit
+        // either index; both conflicts must follow the existing 409 response.
         const [user] = await db.insert(users).values({
           firebaseUid: identity.uid, email: identity.email,
           preferredName: body.preferred_name,
           major: body.major ?? null, academicLevel: body.academic_level ?? null, facultyId: body.faculty_id ?? null,
           interests: body.interests ?? null, bio: body.bio ?? null,
           ubcVerified: isUbcEmail(identity.email), onboardingCompleted: true,
-        }).onConflictDoNothing({ target: users.firebaseUid }).returning();
+        }).onConflictDoNothing().returning();
         if (!user) throw new ApiError(409, 'User already exists');
         return presentUser(user);
       });
