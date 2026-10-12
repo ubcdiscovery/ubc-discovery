@@ -87,11 +87,11 @@ function app(factory: ServicesFactory, configuration = env) {
     .use(createMemberRoutes(configuration, factory)).compile();
 }
 
-function request(path: string, options: { method?: string; body?: unknown; uid?: string; authorization?: string } = {}) {
+function request(path: string, options: { method?: string; body?: unknown; uid?: string; authorization?: string; jsonHeader?: boolean } = {}) {
   return new Request(`http://localhost${path}`, {
     method: options.method ?? 'GET',
     headers: {
-      ...(options.body === undefined ? {} : { 'content-type': 'application/json' }),
+      ...(options.body === undefined && !options.jsonHeader ? {} : { 'content-type': 'application/json' }),
       ...(options.uid ? { authorization: `Bearer ${options.uid}` } : {}),
       ...(options.authorization ? { authorization: options.authorization } : {}),
     },
@@ -378,6 +378,23 @@ describe.skipIf(!testUrl)('member authentication, onboarding and profile contrac
 });
 
 describe.skipIf(!testUrl)('saved events and ratings visibility contracts', () => {
+  it('accepts browser JSON headers on empty-body save/unsave requests while validating JSON-required mutations', async () => {
+    const existing = await member();
+    const target = await event();
+    const api = app(serviceMocks().factory);
+    const headers = { uid: existing.identity.uid, jsonHeader: true };
+    const saved = await api.handle(request(`/saved-events/${target.id}`, { ...headers, method: 'PUT' }));
+    expect(saved.status).toBe(201);
+    expect(saved.headers.get('location')).toBe(`/saved-events/${target.id}`);
+    expect((await api.handle(request(`/saved-events/${target.id}`, { ...headers, method: 'PUT' }))).status).toBe(200);
+    const removed = await api.handle(request(`/saved-events/${target.id}`, { ...headers, method: 'DELETE' }));
+    expect(removed.status).toBe(204);
+    expect(await removed.text()).toBe('');
+    expect((await api.handle(request(`/ratings/mine/${target.id}`, { ...headers, method: 'POST' }))).status).toBe(422);
+    expect((await api.handle(request('/users/me', { ...headers, method: 'PUT' }))).status).toBe(422);
+    await withDatabase(env, async db => expect(await db.select().from(savedEvents).where(eq(savedEvents.eventId, target.id))).toHaveLength(0));
+  });
+
   it('saves idempotently with correct status/location and removes idempotently', async () => {
     const existing = await member();
     const target = await event();

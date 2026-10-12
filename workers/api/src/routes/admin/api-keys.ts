@@ -44,7 +44,7 @@ export function createApiKeyRoutes(env: ApiEnv, servicesFactory: ServicesFactory
    await tx.insert(audits).values({ credentialId: row.credential.id, actorType: 'member', actorId: actor.actorId, action: 'revoke', createdAt: services.now() });
   }
   return presentCredential(row.credential, row.creator, services.now());
- }), { params: uuidParams, detail: { tags: ['Admin API Credentials'] } })
+ }), { parse: 'none', params: uuidParams, detail: { tags: ['Admin API Credentials'] } })
  .get('/:credential_id/audit', ({ request, params }) => adminTransaction(env, request, servicesFactory, async tx => {
   const [credential] = await tx.select({ id: credentials.id }).from(credentials).where(eq(credentials.id, params.credential_id));
   if (!credential) throw new ApiError(404, 'API credential not found');

@@ -8,6 +8,19 @@ async function json(response: Response): Promise<Record<string, unknown>> { retu
 
 describe.skipIf(!testUrl)('administrator lifecycle against PostgreSQL', () => {
  beforeAll(fixture.setup); afterAll(fixture.teardown);
+ it('accepts browser JSON headers with empty admin POST/DELETE bodies and keeps schema/auth validation', async () => {
+  await withDatabase(fixture.env, db => db.insert(events).values({ id: 'bodyfree', title: 'Empty-body header fixture', source: 'manual', locationName: 'Nest', eventDate: new Date('2030-05-01T20:00:00Z') }));
+  const upload = await fixture.request('/admin/events/bodyfree/presigned-upload', 'POST', undefined, 'admin', true);
+  expect(upload.status).toBe(200);
+  expect(await json(upload)).toMatchObject({ file_key: 'event-pictures/bodyfree.webp' });
+  for (const action of ['archive', 'restore']) {
+   expect((await fixture.request(`/admin/events/bodyfree/${action}`, 'POST', undefined, 'admin', true)).status).toBe(200);
+  }
+  expect((await fixture.request('/admin/events/bodyfree', 'DELETE', undefined, 'admin', true)).status).toBe(204);
+  expect((await fixture.request('/admin/events', 'POST', undefined, 'admin', true)).status).toBe(422);
+  expect((await fixture.request('/admin/events/bodyfree/restore', 'POST', undefined, 'member', true)).status).toBe(403);
+ });
+
  it('creates bounded credentials, reveals the token once, and audits idempotent revocation', async () => {
   const response = await fixture.request('/admin/api-keys', 'POST', { label: ' Shared Worker ', scopes: ['candidates:extract', 'candidates:extract'], expires_at: '2031-01-01T00:00:00Z' }, 'admin');
   expect(response.status).toBe(201);

@@ -45,7 +45,7 @@ export function createSavedEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
         set.status = 200;
         return { event_id: existing.eventId, saved_at: existing.savedAt.toISOString() };
       });
-    }, { detail: { tags: ['Saved Events'] } })
+    }, { parse: 'none', detail: { tags: ['Saved Events'] } })
     .delete('/saved-events/:event_id', async ({ request, params }) => {
       const services = servicesFactory();
       await withDatabase(env, async db => {
@@ -53,5 +53,5 @@ export function createSavedEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
         await db.delete(savedEvents).where(and(eq(savedEvents.userId, member.id), eq(savedEvents.eventId, params.event_id)));
       });
       return new Response(null, { status: 204 });
-    }, { detail: { tags: ['Saved Events'] } });
+    }, { parse: 'none', detail: { tags: ['Saved Events'] } });
 }

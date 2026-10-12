@@ -54,8 +54,8 @@ export function extractionFixture() {
   });
  };
  const teardown = () => withDatabase({ DATABASE_URL: testUrl } as ApiEnv, db => db.execute(sql`DROP SCHEMA IF EXISTS ${sql.identifier(schemaName)} CASCADE`));
- const request = (path: string, method = 'GET', body?: unknown, auth: 'admin' | 'member' | 'ingest' | 'extract' | 'none' = 'extract') => app.handle(new Request(`http://localhost${path}`, {
-  method, headers: { ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+ const request = (path: string, method = 'GET', body?: unknown, auth: 'admin' | 'member' | 'ingest' | 'extract' | 'none' = 'extract', jsonHeader = false) => app.handle(new Request(`http://localhost${path}`, {
+  method, headers: { ...(body === undefined && !jsonHeader ? {} : { 'Content-Type': 'application/json' }),
    ...(auth === 'none' ? {} : { Authorization: auth === 'admin' || auth === 'member' ? `Bearer ${auth}` : `Api-Key ${auth === 'ingest' ? ingestToken : extractToken}` }) },
   ...(body === undefined ? {} : { body: JSON.stringify(body) }),
  }));

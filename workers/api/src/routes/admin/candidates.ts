@@ -57,7 +57,7 @@ export function createAdminCandidateRoutes(env: ApiEnv, servicesFactory: Service
   }
   const [saved] = await tx.select().from(candidates).where(eq(candidates.id, candidate.id));
   return presentCandidateDetail(saved!, tx, services.storage);
- }, true), { detail: { tags: ['Admin Candidates'] } });
+ }, true), { parse: 'none', detail: { tags: ['Admin Candidates'] } });
  for (const [path, target] of [['reject', 'rejected'], ['return-to-review', 'pending']] as const) {
   routes.post(`/:candidate_id/${path}`, ({ request, params }) => adminTransaction(env, request, servicesFactory, async (tx, _actor, services) => {
    const [candidate] = await tx.select().from(candidates).where(eq(candidates.id, params.candidate_id)).for('update');
@@ -66,7 +66,7 @@ export function createAdminCandidateRoutes(env: ApiEnv, servicesFactory: Service
    else if (candidate.status !== 'rejected') throw new ApiError(409, 'Only rejected Candidates can return to review');
    const [saved] = await tx.update(candidates).set({ status: target }).where(eq(candidates.id, candidate.id)).returning();
    return presentCandidateDetail(saved!, tx, services.storage);
-  }), { detail: { tags: ['Admin Candidates'] } });
+  }), { parse: 'none', detail: { tags: ['Admin Candidates'] } });
  }
  return routes;
 }

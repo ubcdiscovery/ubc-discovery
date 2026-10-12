@@ -49,5 +49,5 @@ export function createIngestionRoutes(env: ApiEnv, servicesFactory: ServicesFact
    }
    return { candidate_id: params.candidate_id, status: 'ready', dispatched };
   }, { direct: true });
- }, { detail: { tags: ['Candidate Ingestion'] } });
+ }, { parse: 'none', detail: { tags: ['Candidate Ingestion'] } });
 }

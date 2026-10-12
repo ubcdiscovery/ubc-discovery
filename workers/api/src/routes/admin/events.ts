@@ -64,7 +64,7 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
   const upload = await services.storage.generatePresignedUpload({ fileKey: eventImageKey(event.id), contentType: 'image/webp', maxFileSizeBytes: maxBytes });
   await addEventAudit(tx, event, actor, 'image_upload', null, { event_picture_key: upload.file_key }, services.now());
   return { upload_url: upload.url, fields: upload.fields, file_key: upload.file_key, max_file_size_bytes: maxBytes };
- }), { detail: { tags: ['Admin Events'] } });
+ }), { parse: 'none', detail: { tags: ['Admin Events'] } });
  for (const [path, archived] of [['archive', true], ['restore', false]] as const) {
   routes.post(`/:event_id/${path}`, ({ request, params }) => adminTransaction(env, request, servicesFactory, async (tx, actor, services) => {
    const [event] = await tx.select().from(events).where(eq(events.id, params.event_id)).for('update');
@@ -73,7 +73,7 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
    const [saved] = await tx.update(events).set({ isArchived: archived, archivedAt: archived ? services.now() : null, archivedBy: archived ? actor.actorId : null }).where(eq(events.id, event.id)).returning();
    await addEventAudit(tx, saved!, actor, archived ? 'archive' : 'restore', eventSnapshot(event), eventSnapshot(saved!), services.now());
    return presentAdminEvent(saved!, services.storage);
-  }), { detail: { tags: ['Admin Events'] } });
+  }), { parse: 'none', detail: { tags: ['Admin Events'] } });
  }
  routes.delete('/:event_id', ({ request, params }) => adminTransaction(env, request, servicesFactory, async (tx, actor, services) => {
   const [event] = await tx.select().from(events).where(eq(events.id, params.event_id)).for('update');
@@ -83,7 +83,7 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
    await addEventAudit(tx, saved!, actor, 'archive', eventSnapshot(event), eventSnapshot(saved!), services.now());
   }
   return new Response(null, { status: 204 });
- }), { detail: { tags: ['Admin Events'] } });
+ }), { parse: 'none', detail: { tags: ['Admin Events'] } });
  return routes;
 }
 function eventChanges(body: EventUpdate): Partial<Event> {
