@@ -1,65 +1,50 @@
 # Database migrations
 
-Alembic is the authoritative schema change tool for the backend. The FastAPI
-lifespan does not create or alter tables. The backend container runs
-`alembic upgrade head` before starting the API process.
+Drizzle Kit is the authoritative schema change tool. The schema lives in
+`workers/api/src/db/schema.ts` and the migrations in `workers/api/drizzle/`. The
+API Worker never creates or alters tables at runtime.
+
+`0000_baseline` reproduces the schema of the former Alembic head
+(`0012_queue_extraction`), including the `vector` and `pg_trgm` extensions. The
+Alembic history was removed with the Python backend; it remains in Git history.
 
 ## Local PostgreSQL
 
 ```bash
 docker compose up -d postgres
-cd backend
-export DATABASE_URL=postgresql+asyncpg://ubc_discovery:ubc_discovery@localhost:5432/ubc_discovery
-export DATABASE_SSL=false
-uv run alembic upgrade head
-uv run alembic current
-uv run pytest tests/ -v
+cd workers/api
+export DATABASE_URL=postgresql://ubc_discovery:ubc_discovery@localhost:5432/ubc_discovery
+pnpm run db:migrate
+TEST_DATABASE_URL=$DATABASE_URL pnpm run check
 ```
 
-For a new database, run `uv run alembic upgrade head`; the initial migration
-creates the application tables and search index before applying the vector
-migration. Re-running `upgrade head` is safe because Alembic records the
-migration state and the migration's extension/index creation is idempotent.
+Use a disposable database for `TEST_DATABASE_URL`; the integration tests copy
+the migrated `public` tables into temporary schemas.
 
-The vector migration performs validated data backfill, so it requires an online
-database connection; `alembic upgrade head --sql` is not supported for the full
-migration chain.
+## Changing the schema
 
-## Removing legacy JSON embeddings
+1. Edit `src/db/schema.ts`.
+2. Run `pnpm run db:generate --name <short_change_name>` and review the SQL.
+3. Commit the SQL file and the updated `drizzle/meta/` files together.
 
-The contract migration drops `events.embedding` only after validating every
-non-null, non-JSON-null legacy value: it must contain 1024 finite numeric
-components, and the stored `embedding_vector` must equal those values after
-PostgreSQL's float32 conversion. SQL `NULL` and JSON `null` are allowed. A
-failed check names sample event IDs and leaves the column intact. Correct or
-backfill those rows before retrying.
+The API Worker PR checks fail when `schema.ts` changes without a committed
+migration, then apply every migration to a fresh database before running tests.
 
-Revision `0002_add_event_embedding_vector` adds the vector column and backfills
-it from JSON. Deploy the expand/backfill release that writes both columns, allow
-its backfill to complete, then drain all application instances running that
-release. Run `uv run alembic upgrade 0011_drop_legacy_embedding` to apply the
-contract revision; its validation is the deployment check and aborts if any
-populated legacy value is malformed or differs from the stored vector. Older
-application code expects the JSON column and must not run after it is dropped.
-The migration blocks writes to `events` while it validates parity; this scan
-scales with the number of embedded listings. Reads can continue during validation,
-but the final column drop takes an exclusive lock that also blocks reads.
+Keep explicit constraint and index names in `schema.ts`. They match the existing
+database, and generated `DROP`/`ALTER` statements reference them by name.
 
-To roll back to an older binary, first run
-`uv run alembic downgrade 0010_academic_context`, then restart the old release.
-This recreates JSON values from the vectors as float32 numbers, so any precision
-beyond float32 from the original JSON values cannot be restored.
+Prefer expand/contract changes: add nullable columns or new tables first, deploy
+code that handles both shapes, and drop old structures in a later migration.
+Drizzle Kit has no down migrations; undo a change with a new forward migration.
 
-## Rollback
+## Applying to production
 
-The vector migration has a reversible downgrade that drops only the HNSW index
-and `embedding_vector`; the JSON embedding column remains intact:
+Production migrations are manual. Apply a migration before deploying code that depends on it, using the
+direct (non-pooled) Neon endpoint:
 
 ```bash
-uv run alembic downgrade 0001_initial_schema
+cd workers/api
+DATABASE_URL='<direct production database URL>' pnpm run db:migrate
 ```
 
-Do not downgrade the initial schema baseline in production. It intentionally
-refuses a destructive downgrade; restore the pre-migration RDS snapshot if a
-full schema rollback is required. After correcting the cause, rerun
-`uv run alembic upgrade head`.
+Take a Neon restore point first for migrations that rewrite or drop data.

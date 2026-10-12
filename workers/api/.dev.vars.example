@@ -1,6 +1,6 @@
 # Local development only. Never point tests at the production database.
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55434/ubc_rewrite_test
-DIRECT_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55434/ubc_rewrite_test
+DATABASE_URL=postgresql://ubc_discovery:ubc_discovery@localhost:5432/ubc_discovery
+DIRECT_DATABASE_URL=postgresql://ubc_discovery:ubc_discovery@localhost:5432/ubc_discovery
 DATABASE_SSL=false
 FIREBASE_PROJECT_ID=
 FIREBASE_CREDENTIALS_JSON=
