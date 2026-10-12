@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   // Default builds remain staging. Select production at Vite build time.
-  // Custom domain routes are switched separately after cutover validation.
+  // Production owns the verified custom domain; staging stays on workers.dev.
   "name": "ubc-discovery-web-staging",
   "main": "./workers/app.ts",
   "compatibility_date": "2026-10-12",
@@ -20,6 +20,7 @@
       "name": "ubc-discovery-web",
       "account_id": "5637cded1864726ba930947d2f6138af",
       "workers_dev": true,
+      "routes": [{ "pattern": "ubcdiscovery.com", "custom_domain": true, "zone_id": "bcd291566a7b602657d980a51d542c5f" }],
       "assets": { "binding": "ASSETS", "directory": "./build/client" }
     }
   }

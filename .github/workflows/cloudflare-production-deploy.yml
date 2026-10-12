@@ -81,16 +81,27 @@ jobs:
       - name: Check production API before deploying callers
         run: |
           curl --fail --silent --show-error --max-time 30 \
-            https://ubc-discovery-api.ubcdiscovery.workers.dev/ \
-            | node -e 'let body=""; process.stdin.on("data", b=>body+=b); process.stdin.on("end", ()=>{const v=JSON.parse(body); if(v.status!=="ok" || v.app!=="UBC Discovery API") process.exit(1)})'
+            --retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 60 \
+            --output "$RUNNER_TEMP/cloudflare-api-health.json" \
+            https://ubc-discovery-api.ubcdiscovery.workers.dev/
+          node -e 'const v=JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if(v.status!=="ok" || v.app!=="UBC Discovery API") process.exit(1)' "$RUNNER_TEMP/cloudflare-api-health.json"
           curl --fail --silent --show-error --max-time 30 \
-            'https://ubc-discovery-api.ubcdiscovery.workers.dev/events?limit=1' \
-            | node -e 'let body=""; process.stdin.on("data", b=>body+=b); process.stdin.on("end", ()=>{const v=JSON.parse(body); if(!Array.isArray(v.events)) process.exit(1)})'
+            --retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 60 \
+            --output "$RUNNER_TEMP/cloudflare-api-events.json" \
+            'https://ubc-discovery-api.ubcdiscovery.workers.dev/events?limit=1'
+          node -e 'const v=JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if(!Array.isArray(v.events)) process.exit(1)' "$RUNNER_TEMP/cloudflare-api-events.json"
       - name: Deploy compiled production web
         working-directory: web
         run: pnpm exec wrangler deploy
       - name: Check shadow web origin
-        run: curl --fail --silent --show-error --max-time 30 --output /dev/null https://ubc-discovery-web.ubcdiscovery.workers.dev/
+        run: |
+          curl --fail --silent --show-error --max-time 30 \
+            --retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 60 --output /dev/null https://ubc-discovery-web.ubcdiscovery.workers.dev/
+      - name: Check production custom domain
+        run: |
+          curl --fail --silent --show-error --max-time 30 \
+            --retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 60 \
+            --output /dev/null https://ubcdiscovery.com/
       - name: Remove private deployment file
         if: always()
-        run: rm -f "$RUNNER_TEMP/cloudflare-api-secrets.json"
+        run: rm -f "$RUNNER_TEMP/cloudflare-api-secrets.json" "$RUNNER_TEMP/cloudflare-api-health.json" "$RUNNER_TEMP/cloudflare-api-events.json"
