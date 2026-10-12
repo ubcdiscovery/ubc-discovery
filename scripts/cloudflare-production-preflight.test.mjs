@@ -50,6 +50,18 @@ test('production preflight rejects local, staged, pooled or insecure database UR
   });
 });
 
+test('production preflight rejects PostgreSQL connection-target query overrides', () => {
+  for (const query of [
+    'host=ep-fixture-pooler.us-west-2.aws.neon.tech',
+    'host=localhost', 'hostaddr=127.0.0.1', 'port=55434',
+    'database=ubc_discovery_cloudflare_staging', 'dbname=staging',
+    'user=another-user', 'password=private-override', 'service=staging',
+  ]) assert.throws(() => validateProductionConfiguration({ ...fixture, DATABASE_URL: `${fixture.DATABASE_URL}?${query}` }), error => {
+    assert.ok(!error.message.includes('private-override'));
+    return true;
+  });
+});
+
 test('production bindings remain distinct from the default staging deployment', () => {
   const config = JSON.parse(readFileSync(new URL('../workers/api/wrangler.jsonc', import.meta.url), 'utf8'));
   assert.equal(config.name, 'ubc-discovery-api-staging');

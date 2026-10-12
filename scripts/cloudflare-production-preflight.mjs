@@ -37,6 +37,7 @@ export function validateProductionConfiguration(env) {
   try { database = new URL(env.DATABASE_URL.replace(/^postgresql\+asyncpg:/, 'postgresql:')); }
   catch { throw new Error('Invalid production database configuration'); }
   if (!['postgres:', 'postgresql:'].includes(database.protocol) || !database.username || !database.password
+    || ['host', 'hostaddr', 'port', 'database', 'dbname', 'user', 'password', 'service'].some(name => database.searchParams.has(name))
     || !database.hostname.endsWith('.neon.tech') || database.hostname.includes('-pooler')
     || !database.pathname.slice(1) || /(?:staging|test)/i.test(database.pathname)
     || (database.searchParams.has('sslmode') && !['require', 'verify-ca', 'verify-full'].includes(database.searchParams.get('sslmode')))
