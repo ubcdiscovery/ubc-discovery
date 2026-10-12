@@ -13,6 +13,7 @@
     "deploy:staging": "VITE_AUTH_TEST_MODE=false pnpm run build && wrangler deploy",
     "deploy:dry-run": "pnpm run build && wrangler deploy --dry-run",
     "test:e2e": "playwright test",
+    "test:e2e:live": "playwright test --config playwright.live.config.ts",
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
