@@ -9,6 +9,7 @@
     "types": "wrangler types worker-configuration.d.ts --env-interface CloudflareBindings --include-runtime=false --strict-vars=false",
     "typecheck": "pnpm run types && tsc --noEmit",
     "test": "vitest run",
+    "test:runtime": "node scripts/runtime-check.mjs",
     "check": "pnpm typecheck && pnpm test",
     "build": "wrangler deploy --dry-run",
     "deploy": "wrangler deploy"

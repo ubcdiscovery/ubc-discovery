@@ -1,0 +1,8 @@
+{
+  "name": "ubc-discovery-api-local-test",
+  "main": "probe.ts",
+  "compatibility_date": "2026-10-11",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false,
+  "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "local-runtime-test" }]
+}

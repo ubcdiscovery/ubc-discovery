@@ -59,4 +59,5 @@ jobs:
           DATABASE_SSL: "false"
         run: uv run --locked alembic upgrade head
       - run: pnpm run check
+      - run: pnpm run test:runtime
       - run: pnpm run build
