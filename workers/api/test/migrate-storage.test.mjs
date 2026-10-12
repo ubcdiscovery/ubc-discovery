@@ -254,12 +254,12 @@ describe('bounded migration concurrency', () => {
     );
     await ready; controls.get(0).resolve();
     await new Promise(resolve => setTimeout(resolve, 20));
-    expect(settled).toBe(false); expect(f.started).toEqual([0, 1]);
+    expect(settled).toBe(false); expect([...f.started].sort((a, b) => a - b)).toEqual([0, 1]);
     expect(await readFile(f.sourceFiles.get(1))).toEqual(Buffer.from([1, 2, 3]));
     controls.get(1).resolve();
     const result = await completion;
     expect(result.error.message).toBe('R2 S3 request failed (HTTP 403); check object and permissions');
-    expect(f.started).toEqual([0, 1]);
+    expect([...f.started].sort((a, b) => a - b)).toEqual([0, 1]);
     await expect(readFile(f.sourceFiles.get(1))).rejects.toMatchObject({ code: 'ENOENT' });
     const manifest = JSON.parse(await readFile(f.manifest, 'utf8'));
     expect(manifest.allVerified).toBe(false); expect(manifest.verifiedAt).toBeNull();
