@@ -2,6 +2,7 @@
 import { sql } from 'drizzle-orm';
 import { env as cloudflareEnv } from 'cloudflare:workers';
 import { decodeJwt } from 'jose';
+import { AwsV4Signer } from 'aws4fetch';
 import type { ApiEnv } from '../../src/env';
 import { withDatabase, withTransaction } from '../../src/db';
 import { createFirebase } from '../../src/services/firebase';
@@ -14,6 +15,8 @@ const storageEnv: ApiEnv = {
   ...cloudflareEnv, STORAGE_PROVIDER: 'r2', API_PUBLIC_BASE_URL: 'http://localhost',
   UPLOAD_SIGNING_SECRET: 'local-runtime-capability-secret-at-least-32-bytes',
   CORS_ALLOWED_ORIGINS: '["http://web.localhost"]',
+  R2_ACCOUNT_ID: 'a'.repeat(32), R2_BUCKET_NAME: 'local-runtime-test',
+  R2_ACCESS_KEY_ID: 'synthetic-access-key', R2_SECRET_ACCESS_KEY: 'synthetic-secret-key',
 };
 // Elysia's Workers adapter compiles at module initialization, as in src/index.ts.
 const app = createApp(storageEnv);
@@ -45,13 +48,11 @@ export default {
     const key = `runtime-test/${crypto.randomUUID()}.webp`;
     let r2 = false;
     try {
-      await storage.putUploadedImage(key, new Request('http://localhost/upload', {
-        method: 'PUT', headers: { 'content-type': 'image/webp' }, body: new Uint8Array([1, 2, 3]),
-      }), 'image/webp', 512);
+      await env.R2_BUCKET.put(key, new Uint8Array([1, 2, 3]), { httpMetadata: { contentType: 'image/webp' } });
       r2 = await storage.objectExists(key) && (await storage.getObjectBytes(key)).length === 3;
     } finally { await storage.deleteObject(key); }
-    // Dispatch raw Request bodies through the complete production application's
-    // actual Elysia Cloudflare adapter in workerd.
+    // Exercise signing and read routes through the production adapter in workerd.
+    // Direct PUT enforcement is validated separately against real staging R2.
     const capabilityStorage = new R2Storage(storageEnv);
     const candidateKey = `candidates/runtime-${crypto.randomUUID()}/00.webp`;
     const publicKey = `event-pictures/runtime-${crypto.randomUUID()}.webp`;
@@ -59,35 +60,36 @@ export default {
     let capabilities = false;
     try {
       const upload = await capabilityStorage.generatePresignedUpload({
-        fileKey: candidateKey, contentType: 'image/webp', maxFileSizeBytes: 512,
+        fileKey: candidateKey, contentType: 'image/webp', maxFileSizeBytes: 512, fileSizeBytes: payload.length,
       });
-      const uploaded = await app.fetch(new Request(upload.url, {
-        method: upload.method, headers: upload.headers, body: payload,
-      }));
+      const signedUrl = new URL(upload.url);
+      const signature = signedUrl.searchParams.get('X-Amz-Signature');
+      const unsignedUrl = new URL(signedUrl);
+      unsignedUrl.searchParams.delete('X-Amz-Signature');
+      const expectedSignature = await new AwsV4Signer({ method: 'PUT', url: unsignedUrl.toString(),
+        accessKeyId: storageEnv.R2_ACCESS_KEY_ID!, secretAccessKey: storageEnv.R2_SECRET_ACCESS_KEY!,
+        region: 'auto', service: 's3', signQuery: true, allHeaders: true,
+        datetime: signedUrl.searchParams.get('X-Amz-Date')!,
+        headers: { 'content-type': 'image/webp', 'content-length': String(payload.length) },
+      }).signature();
+      await storageEnv.R2_BUCKET.put(candidateKey, payload, { httpMetadata: { contentType: 'image/webp' } });
+      await storageEnv.R2_BUCKET.put(publicKey, payload, { httpMetadata: { contentType: 'image/webp' } });
       const download = await app.fetch(new Request(await capabilityStorage.generatePresignedDownloadUrl(candidateKey)));
       const downloaded = new Uint8Array(await download.arrayBuffer());
       const deniedPublic = await app.fetch(new Request(`http://localhost/media/public/${candidateKey}`));
       const deniedToken = await app.fetch(new Request('http://localhost/media/private?token=invalid-capability'));
       const wrongOperation = await app.fetch(new Request(`http://localhost/media/private${new URL(upload.url).search}`));
-      const oversized = await app.fetch(new Request(upload.url, {
-        method: 'PUT', headers: upload.headers, body: new Uint8Array(513),
-      }));
-      const afterRejectedUpload = await capabilityStorage.getObjectBytes(candidateKey);
-      const publicUpload = await capabilityStorage.generatePresignedUpload({
-        fileKey: publicKey, contentType: 'image/webp', maxFileSizeBytes: 512,
-      });
-      const publicUploaded = await app.fetch(new Request(publicUpload.url, {
-        method: publicUpload.method, headers: publicUpload.headers, body: payload,
-      }));
+      const removedUpload = await app.fetch(new Request('http://localhost/media/upload', { method: 'PUT', body: payload }));
       const publicResponse = await app.fetch(new Request(capabilityStorage.publicUrl(publicKey)));
       const publicBytes = new Uint8Array(await publicResponse.arrayBuffer());
-      capabilities = uploaded.status === 204 && download.status === 200
+      capabilities = signature === expectedSignature
+        && signedUrl.searchParams.get('X-Amz-SignedHeaders') === 'content-length;content-type;host'
+        && upload.method === 'PUT' && !Object.hasOwn(upload.headers!, 'content-length') && download.status === 200
         && download.headers.get('cache-control') === 'private, no-store'
         && download.headers.get('content-type') === 'image/webp'
         && JSON.stringify([...downloaded]) === JSON.stringify([...payload])
         && deniedPublic.status === 404 && deniedToken.status === 403 && wrongOperation.status === 403
-        && oversized.status === 413 && JSON.stringify([...afterRejectedUpload]) === JSON.stringify([...payload])
-        && publicUploaded.status === 204 && publicResponse.status === 200
+        && removedUpload.status === 404 && publicResponse.status === 200
         && publicResponse.headers.get('cache-control') === 'public, max-age=60'
         && publicResponse.headers.get('x-content-type-options') === 'nosniff'
         && JSON.stringify([...publicBytes]) === JSON.stringify([...payload]);

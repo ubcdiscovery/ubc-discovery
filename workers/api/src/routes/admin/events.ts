@@ -7,6 +7,7 @@ import { integerSetting, type ApiEnv } from '../../env';
 import { ApiError } from '../../http/errors';
 import { presentAdminEvent, eventImageKey } from '../../presenters/events';
 import { createEventSchema, updateEventSchema, parseDate, checkEndDate, type EventUpdate } from '../../schemas/events';
+import { uploadFileSize } from '../../schemas/upload-size';
 import type { ServicesFactory } from '../../services';
 import { createCanonicalEvent, addEventAudit, eventSnapshot, embeddingFor } from '../../services/event-administration';
 import { adminTransaction } from './common';
@@ -62,7 +63,8 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
   const [event] = await tx.select().from(events).where(eq(events.id, params.event_id));
   if (!event) throw new ApiError(404, 'Event not found');
   const maxBytes = integerSetting(env.EVENT_IMAGE_MAX_BYTES, 3 * 1024 * 1024);
-  const upload = await services.storage.generatePresignedUpload({ fileKey: eventImageKey(event.id), contentType: 'image/webp', maxFileSizeBytes: maxBytes });
+  const fileSizeBytes = uploadFileSize(request, maxBytes, env.STORAGE_PROVIDER === 'r2');
+  const upload = await services.storage.generatePresignedUpload({ fileKey: eventImageKey(event.id), contentType: 'image/webp', maxFileSizeBytes: maxBytes, fileSizeBytes });
   await addEventAudit(tx, event, actor, 'image_upload', null, { event_picture_key: upload.file_key }, services.now());
   return presentUpload(upload, maxBytes);
  }), { parse: 'none', detail: { tags: ['Admin Events'] } });

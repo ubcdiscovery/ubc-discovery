@@ -24,18 +24,36 @@ test("old S3 responses retain signed form uploads", async () => {
   });
 });
 
-test("Worker responses upload raw bytes with the signed MIME header", async () => {
+test("R2 responses upload raw bytes with only the signed MIME header", async () => {
   const image = new Blob([new Uint8Array([1, 2, 3])], { type: "image/webp" });
-  await uploadImage({ ...target, fields: {}, method: "PUT", headers: { "content-type": "image/webp" } }, image, undefined,
+  await uploadImage(
+    { ...target, fields: {}, method: "PUT", headers: { "content-type": "image/webp" } },
+    image,
+    undefined,
     async (_url, init) => {
       expect(init?.method).toBe("PUT");
       expect(init?.body).toBe(image);
       expect(init?.headers).toEqual({ "content-type": "image/webp" });
       return new Response(null, { status: 204 });
-    });
+    },
+  );
+});
+
+test("empty images fail before contacting storage", async () => {
+  await expect(
+    uploadImage(target, new Blob([]), undefined, async () => {
+      throw new Error("must not contact storage");
+    }),
+  ).rejects.toThrow("non-empty image");
 });
 
 test("storage denial surfaces an upload error without provider details", async () => {
-  await expect(uploadImage(target, new Blob(["image"]), undefined,
-    async () => new Response("private provider diagnostics", { status: 403 }))).rejects.toThrow("Image upload failed.");
+  await expect(
+    uploadImage(
+      target,
+      new Blob(["image"]),
+      undefined,
+      async () => new Response("private provider diagnostics", { status: 403 }),
+    ),
+  ).rejects.toThrow("Image upload failed.");
 });

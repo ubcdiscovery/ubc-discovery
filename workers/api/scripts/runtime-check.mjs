@@ -54,7 +54,7 @@ try {
   });
   assert.equal(response.status, 200, `Runtime probe failed: ${output}`);
   assert.deepEqual(await response.json(), { database: true, r2: true, capabilities: true, auth: true, vancouver: true, firebase: true });
-  console.log('Workers runtime: pgvector transaction, Firebase X509/RS256, secret comparison, local R2, and signed upload/private/public media routes passed.');
+  console.log('Workers runtime: pgvector transaction, Firebase X509/RS256, secret comparison, local R2, and direct PUT signing and signed private/public media read routes passed.');
 } finally {
   if (worker && worker.exitCode === null) {
     worker.kill('SIGTERM');

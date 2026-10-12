@@ -30,6 +30,7 @@ describe.skipIf(!testUrl)('complete API R2 contract against PostgreSQL', () => {
     list: unused, createMultipartUpload: unused, resumeMultipartUpload: unused,
   };
   Object.assign(fixture.env, { STORAGE_PROVIDER: 'r2', API_PUBLIC_BASE_URL: 'https://api.example.test',
+    R2_ACCOUNT_ID: 'a'.repeat(32), R2_BUCKET_NAME: 'private-test-images', R2_ACCESS_KEY_ID: 'test-access-id', R2_SECRET_ACCESS_KEY: 'synthetic-secret',
     UPLOAD_SIGNING_SECRET: 'isolated-integration-only-32-byte-key', R2_BUCKET: bucket, CORS_ALLOWED_ORIGINS: '["https://web.example.test"]' });
   fixture.services.storage = new R2Storage(fixture.env);
   const app = createApp(fixture.env, () => fixture.services);
@@ -40,22 +41,22 @@ describe.skipIf(!testUrl)('complete API R2 contract against PostgreSQL', () => {
     expect(target.method).toBe('PUT');
     expect(target.headers).toEqual({ 'content-type': contentType });
     expect(target.fields).toEqual({});
-    const response = await app.handle(new Request(target.upload_url, {
-      method: target.method, headers: { ...target.headers, origin: 'https://web.example.test' }, body: new Uint8Array([1, 2, 3]),
-    }));
-    expect(response.status).toBe(204);
-    expect(response.headers.get('access-control-allow-origin')).toBe('https://web.example.test');
-    expect(objects.get(target.file_key)?.bytes).toEqual(new Uint8Array([1, 2, 3]));
+    const signed = new URL(target.upload_url);
+    expect(signed.hostname).toBe(`${'a'.repeat(32)}.r2.cloudflarestorage.com`);
+    expect(signed.searchParams.get('X-Amz-SignedHeaders')).toBe('content-length;content-type;host');
+    // Model the object now arriving from R2's direct S3 endpoint. Signature
+    // enforcement is covered separately by the live R2/browser proof.
+    objects.set(target.file_key, { bytes: new Uint8Array([1, 2, 3]), httpMetadata: { contentType } });
   }
   function request(path: string, method = 'GET', body?: unknown, authorization = 'Bearer admin') {
     return app.handle(new Request(`https://api.example.test${path}`, { method,
-      headers: { authorization, ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
+      headers: { authorization, ...(body === undefined ? {} : { 'content-type': 'application/json' }), ...(path === '/ingestion/event-candidates' ? { 'x-image-file-sizes': '[3]' } : {}) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     }));
   }
 
   it('propagates raw upload metadata for profile and administrator event images', async () => {
-    const profileTarget = await (await request('/users/me/presigned-upload')).json() as UploadResponse;
+    const profileTarget = await (await request('/users/me/presigned-upload?file_size_bytes=3')).json() as UploadResponse;
     expect(profileTarget.max_file_size_bytes).toBe(512 * 1024);
     await upload(profileTarget, 'image/webp');
     const profile = await (await request('/users/me')).json() as { profile_picture_url: string };
@@ -64,7 +65,7 @@ describe.skipIf(!testUrl)('complete API R2 contract against PostgreSQL', () => {
     const created = await request('/admin/events', 'POST', { title: 'R2 fixture', location_name: 'UBC', event_date: '2030-03-01T12:00:00Z' });
     expect(created.status).toBe(200);
     const event = await created.json() as { id: string };
-    const eventTarget = await (await request(`/admin/events/${event.id}/presigned-upload`, 'POST')).json() as UploadResponse;
+    const eventTarget = await (await request(`/admin/events/${event.id}/presigned-upload?file_size_bytes=3`, 'POST')).json() as UploadResponse;
     expect(eventTarget.max_file_size_bytes).toBe(3 * 1024 * 1024);
     await upload(eventTarget, 'image/webp');
     expect((await app.handle(new Request(fixture.services.storage.publicUrl(eventTarget.file_key)))).status).toBe(200);

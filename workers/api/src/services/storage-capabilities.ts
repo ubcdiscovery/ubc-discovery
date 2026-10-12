@@ -4,10 +4,8 @@ import { ApiError } from '../http/errors';
 
 const audience = 'ubc-discovery-storage';
 export interface StorageCapability {
-  operation: 'upload' | 'download';
+  operation: 'download';
   key: string;
-  contentType?: string;
-  maxBytes?: number;
 }
 
 function signingKey(env: ApiEnv) {
@@ -44,11 +42,6 @@ export async function verifyStorageCapability(env: ApiEnv, token: string, operat
     if (payload.operation !== operation || typeof payload.key !== 'string' ||
         typeof payload.iat !== 'number' || payload.iat > Math.floor(now.getTime() / 1000) ||
         typeof payload.exp !== 'number' || payload.exp - payload.iat > 3600) throw new Error();
-    if (operation === 'upload' && (typeof payload.contentType !== 'string' || typeof payload.maxBytes !== 'number' ||
-      !Number.isSafeInteger(payload.maxBytes) || payload.maxBytes < 1 || payload.maxBytes > 5 * 1024 * 1024)) throw new Error();
-    return { operation, key: payload.key,
-      ...(typeof payload.contentType === 'string' ? { contentType: payload.contentType } : {}),
-      ...(typeof payload.maxBytes === 'number' ? { maxBytes: payload.maxBytes } : {}),
-    };
+    return { operation, key: payload.key };
   } catch { throw new ApiError(403, 'Invalid or expired storage URL'); }
 }

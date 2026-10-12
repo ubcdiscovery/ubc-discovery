@@ -1,12 +1,13 @@
 import type { PresignedUploadResponse } from "./api.types";
 
-/** Accept the S3 form contract and the Worker raw-file contract during cutover. */
+/** Accept signed S3 forms and direct R2 PUTs during cutover. */
 export async function uploadImage(
   upload: PresignedUploadResponse,
   image: Blob,
   filename = "image.webp",
   http: typeof fetch = fetch,
 ): Promise<void> {
+  if (!image.size) throw new Error("Choose a non-empty image file.");
   let body: BodyInit;
   if (upload.method === "PUT") {
     body = image;

@@ -8,7 +8,7 @@ Use Node 24 and pnpm. In `workers/api/`, run `pnpm install`, copy `.dev.vars.exa
 
 Run `pnpm check` and `pnpm build`. Database integration tests run when `TEST_DATABASE_URL` names a disposable localhost database with the existing migrated schema. With that same setting, run `pnpm test:runtime` to validate PostgreSQL/pgvector transactions, Firebase X509 verification and RS256 signing, secret comparison, R2 bindings and Vancouver calendar boundaries inside workerd. The harness uses synthetic keys and an isolated local R2 store, and is not a deployable entry point. The schema is mapped into Drizzle without generating or applying a new migration. Existing Alembic migrations remain authoritative until an explicit migration-tool handoff.
 
-The default configuration names a staging Worker and a staging R2 bucket. It does not alter the production API, the extraction Worker or its queue. Local Wrangler R2 operations use local storage unless remote bindings are explicitly configured.
+The default configuration names a staging Worker and a staging R2 bucket. It does not alter the production API, the extraction Worker or its queue. Local Wrangler R2 operations use local storage unless remote bindings are explicitly configured. Direct presigned uploads always target the real R2 S3 endpoint. For local browser image journeys, explicitly configure a remote binding to the staging bucket and use its scoped signing credentials; otherwise use the local runtime fixture, which seeds the isolated local bucket without external uploads. Never use production credentials/bindings for local tests.
 
 Direct database origins use TLS with certificate verification by default, retaining the Python API's `DATABASE_SSL=true` behavior even when a Neon URL has no `sslmode`. Set `DATABASE_SSL=false` in `.dev.vars` for the disposable local database; without a setting, localhost connections use plain TCP. Explicit URL TLS parameters take precedence according to [node-postgres SSL configuration](https://node-postgres.com/features/ssl). Ordinary Hyperdrive connections ignore this origin setting because Hyperdrive manages origin TLS; `DIRECT_DATABASE_URL` publication connections still use it.
 
@@ -29,7 +29,11 @@ Keep the bucket private, with both public development access and custom bucket d
 
 Keep `observability.redact_query_string: true` when deploying: storage URLs carry bearer capabilities in their query string. Never print these URLs in application logs or error messages. Cloudflare logs and traces remain enabled with query strings redacted.
 
-For R2, authenticated upload-target endpoints return `method: "PUT"`, an empty `fields` object, and a required content-type header. Send the raw file to `upload_url`. The Worker checks the signature, expiry, object key, MIME header, nonempty body and actual streamed byte count before writing through its R2 binding. Limits remain 512 KiB for profiles, 3 MiB for administrator event images, and 5 MiB for candidate images. Upload URLs expire after five minutes; private image download URLs expire after one hour. These are Worker capabilities, rather than R2 S3 credentials or S3 multipart POST policies.
+For R2, clients supply the final upload byte count: `file_size_bytes` in profile/admin upload-target queries, and a JSON array in the ingestion request's `X-Image-File-Sizes` header, matching `image_content_types` in order. The API validates positive safe integers and the existing limits: 512 KiB for profiles, 3 MiB for administrator event images, and 5 MiB for candidate images. Sizes remain optional for the S3 rollback provider.
+
+Upload targets return `method: "PUT"`, empty `fields`, and a required content-type header. Upload the raw final Blob/File directly to R2. The five-minute SigV4 URL signs the object key, exact `Content-Length`, and `Content-Type`; a different size or MIME fails verification. Browser clients must let the browser supply Content-Length from the body. Do not send multipart form data or add application authorization headers. The API Worker handles no uploaded file bytes. Private downloads still use one-hour Worker capabilities and the R2 binding; public images use the existing bounded Worker read route.
+
+Configure `R2_ACCOUNT_ID` and `R2_BUCKET_NAME` for the same account/bucket as the `R2_BUCKET` binding. Store dedicated, bucket-scoped Object Read & Write credentials in Wrangler secrets `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`; never use AWS S3 credentials for R2. Configure [bucket CORS](https://developers.cloudflare.com/r2/buckets/cors/) to allow PUT and Content-Type from the deployed frontend origin and the documented local development origins. Presigned URLs can be reused until expiry, so image keys and existing ownership/publication checks continue to define the authorization boundary.
 
 The resumable copy helper runs from `workers/api/` using the logged-in AWS and Wrangler CLIs:
 
@@ -46,7 +50,7 @@ The helper preserves image keys and supported HTTP metadata, compares object byt
 
 1. Validate the runtime/adapters foundation, including an actual Workers runtime check.
 2. Port discovery/recommendations, authentication/member features, and administration/ingestion/extraction in bounded agent-owned domains.
-3. Add R2 upload/download capabilities, copy existing objects with matching keys and metadata, and verify a content manifest.
+3. Add exact-size R2 upload signatures and private download capabilities, copy existing objects with matching keys and metadata, and verify a content manifest.
 4. Move the existing React Router frontend deployment to Workers and verify browser journeys.
 5. Obtain independent review covering auth, duplicate publication, stale generations, dispatch recovery and rollback.
 6. Coordinate a short write pause, extraction producers/consumers, final object delta and API/caller switch. Verify the deployed versions and functional behavior before resuming.

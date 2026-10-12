@@ -2,7 +2,7 @@ import { Elysia } from 'elysia';
 import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker';
 import type { ApiEnv } from '../env';
 import { ApiError } from '../http/errors';
-import { MAX_IMAGE_BYTES, R2Storage, validateStorageKey } from '../services/storage';
+import { MAX_IMAGE_BYTES, validateStorageKey } from '../services/storage';
 import { verifyStorageCapability } from '../services/storage-capabilities';
 
 function requireR2(env: ApiEnv) {
@@ -34,14 +34,6 @@ async function imageResponse(env: ApiEnv, key: string, isPublic: boolean): Promi
 
 export function createStorageRoutes(env: ApiEnv) {
   return new Elysia({ name: 'r2-media', adapter: CloudflareAdapter, prefix: '/media' })
-    .put('/upload', async ({ request, set }) => {
-      requireR2(env);
-      const token = new URL(request.url).searchParams.get('token') ?? '';
-      const capability = await verifyStorageCapability(env, token, 'upload');
-      await new R2Storage(env).putUploadedImage(capability.key, request, capability.contentType!, capability.maxBytes!);
-      set.status = 204;
-      return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } });
-    }, { parse: 'none', detail: { hide: true } })
     .get('/private', async ({ request }) => {
       requireR2(env);
       const capability = await verifyStorageCapability(env, new URL(request.url).searchParams.get('token') ?? '', 'download');

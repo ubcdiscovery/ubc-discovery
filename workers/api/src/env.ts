@@ -11,6 +11,8 @@ export interface ApiEnv extends CloudflareBindings {
   EMAIL_SENDER_EMAIL?: string;
   S3_BUCKET_NAME?: string;
   S3_PUBLIC_BASE_URL?: string;
+  R2_ACCESS_KEY_ID?: string;
+  R2_SECRET_ACCESS_KEY?: string;
   UPLOAD_SIGNING_SECRET?: string;
   API_PUBLIC_BASE_URL?: string;
   CORS_ALLOWED_ORIGIN_REGEX?: string;

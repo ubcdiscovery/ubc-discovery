@@ -6,13 +6,15 @@ const EVENT_IMAGE_MAX_SIZE_PX = 1600;
 const EVENT_IMAGE_QUALITY = 0.88;
 
 export async function uploadAdminEventImage(eventId: string, file: File): Promise<AdminApiEvent> {
+  if (!file.size) throw new Error("Choose a non-empty image file.");
   let image: Blob;
   try {
     image = await resizeImage(file, EVENT_IMAGE_MAX_SIZE_PX, EVENT_IMAGE_QUALITY);
   } catch {
     throw new Error("Could not read that image. Choose a valid image file.");
   }
-  const target = await api.admin.events.presignedUpload(eventId);
+  if (!image.size) throw new Error("Event image is empty after compression.");
+  const target = await api.admin.events.presignedUpload(eventId, image.size);
 
   if (image.size > target.max_file_size_bytes) {
     throw new Error("Event image is too large after compression.");

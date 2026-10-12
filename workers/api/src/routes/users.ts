@@ -9,6 +9,7 @@ import { ApiError } from '../http/errors';
 import { presentUser } from '../presenters/users';
 import { presentUpload } from '../presenters/storage';
 import { isUbcEmail, normalizeMemberInput, onboardingSchema, updateProfileSchema } from '../schemas/member';
+import { uploadFileSize } from '../schemas/upload-size';
 import { createServices, type ServicesFactory } from '../services';
 import { createAuthRoutes } from './auth';
 import { createSavedEventRoutes } from './saved-events';
@@ -58,10 +59,12 @@ export function createUserRoutes(env: ApiEnv, servicesFactory: ServicesFactory =
       return withDatabase(env, async db => {
         const member = await requireMember(db, request, services.firebase);
         const maxBytes = integerSetting(env.PROFILE_PHOTO_MAX_BYTES, 512 * 1024);
-        if (member.profilePictureKey) await services.storage.deleteObject(member.profilePictureKey);
+        const fileSizeBytes = uploadFileSize(request, maxBytes, env.STORAGE_PROVIDER === 'r2');
         const upload = await services.storage.generatePresignedUpload({
           contentType: 'image/webp', fileKey: `profile-pictures/${crypto.randomUUID()}`, maxFileSizeBytes: maxBytes,
+          fileSizeBytes,
         });
+        if (member.profilePictureKey) await services.storage.deleteObject(member.profilePictureKey);
         await db.update(users).set({ profilePictureKey: upload.file_key }).where(eq(users.id, member.id));
         return presentUpload(upload, maxBytes);
       });
