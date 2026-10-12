@@ -16,6 +16,8 @@ test.beforeEach(async ({ memberApi, live }) => {
     expect(body.title).toBe(event.title);
     const end = new Date(body.event_end_date).getTime();
     if (event.id === live.futureEvent.id) {
+      const start = new Date(body.event_date).getTime();
+      if (!Number.isFinite(start) || start <= Date.now() + 120_000) throw new Error("The future fixture must start after the complete test; discovery excludes events that have started. Refresh the isolated staging fixture before rerunning.");
       if (!Number.isFinite(end) || end <= Date.now() + 120_000) throw new Error("The future fixture must remain future for the complete test; refusing mutation.");
     } else if (!Number.isFinite(end) || end >= Date.now()) {
       throw new Error("The past fixture needs an end time before now.");
