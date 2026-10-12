@@ -57,9 +57,11 @@ test("saves through deployed API, partitions Saved tabs, and removes the event",
       { timeout: 15_000 });
     await page.goto(`/events/${live.futureEvent.id}`);
     expect((await hydratedSaves).status()).toBe(200);
-    const save = page.waitForResponse(response => response.url() === `${live.apiBaseUrl}/saved-events/${live.futureEvent.id}` && response.request().method() === "PUT", { timeout: 15_000 });
-    await page.getByRole("button", { name: "Save event", exact: true }).filter({ visible: true }).click();
-    expect((await save).status()).toBe(201);
+    const [save] = await Promise.all([
+      page.waitForResponse(response => response.url() === `${live.apiBaseUrl}/saved-events/${live.futureEvent.id}` && response.request().method() === "PUT", { timeout: 15_000 }),
+      page.getByRole("button", { name: "Save event", exact: true }).filter({ visible: true }).click({ timeout: 8_000 }),
+    ]);
+    expect(save.status()).toBe(201);
     await expect(page.getByRole("button", { name: "Remove from saved events" }).filter({ visible: true })).toBeVisible();
     expect((await memberApi.put(`/saved-events/${live.pastEvent.id}`)).status()).toBe(201);
     await page.goto("/saved?tab=past");
