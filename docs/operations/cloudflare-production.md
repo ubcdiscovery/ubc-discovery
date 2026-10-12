@@ -44,15 +44,7 @@ Coordinate the existing extraction Worker separately after the API is ready:
 its checked-in callback now names the production API, and its existing queues,
 retry policy, cron and deployed secrets remain in place.
 
-`www.ubcdiscovery.com` is not a Worker route. It is configured in the Cloudflare
-dashboard, outside this repository: a proxied `www` DNS record plus a zone redirect
-rule that answers `301` to `https://ubcdiscovery.com` with the same path and query
-string. Check it after DNS changes:
-
-```bash
-curl -sI 'https://www.ubcdiscovery.com/saved?x=1' | grep -i '^location'
-# location: https://ubcdiscovery.com/saved?x=1
-```
+`www.ubcdiscovery.com` is configured as Cloudflare rule to redirect to `ubcdiscovery.com`
 
 The retained AWS runtime identity needs `bedrock:InvokeModel` for the existing Titan embedding model. Its least-privilege policy is [titan-embeddings.json](../../infra/prod/policies/titan-embeddings.json); apply it separately from the existing SES/S3 policies:
 
