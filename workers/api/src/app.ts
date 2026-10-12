@@ -3,6 +3,13 @@ import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { openapi } from "@elysiajs/openapi";
 import type { ApiEnv } from "./env";
 import { ApiError, errorResponse } from "./http/errors";
+import { createEventRoutes } from "./routes/events";
+import { createRecommendationRoutes } from "./routes/recommendations";
+import { createMemberRoutes } from "./routes/users";
+import { createAdminRoutes } from "./routes/admin";
+import { createIngestionRoutes } from "./routes/ingestion";
+import { createExtractionRoutes } from "./routes/extraction";
+import { createServices, type ServicesFactory } from "./services";
 
 function corsOrigin(env: ApiEnv, request: Request): string | null {
   const origin = request.headers.get("origin");
@@ -17,8 +24,8 @@ function corsOrigin(env: ApiEnv, request: Request): string | null {
 }
 
 /** Construct and compile once per deployment, with no mutable request state. */
-export function createApp(env: ApiEnv) {
-  return new Elysia({ name: "ubc-discovery-api", adapter: CloudflareAdapter })
+export function createApp(env: ApiEnv, servicesFactory: ServicesFactory = () => createServices(env)) {
+  return new Elysia({ name: "ubc-discovery-api", adapter: CloudflareAdapter, normalize: false })
     .use(openapi({ path: "/docs", specPath: "/openapi.json", documentation: { info: { title: "UBC Discovery API", version: "0.1.0" } } }))
     .onRequest(({ request, set }) => {
       const origin = corsOrigin(env, request);
@@ -39,10 +46,24 @@ export function createApp(env: ApiEnv) {
     .onError(({ code, error }) => {
       if (code === "NOT_FOUND") return Response.json({ detail: "Not Found" }, { status: 404 });
       if (code === "VALIDATION" || code === "PARSE") {
-        return Response.json({ detail: "Invalid request" }, { status: code === "PARSE" ? 400 : 422 });
+        return Response.json({ detail: "Invalid request" }, { status: 422 });
       }
       return errorResponse(error);
     })
+    .onTransform(({ query }) => {
+      // Starlette's scalar query parameters use the last repeated value. Elysia
+      // initially parses repetitions as arrays; collapse before validation.
+      const scalarQuery = query as Record<string, string | string[]>;
+      for (const [key, value] of Object.entries(scalarQuery)) {
+        if (Array.isArray(value)) scalarQuery[key] = value.at(-1) ?? "";
+      }
+    })
     .get("/", () => ({ status: "ok", app: "UBC Discovery API" }), { detail: { tags: ["Health"] } })
+    .use(createEventRoutes(env, servicesFactory))
+    .use(createRecommendationRoutes(env, servicesFactory))
+    .use(createMemberRoutes(env, servicesFactory))
+    .use(createAdminRoutes(env, servicesFactory))
+    .use(createIngestionRoutes(env, servicesFactory))
+    .use(createExtractionRoutes(env, servicesFactory))
     .compile();
 }

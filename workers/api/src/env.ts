@@ -16,6 +16,13 @@ export interface ApiEnv extends CloudflareBindings {
   CORS_ALLOWED_ORIGIN_REGEX?: string;
   EXTRACTION_QUEUE_PRODUCER_URL?: string;
   EXTRACTION_QUEUE_PRODUCER_SECRET?: string;
+  PROFILE_PHOTO_MAX_BYTES?: string;
+  EVENT_IMAGE_MAX_BYTES?: string;
+  CANDIDATE_IMAGE_MAX_BYTES?: string;
+  EXTRACTION_MODEL?: string;
+  EXTRACTION_REASONING_EFFORT?: string;
+  EXTRACTION_IMAGE_DETAIL?: string;
+  EXTRACTION_IMAGE_WAIT_SECONDS?: string;
 }
 
 export function integerSetting(value: string | undefined, fallback: number): number {
