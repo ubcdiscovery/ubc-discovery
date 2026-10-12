@@ -107,12 +107,6 @@ uv run pytest tests/ -v
 
 Tests use `DATABASE_URL` from `backend/.env`. Use a dedicated, empty test database: transaction rollback isolates test writes, but existing rows remain visible to queries.
 
-## Deployment
-
-Pushes to `main` build the backend image in GitHub Actions and deploy it to AWS Lightsail. Infrastructure configuration lives in `infra/prod/`.
-
-The web frontend is a Cloudflare Worker, deployed only by the manual **Deploy Cloudflare production** workflow; merges never deploy it. See `docs/operations/cloudflare-production.md`.
-
 ## DB Credentials
 
 All in `.env` (not committed).
