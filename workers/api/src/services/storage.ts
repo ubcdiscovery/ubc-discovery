@@ -1,6 +1,7 @@
 import type { ApiEnv } from '../env';
 import { ApiError } from '../http/errors';
 import { awsCredentials, awsRequest, createAwsClient, readBoundedBytes, signPostPolicy, type Fetcher } from './aws';
+import { signStorageCapability, storageApiBase } from './storage-capabilities';
 
 export const PRESIGNED_DOWNLOAD_EXPIRES_IN = 3600;
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -8,6 +9,8 @@ export interface PresignedUpload {
   url: string;
   fields: Record<string, string>;
   file_key: string;
+  method?: 'POST' | 'PUT';
+  headers?: Record<string, string>;
 }
 export interface UploadOptions {
   contentType: string;
@@ -158,7 +161,9 @@ export class R2Storage implements ObjectStorage {
     return this.env.R2_BUCKET;
   }
 
-  publicUrl(fileKey: string) { return publicObjectUrl(this.env.R2_PUBLIC_BASE_URL, fileKey); }
+  publicUrl(fileKey: string) {
+    return publicObjectUrl(`${storageApiBase(this.env)}/media/public`, fileKey);
+  }
 
   async objectExists(fileKey: string) {
     validateStorageKey(fileKey);
@@ -218,14 +223,19 @@ export class R2Storage implements ObjectStorage {
     if (!result) throw new ApiError(502, 'Storage upload failed');
   }
 
-  generatePresignedDownloadUrl(_fileKey: string, _expiresIn = PRESIGNED_DOWNLOAD_EXPIRES_IN): Promise<string> {
-    // A Workers binding has no S3 signing credential. The private download route
-    // and its short-lived capability must be implemented before R2 cutover.
-    throw new ApiError(501, 'R2 private download endpoint is not configured');
+  async generatePresignedDownloadUrl(fileKey: string, expiresIn = PRESIGNED_DOWNLOAD_EXPIRES_IN): Promise<string> {
+    validateStorageKey(fileKey);
+    const token = await signStorageCapability(this.env, { operation: 'download', key: fileKey }, expiresIn);
+    return `${storageApiBase(this.env)}/media/private?token=${encodeURIComponent(token)}`;
   }
 
-  generatePresignedUpload(_options: UploadOptions): Promise<PresignedUpload> {
-    throw new ApiError(501, 'R2 upload endpoint is not configured');
+  async generatePresignedUpload({ contentType, fileKey, maxFileSizeBytes }: UploadOptions): Promise<PresignedUpload> {
+    validateStorageKey(fileKey);
+    imageLimit(maxFileSizeBytes);
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(contentType)) throw new ApiError(400, 'Invalid image content type');
+    const token = await signStorageCapability(this.env, { operation: 'upload', key: fileKey, contentType, maxBytes: maxFileSizeBytes }, 300);
+    return { url: `${storageApiBase(this.env)}/media/upload?token=${encodeURIComponent(token)}`,
+      fields: {}, file_key: fileKey, method: 'PUT', headers: { 'content-type': contentType } };
   }
 }
 

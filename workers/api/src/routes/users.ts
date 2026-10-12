@@ -7,6 +7,7 @@ import { integerSetting, type ApiEnv } from '../env';
 import { requireIdentity, requireMember } from '../http/auth';
 import { ApiError } from '../http/errors';
 import { presentUser } from '../presenters/users';
+import { presentUpload } from '../presenters/storage';
 import { isUbcEmail, normalizeMemberInput, onboardingSchema, updateProfileSchema } from '../schemas/member';
 import { createServices, type ServicesFactory } from '../services';
 import { createAuthRoutes } from './auth';
@@ -62,7 +63,7 @@ export function createUserRoutes(env: ApiEnv, servicesFactory: ServicesFactory =
           contentType: 'image/webp', fileKey: `profile-pictures/${crypto.randomUUID()}`, maxFileSizeBytes: maxBytes,
         });
         await db.update(users).set({ profilePictureKey: upload.file_key }).where(eq(users.id, member.id));
-        return { upload_url: upload.url, fields: upload.fields, file_key: upload.file_key, max_file_size_bytes: maxBytes };
+        return presentUpload(upload, maxBytes);
       });
     }, { detail: { tags: ['Users'] } })
     .get('/users/me/stats', async ({ request }) => {

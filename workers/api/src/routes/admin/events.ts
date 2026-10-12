@@ -1,4 +1,5 @@
 import { Elysia, t } from 'elysia';
+import { presentUpload } from '../../presenters/storage';
 import { CloudflareAdapter } from 'elysia/adapter/cloudflare-worker';
 import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { events, eventAuditLogs as audits, type Event } from '../../db/schema';
@@ -63,7 +64,7 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
   const maxBytes = integerSetting(env.EVENT_IMAGE_MAX_BYTES, 3 * 1024 * 1024);
   const upload = await services.storage.generatePresignedUpload({ fileKey: eventImageKey(event.id), contentType: 'image/webp', maxFileSizeBytes: maxBytes });
   await addEventAudit(tx, event, actor, 'image_upload', null, { event_picture_key: upload.file_key }, services.now());
-  return { upload_url: upload.url, fields: upload.fields, file_key: upload.file_key, max_file_size_bytes: maxBytes };
+  return presentUpload(upload, maxBytes);
  }), { parse: 'none', detail: { tags: ['Admin Events'] } });
  for (const [path, archived] of [['archive', true], ['restore', false]] as const) {
   routes.post(`/:event_id/${path}`, ({ request, params }) => adminTransaction(env, request, servicesFactory, async (tx, actor, services) => {

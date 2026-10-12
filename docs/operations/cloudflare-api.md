@@ -19,9 +19,28 @@ Direct database origins use TLS with certificate verification by default, retain
 - Create and close database clients within the request. Hyperdrive query caching must initially be disabled because callers expect fresh reads after writes.
 - Candidate publication currently uses a transaction-scoped advisory lock. Hyperdrive does not support advisory locks; publication must use the direct database connection, or an independently validated locking replacement, before cutover.
 - SES and Bedrock use signed HTTPS requests. Never log request bodies, authorization headers, private keys, OTPs or provider credentials.
-- S3's signed POST upload contract remains available during the API port. R2 upload and private-download contracts must be implemented and integrated with frontend and scraper callers before setting `STORAGE_PROVIDER=r2`.
+- S3's signed POST upload contract remains available during the API port. Both frontend and scraper callers must accept the response's optional `method` and `headers` before switching to R2; absent `method` means the existing multipart POST contract.
 - Scalar query parameters retain the last repeated value and ignore unrelated parameters. Malformed JSON and validation failures return 422. Profile/candidate models that forbid extra fields remain strict; permissive Python models continue to ignore extras.
 - The Worker uses current `America/Vancouver` timezone data, including permanent UTC-7 after March 2026. Verify the old runtime's timezone data before comparing same-club calendar-day boundaries near midnight; stored event timestamps remain UTC.
+
+## R2 images
+
+Keep the bucket private, with both public development access and custom bucket domains disabled. The API serves only `profile-pictures/`, `event-pictures/` and legacy `event-images/` through `/media/public/`; candidate evidence requires an expiring signed download URL. Configure `API_PUBLIC_BASE_URL` to the API's HTTPS origin and set `UPLOAD_SIGNING_SECRET` through Wrangler secrets to at least 32 random bytes. Rotating this secret invalidates outstanding storage URLs.
+
+Keep `observability.redact_query_string: true` when deploying: storage URLs carry bearer capabilities in their query string. Never print these URLs in application logs or error messages. Cloudflare logs and traces remain enabled with query strings redacted.
+
+For R2, authenticated upload-target endpoints return `method: "PUT"`, an empty `fields` object, and a required content-type header. Send the raw file to `upload_url`. The Worker checks the signature, expiry, object key, MIME header, nonempty body and actual streamed byte count before writing through its R2 binding. Limits remain 512 KiB for profiles, 3 MiB for administrator event images, and 5 MiB for candidate images. Upload URLs expire after five minutes; private image download URLs expire after one hour. These are Worker capabilities, rather than R2 S3 credentials or S3 multipart POST policies.
+
+The resumable copy helper runs from `workers/api/` using the logged-in AWS and Wrangler CLIs:
+
+```bash
+node scripts/migrate-storage.mjs --source S3_BUCKET --target R2_BUCKET \
+  --manifest /private/path/storage-manifest.json --mode inspect \
+  --cf-account CLOUDFLARE_ACCOUNT_ID
+# Repeat with --mode copy, then --mode verify after the final write pause.
+```
+
+The helper preserves image keys and supported HTTP metadata, compares object bytes using SHA-256, checkpoints a private manifest, checks that the source inventory stayed stable, and never deletes objects. Zero-byte S3 folder markers are listed separately and skipped. Custom S3 metadata and unsupported image types/sizes require explicit handling instead of silent loss. Copy and verify require an explicit 32-character Cloudflare account ID, confirm that account through the API, and pin Wrangler and REST reads to the same captured bearer token. The manifest records the account and verifies bytes, size, MIME and supported HTTP metadata through the [R2 object REST API](https://developers.cloudflare.com/api/resources/r2/subresources/buckets/subresources/objects/methods/get/). Encoded images are rejected because the serving route does not support them. Source modification timestamps participate in resume and inventory checks, including metadata-only updates. Authentication uses the logged-in [Wrangler bearer token](https://developers.cloudflare.com/workers/wrangler/commands/general/#auth-token) or `CLOUDFLARE_API_TOKEN` (also accepts `CF_API_TOKEN`); it requires account read and R2 object read/write permissions. Tokens are captured privately and never written to the manifest or logs. A resumed copy skips previously verified unchanged source entries; the final `verify` always reads both stores again. Require a successful final `verify` run with `mode: "verify"`, `allVerified: true`, and its new `verifiedAt` timestamp as the cutover gate. Every new attempt invalidates an earlier gate before external calls; a copy checkpoint has no final verification timestamp.
 
 ## Delivery and cutover
 

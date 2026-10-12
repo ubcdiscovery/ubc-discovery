@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm';
+import { presentUpload } from '../presenters/storage';
 import { eventListingCandidates as candidates, eventListingCandidateIngestionAudits as audits, type EventListingCandidate } from '../db/schema';
 import type { DbTransaction } from '../db';
 import type { CandidateIngestionInput } from '../schemas/candidates';
@@ -50,7 +51,7 @@ export async function ingestCandidate(tx: DbTransaction, body: CandidateIngestio
  const maxFileSizeBytes = integerSetting(env.CANDIDATE_IMAGE_MAX_BYTES, 5 * 1024 * 1024);
  const uploads = candidate!.extractedAt ? [] : await Promise.all((candidate!.imageKeys ?? []).map(async (key, index) => {
   const upload = await services.storage.generatePresignedUpload({ fileKey: key, contentType: body.image_content_types[index]!, maxFileSizeBytes });
-  return { upload_url: upload.url, fields: upload.fields, file_key: upload.file_key, max_file_size_bytes: maxFileSizeBytes };
+  return presentUpload(upload, maxFileSizeBytes);
  }));
  const [audit] = await tx.insert(audits).values({ candidateId: candidate!.id, sourceType: values.sourceType, externalSourceId: values.externalSourceId,
   outcome, actorType: 'api_key', actorId: credential.actorId, credentialLabel: credential.name, receivedAt: services.now() }).returning();
