@@ -1,6 +1,12 @@
+from enum import StrEnum
 from typing import Literal
 
 from pydantic_settings import BaseSettings
+
+
+class ExtractionMode(StrEnum):
+    LEGACY = "legacy"
+    QUEUE = "queue"
 
 
 class Settings(BaseSettings):
@@ -29,6 +35,10 @@ class Settings(BaseSettings):
 
     openai_api_key: str = ""
     extraction_enabled: bool = False
+    extraction_mode: ExtractionMode = ExtractionMode.LEGACY
+    extraction_queue_producer_url: str = ""
+    extraction_queue_producer_secret: str = ""
+    extraction_delivery_timeout_seconds: int = 25 * 60 * 60
     extraction_model: str = "gpt-5.6-luna"
     extraction_reasoning_effort: Literal[
         "none", "minimal", "low", "medium", "high", "xhigh", "max"

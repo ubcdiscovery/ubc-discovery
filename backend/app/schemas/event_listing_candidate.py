@@ -107,6 +107,10 @@ class EventListingCandidateAdminResponse(EventListingCandidateResponse):
     extracted_original: dict | list | None = None
     extraction_model: str | None = None
     extracted_at: datetime | None = None
+    capture_ready_at: datetime | None = None
+    processing_dispatched_at: datetime | None = None
+    processing_completed_at: datetime | None = None
+    processing_error: str | None = None
 
 
 class EventListingCandidateIngestionAuditResponse(BaseModel):

@@ -1,10 +1,13 @@
+import logging
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
+from app.config import ExtractionMode, settings
 from app.database import get_db
 from app.dependencies import (
     CandidateIngestionCredential,
@@ -12,6 +15,7 @@ from app.dependencies import (
 )
 from app.models.event_listing_candidate import (
     CandidateIngestionOutcome,
+    CandidateStatus,
     EventListingCandidate,
     EventListingCandidateIngestionAudit,
 )
@@ -20,10 +24,12 @@ from app.schemas.event_listing_candidate import (
     EventListingCandidateIngestionRequest,
     EventListingCandidateIngestionResponse,
 )
+from app.schemas.extraction import CaptureReadyResponse, CaptureStatus, Delivery
 from app.schemas.user import PresignedUploadResponse
 from app.services import s3
 from app.services.candidate_images import candidate_image_key
 from app.services.extraction.jobs import enqueue_extraction_job
+from app.services.extraction.queue import capture_timed_out, dispatch_candidates
 from app.services.ids import generate_unique_id
 
 router = APIRouter(prefix="/event-candidates", tags=["Candidate Ingestion"])
@@ -55,7 +61,7 @@ def _presigned_uploads(
     response_model=EventListingCandidateIngestionResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def ingest_event_listing_candidate(
+async def ingest_event_listing_candidate(  # noqa: PLR0912
     body: EventListingCandidateIngestionRequest,
     response: Response,
     credential: CandidateIngestionCredential = Depends(require_candidate_ingester),
@@ -143,7 +149,8 @@ async def ingest_event_listing_candidate(
         credential_label=credential.name,
     )
     db.add(audit)
-    await enqueue_extraction_job(db, candidate.id, delay_seconds=0)
+    if settings.extraction_mode == ExtractionMode.LEGACY:
+        await enqueue_extraction_job(db, candidate.id, delay_seconds=0)
     await db.commit()
     await db.refresh(candidate)
     await db.refresh(audit)
@@ -154,3 +161,70 @@ async def ingest_event_listing_candidate(
         candidate=candidate_to_response(candidate),
         uploads=uploads,
     )
+
+
+@router.post("/{candidate_id}/capture-ready", response_model=CaptureReadyResponse)
+async def capture_ready(
+    candidate_id: str,
+    _credential: CandidateIngestionCredential = Depends(require_candidate_ingester),
+    db: AsyncSession = Depends(get_db),
+):
+    candidate = await db.scalar(
+        select(EventListingCandidate)
+        .where(EventListingCandidate.id == candidate_id)
+        .with_for_update()
+    )
+    if candidate is None:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    if candidate.processing_completed_at or candidate.status != CandidateStatus.PENDING:
+        await db.commit()
+        return {
+            "candidate_id": candidate_id,
+            "status": CaptureStatus.COMPLETED,
+            "dispatched": False,
+        }
+    now = datetime.now(UTC)
+    generation = candidate.processing_generation
+    if any(
+        not s3.object_exists(key) for key in candidate.image_keys or []
+    ) and not capture_timed_out(candidate, now):
+        raise HTTPException(
+            status_code=409, detail="Candidate image uploads are incomplete"
+        )
+    candidate.capture_ready_at = candidate.capture_ready_at or now
+    await db.commit()
+    dispatched = False
+    if (
+        settings.extraction_mode == ExtractionMode.QUEUE
+        and candidate.processing_error is None
+        and candidate.processing_dispatched_at is None
+    ):
+        try:
+            dispatched = await dispatch_candidates(
+                [Delivery(candidate_id=candidate_id, generation=generation)]
+            )
+        except Exception:
+            logging.getLogger(__name__).exception(
+                "Queue dispatch failed for %s", candidate_id
+            )
+        if dispatched:
+            candidate = await db.scalar(
+                select(EventListingCandidate)
+                .where(EventListingCandidate.id == candidate_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            if (
+                candidate is not None
+                and candidate.processing_generation == generation
+                and candidate.processing_dispatched_at is None
+                and candidate.processing_error is None
+                and candidate.processing_completed_at is None
+            ):
+                candidate.processing_dispatched_at = datetime.now(UTC)
+            await db.commit()
+    return {
+        "candidate_id": candidate_id,
+        "status": CaptureStatus.READY,
+        "dispatched": dispatched,
+    }

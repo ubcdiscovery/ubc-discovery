@@ -54,6 +54,9 @@ async def enqueue_extraction_job(
     )
     job = inserted.scalar_one_or_none()
     if job is not None:
+        # Legacy re-ingestion can explicitly requeue failed, unextracted work.
+        # Clear its terminal progress so a later queue cutover can resume it.
+        candidate.processing_error = None
         return job
     result = await session.execute(
         select(CandidateExtractionJob).where(
@@ -184,6 +187,9 @@ async def fail_job(
     job.attempts += 1
     if job.attempts >= settings.extraction_max_attempts:
         job.status = ExtractionJobStatus.FAILED
+        candidate = await session.get(EventListingCandidate, job.candidate_id)
+        if candidate is not None and candidate.processing_completed_at is None:
+            candidate.processing_error = error
     else:
         job.status = ExtractionJobStatus.PENDING
         job.available_at = moment + timedelta(seconds=min(60 * job.attempts, 600))
@@ -200,3 +206,9 @@ async def complete_job(
     job.claimed_at = None
     job.last_error = None
     job.updated_at = moment
+    # Keep product progress current while legacy processing remains enabled
+    # after the additive migration; cutover must not republish review drafts.
+    candidate = await session.get(EventListingCandidate, job.candidate_id)
+    if candidate is not None:
+        candidate.processing_completed_at = candidate.processing_completed_at or moment
+        candidate.processing_error = None

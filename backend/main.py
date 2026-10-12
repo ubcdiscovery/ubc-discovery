@@ -8,19 +8,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from firebase_admin import credentials
 
-from app.config import settings
+from app.config import ExtractionMode, settings
 from app.database import engine
 from app.routers import (
     admin,
     auth,
     events,
+    extraction,
     ingestion,
     ratings,
     recommendations,
     saved_events,
     users,
 )
-from app.services.extraction.worker import run_extraction_worker
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,12 @@ async def lifespan(app: FastAPI):
 
     stop = asyncio.Event()
     worker_task = None
-    if settings.extraction_enabled:
+    if (
+        settings.extraction_enabled
+        and settings.extraction_mode == ExtractionMode.LEGACY
+    ):
+        from app.services.extraction.worker import run_extraction_worker
+
         worker_task = asyncio.create_task(run_extraction_worker(stop))
         logger.info("Candidate extraction worker scheduled")
     yield
@@ -73,6 +78,7 @@ app.include_router(users.router)
 app.include_router(events.router)
 app.include_router(admin.router)
 app.include_router(ingestion.router)
+app.include_router(extraction.router)
 app.include_router(ratings.router)
 app.include_router(saved_events.router)
 app.include_router(recommendations.router)

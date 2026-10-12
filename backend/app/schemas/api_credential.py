@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models.api_credential import ApiCredentialAuditAction
+from app.models.api_credential import ApiCredentialAuditAction, ApiCredentialScope
 from app.models.audit_actor import AuditActorType
 
 CredentialStatus = Literal["active", "expired", "revoked"]
@@ -13,6 +13,9 @@ CredentialStatus = Literal["active", "expired", "revoked"]
 class ApiCredentialCreateRequest(BaseModel):
     label: str = Field(min_length=1, max_length=80)
     expires_at: datetime | None = None
+    scopes: list[ApiCredentialScope] = Field(
+        default=[ApiCredentialScope.INGEST], min_length=1
+    )
 
     @field_validator("expires_at")
     @classmethod
@@ -41,6 +44,7 @@ class ApiCredentialResponse(BaseModel):
     revoked_at: datetime | None
     last_used_at: datetime | None
     status: CredentialStatus
+    scopes: list[str]
 
 
 class ApiCredentialCreateResponse(ApiCredentialResponse):
