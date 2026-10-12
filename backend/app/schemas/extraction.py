@@ -13,6 +13,7 @@ class EvidenceState(StrEnum):
     COMPLETED = "completed"
     TERMINAL = "terminal"
     MISSING = "missing"
+    STALE = "stale"
 
 
 class ResultStatus(StrEnum):
@@ -20,6 +21,7 @@ class ResultStatus(StrEnum):
     RETRY = "retry"
     TERMINAL = "terminal"
     MISSING = "missing"
+    STALE = "stale"
 
 
 class EvidenceRequest(BaseModel):
@@ -31,6 +33,23 @@ class EvidenceRequest(BaseModel):
         if len(ids) != len(set(ids)):
             raise ValueError("candidate_ids must be unique")
         return ids
+
+
+class Delivery(BaseModel):
+    candidate_id: str
+    generation: int = Field(ge=1)
+
+
+class DeliveriesRequest(BaseModel):
+    candidates: list[Delivery] = Field(min_length=1, max_length=10)
+
+    @field_validator("candidates")
+    @classmethod
+    def distinct_deliveries(cls, values: list[Delivery]) -> list[Delivery]:
+        identities = [(item.candidate_id, item.generation) for item in values]
+        if len(identities) != len(set(identities)):
+            raise ValueError("deliveries must be unique")
+        return values
 
 
 class QueueExtraction(BaseModel):
@@ -51,8 +70,7 @@ class QueueExtraction(BaseModel):
         return value
 
 
-class QueueResult(BaseModel):
-    candidate_id: str
+class QueueResult(Delivery):
     extraction: QueueExtraction | None = None
 
 
@@ -74,8 +92,7 @@ class ResultsRequest(BaseModel):
         return values
 
 
-class TerminalRequest(BaseModel):
-    candidate_id: str
+class TerminalRequest(Delivery):
     error: str = Field(min_length=1, max_length=2000)
 
 

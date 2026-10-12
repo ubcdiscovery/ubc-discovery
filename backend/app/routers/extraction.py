@@ -14,6 +14,7 @@ from app.database import get_db
 from app.dependencies import require_candidate_extractor
 from app.models.event_listing_candidate import CandidateStatus, EventListingCandidate
 from app.schemas.extraction import (
+    DeliveriesRequest,
     EvidenceRequest,
     EvidenceState,
     ResultsRequest,
@@ -42,22 +43,27 @@ def _require_queue_mode():
 
 
 @router.post("/evidence")
-async def evidence(body: EvidenceRequest, db: AsyncSession = Depends(get_db)):
+async def evidence(body: DeliveriesRequest, db: AsyncSession = Depends(get_db)):
     _require_queue_mode()
     rows = await db.scalars(
         select(EventListingCandidate)
-        .where(EventListingCandidate.id.in_(body.candidate_ids))
+        .where(
+            EventListingCandidate.id.in_(item.candidate_id for item in body.candidates)
+        )
         .order_by(EventListingCandidate.created_at, EventListingCandidate.id)
     )
     by_id = {item.id: item for item in rows}
     items = []
     now = datetime.now(UTC)
-    for candidate_id in body.candidate_ids:
+    for delivery in body.candidates:
+        candidate_id = delivery.candidate_id
         candidate = by_id.get(candidate_id)
         if candidate is None:
-            items.append({"candidate_id": candidate_id, "state": EvidenceState.MISSING})
+            items.append({**delivery.model_dump(), "state": EvidenceState.MISSING})
             continue
-        if (
+        if candidate.processing_generation != delivery.generation:
+            state = EvidenceState.STALE
+        elif (
             candidate.processing_completed_at
             or candidate.status != CandidateStatus.PENDING
         ):
@@ -74,6 +80,7 @@ async def evidence(body: EvidenceRequest, db: AsyncSession = Depends(get_db)):
             state = EvidenceState.READY
         item = {
             "candidate_id": candidate.id,
+            "generation": delivery.generation,
             "state": state,
             "created_at": candidate.created_at.isoformat(),
         }
@@ -101,6 +108,18 @@ async def evidence(body: EvidenceRequest, db: AsyncSession = Depends(get_db)):
         "schema": RESPONSE_SCHEMA,
         "items": items,
     }
+
+
+def _settled_status(
+    candidate: EventListingCandidate, generation: int
+) -> ResultStatus | None:
+    if candidate.processing_generation != generation:
+        return ResultStatus.STALE
+    if candidate.processing_error:
+        return ResultStatus.TERMINAL
+    if candidate.processing_completed_at or candidate.status != CandidateStatus.PENDING:
+        return ResultStatus.COMPLETED
+    return None
 
 
 @router.post("/results")
@@ -132,22 +151,12 @@ async def results(body: ResultsRequest, db: AsyncSession = Depends(get_db)):
             .execution_options(populate_existing=True)
         )
         assert candidate is not None
-        if candidate.processing_error:
-            outcomes.append(
-                {"candidate_id": candidate_id, "status": ResultStatus.TERMINAL}
-            )
-            await db.commit()
-            continue
-        if (
-            candidate.processing_completed_at
-            or candidate.status != CandidateStatus.PENDING
-        ):
-            outcomes.append(
-                {"candidate_id": candidate_id, "status": ResultStatus.COMPLETED}
-            )
-            await db.commit()
-            continue
         item = by_id[candidate_id]
+        status = _settled_status(candidate, item.generation)
+        if status is not None:
+            outcomes.append({"candidate_id": candidate_id, "status": status})
+            await db.commit()
+            continue
         if candidate.extracted_at is None:
             if item.extraction is None:
                 raise HTTPException(
@@ -184,12 +193,9 @@ async def results(body: ResultsRequest, db: AsyncSession = Depends(get_db)):
             .execution_options(populate_existing=True)
         )
         assert candidate is not None
-        if candidate.processing_completed_at or candidate.processing_error:
-            status = (
-                ResultStatus.TERMINAL
-                if candidate.processing_error
-                else ResultStatus.COMPLETED
-            )
+        # Explicit replay can happen between the extraction commit and publication.
+        status = _settled_status(candidate, item.generation)
+        if status is not None:
             outcomes.append({"candidate_id": candidate_id, "status": status})
             await db.commit()
             continue
@@ -224,12 +230,20 @@ async def terminal(body: TerminalRequest, db: AsyncSession = Depends(get_db)):
     )
     if (
         candidate
+        and candidate.processing_generation == body.generation
         and candidate.processing_completed_at is None
         and candidate.status == CandidateStatus.PENDING
     ):
         candidate.processing_error = body.error
     await db.commit()
-    return {"candidate_id": body.candidate_id, "status": ResultStatus.TERMINAL}
+    return {
+        "candidate_id": body.candidate_id,
+        "status": (
+            ResultStatus.STALE
+            if candidate and candidate.processing_generation != body.generation
+            else ResultStatus.TERMINAL
+        ),
+    }
 
 
 @router.get("/recovery")
@@ -276,10 +290,13 @@ async def recovery(
             .with_for_update(skip_locked=True)
         )
     )
-    ids = [candidate.id for candidate in candidates]
+    deliveries = [
+        {"candidate_id": candidate.id, "generation": candidate.processing_generation}
+        for candidate in candidates
+    ]
     await db.commit()
 
-    return {"candidate_ids": ids}
+    return {"candidates": deliveries}
 
 
 @router.post("/replay")
@@ -291,28 +308,41 @@ async def replay(body: EvidenceRequest, db: AsyncSession = Depends(get_db)):
         .where(EventListingCandidate.id.in_(body.candidate_ids))
         .with_for_update()
     )
+    replayed = []
     for candidate in candidates:
-        if candidate.processing_completed_at is None:
+        if (
+            candidate.processing_completed_at is None
+            and candidate.status == CandidateStatus.PENDING
+        ):
+            candidate.processing_generation += 1
             candidate.processing_error = None
             candidate.processing_dispatched_at = None
+            replayed.append(
+                {
+                    "candidate_id": candidate.id,
+                    "generation": candidate.processing_generation,
+                }
+            )
     await db.commit()
-    return {"candidate_ids": body.candidate_ids}
+    return {"candidates": replayed}
 
 
 @router.post("/dispatched")
-async def dispatched(body: EvidenceRequest, db: AsyncSession = Depends(get_db)):
+async def dispatched(body: DeliveriesRequest, db: AsyncSession = Depends(get_db)):
     _require_queue_mode()
     candidates = await db.scalars(
         select(EventListingCandidate)
         .where(
-            EventListingCandidate.id.in_(body.candidate_ids),
+            EventListingCandidate.id.in_(item.candidate_id for item in body.candidates),
             EventListingCandidate.processing_completed_at.is_(None),
             EventListingCandidate.processing_error.is_(None),
             EventListingCandidate.processing_dispatched_at.is_(None),
         )
         .with_for_update()
     )
+    deliveries = {(item.candidate_id, item.generation) for item in body.candidates}
     for candidate in candidates:
-        candidate.processing_dispatched_at = datetime.now(UTC)
+        if (candidate.id, candidate.processing_generation) in deliveries:
+            candidate.processing_dispatched_at = datetime.now(UTC)
     await db.commit()
-    return {"candidate_ids": body.candidate_ids}
+    return {"candidates": [item.model_dump() for item in body.candidates]}

@@ -27,8 +27,8 @@ function environment(): Env {
   };
 }
 
-function item(id: string, state: EvidenceItem["state"] = "ready"): EvidenceItem {
-  return { candidate_id: id, state, caption: "Club event", source_account: "club", source_type: "instagram", reference_timestamp: "2026-10-11T12:00:00Z", created_at: "2026-10-11T12:00:00Z", images: [{ url: "https://s3.example/signed-image" }] };
+function item(id: string, state: EvidenceItem["state"] = "ready", generation = 1): EvidenceItem {
+  return { candidate_id: id, generation, state, caption: "Club event", source_account: "club", source_type: "instagram", reference_timestamp: "2026-10-11T12:00:00Z", created_at: "2026-10-11T12:00:00Z", images: [{ url: "https://s3.example/signed-image" }] };
 }
 
 function evidence(items: EvidenceItem[]): EvidenceBatch {
@@ -39,8 +39,8 @@ function extraction(id: string): Extraction {
   return { candidate_id: id, is_event: true, title: "Club event", event_date: "2026-10-15T19:00:00-07:00", event_end_date: null, location_name: "UBC", club_name: "Club", vibes: ["social"] };
 }
 
-function message(id: string, attempts = 1) {
-  return { id: `message-${id}`, body: { candidate_id: id }, attempts, timestamp: new Date(), ack: vi.fn(), retry: vi.fn() };
+function message(id: string, attempts = 1, generation = 1) {
+  return { id: `message-${id}`, body: { candidate_id: id, generation }, attempts, timestamp: new Date(), ack: vi.fn(), retry: vi.fn() };
 }
 
 function batch(messages: ReturnType<typeof message>[], queue = "ubc-discovery-extraction"): MessageBatch<ExtractionMessage> {
@@ -56,16 +56,16 @@ describe("producer", () => {
     const env = environment();
     const unauthorized = await worker.fetch(new Request("https://worker/enqueue", { method: "POST" }), env);
     expect(unauthorized.status).toBe(401);
-    const invalid = await worker.fetch(new Request("https://worker/enqueue", { method: "POST", headers: { Authorization: "Bearer local-secret" }, body: JSON.stringify({ candidate_ids: ["invalid"] }) }), env);
+    const invalid = await worker.fetch(new Request("https://worker/enqueue", { method: "POST", headers: { Authorization: "Bearer local-secret" }, body: JSON.stringify({ candidates: [{ candidate_id: "invalid", generation: 1 }] }) }), env);
     expect(invalid.status).toBe(400);
     expect(env.EXTRACTION_QUEUE.sendBatch).not.toHaveBeenCalled();
   });
 
   it("enqueues IDs only and deduplicates the producer request", async () => {
     const env = environment();
-    const response = await worker.fetch(new Request("https://worker/enqueue", { method: "POST", headers: { Authorization: "Bearer local-secret" }, body: JSON.stringify({ candidate_ids: [first, first, second] }) }), env);
+    const response = await worker.fetch(new Request("https://worker/enqueue", { method: "POST", headers: { Authorization: "Bearer local-secret" }, body: JSON.stringify({ candidates: [{ candidate_id: first, generation: 1 }, { candidate_id: first, generation: 1 }, { candidate_id: second, generation: 1 }] }) }), env);
     expect(response.status).toBe(202);
-    expect(env.EXTRACTION_QUEUE.sendBatch).toHaveBeenCalledWith([{ body: { candidate_id: first } }, { body: { candidate_id: second } }]);
+    expect(env.EXTRACTION_QUEUE.sendBatch).toHaveBeenCalledWith([{ body: { candidate_id: first, generation: 1 } }, { body: { candidate_id: second, generation: 1 } }]);
   });
 });
 
@@ -90,7 +90,7 @@ describe("queue consumption", () => {
       .mockResolvedValueOnce(json({ results: [{ candidate_id: first, status: "completed" }] }));
     await consume(batch([a, duplicate]), environment(), http);
     expect(http).toHaveBeenCalledTimes(2);
-    expect(JSON.parse(http.mock.calls[1][1]!.body as string).results).toEqual([{ candidate_id: first, extraction: null }]);
+    expect(JSON.parse(http.mock.calls[1][1]!.body as string).results).toEqual([{ candidate_id: first, generation: 1, extraction: null }]);
     expect(a.ack).toHaveBeenCalledOnce();
     expect(duplicate.ack).toHaveBeenCalledOnce();
   });
@@ -117,14 +117,46 @@ describe("queue consumption", () => {
     expect(b.ack).toHaveBeenCalledOnce();
   });
 
-  it("backs off the batch for a rate limit instead of issuing single calls", async () => {
+  it.each([401, 403, 429, 500, 503])("backs off the batch for shared HTTP %s failures", async (status) => {
     const a = message(first), b = message(second), http = httpMock();
     http.mockResolvedValueOnce(json(evidence([item(first), item(second)])))
-      .mockResolvedValueOnce(json({}, 429));
+      .mockResolvedValueOnce(json({}, status));
     await consume(batch([a, b]), environment(), http);
     expect(http).toHaveBeenCalledTimes(2);
     expect(a.retry).toHaveBeenCalledOnce();
     expect(b.retry).toHaveBeenCalledOnce();
+  });
+
+  it("isolates a candidate-specific HTTP 400 so healthy candidates persist", async () => {
+    const a = message(first), b = message(second), http = httpMock();
+    http.mockResolvedValueOnce(json(evidence([item(first), item(second)])))
+      .mockResolvedValueOnce(json({ error: { code: "invalid_image" } }, 400))
+      .mockResolvedValueOnce(ai([extraction(first)]))
+      .mockResolvedValueOnce(json({ error: { code: "invalid_image" } }, 400))
+      .mockResolvedValueOnce(json({ results: [{ candidate_id: first, status: "completed" }] }));
+    await consume(batch([a, b]), environment(), http);
+    expect(http).toHaveBeenCalledTimes(5);
+    expect(JSON.parse(http.mock.calls[4][1]!.body as string).results).toEqual([
+      { candidate_id: first, generation: 1, extraction: extraction(first) },
+    ]);
+    expect(a.ack).toHaveBeenCalledOnce();
+    expect(a.retry).not.toHaveBeenCalled();
+    expect(b.retry).toHaveBeenCalledOnce();
+  });
+
+  it("acks an old generation while processing a replay of the same candidate", async () => {
+    const old = message(first), replay = message(first, 1, 2), http = httpMock();
+    http.mockResolvedValueOnce(json(evidence([item(first, "stale"), item(first, "ready", 2)])))
+      .mockResolvedValueOnce(ai([extraction(first)]))
+      .mockResolvedValueOnce(json({ results: [{ candidate_id: first, status: "completed" }] }));
+    await consume(batch([old, replay]), environment(), http);
+    expect(JSON.parse(http.mock.calls[0][1]!.body as string).candidates).toEqual([
+      { candidate_id: first, generation: 1 }, { candidate_id: first, generation: 2 },
+    ]);
+    expect(JSON.parse(http.mock.calls[2][1]!.body as string).results[0].generation).toBe(2);
+    expect(old.ack).toHaveBeenCalledOnce();
+    expect(replay.ack).toHaveBeenCalledOnce();
+    expect(old.retry).not.toHaveBeenCalled();
   });
 
   it("isolates malformed fields so valid candidates can persist", async () => {
@@ -172,6 +204,7 @@ describe("queue consumption", () => {
     await consume(batch([a], "ubc-discovery-extraction-dlq"), environment(), http);
     expect(http).toHaveBeenCalledOnce();
     expect(String(http.mock.calls[0][0])).toContain("/terminal");
+    expect(JSON.parse(http.mock.calls[0][1]!.body as string).generation).toBe(1);
     expect(a.ack).toHaveBeenCalledOnce();
   });
 
@@ -187,16 +220,16 @@ describe("queue consumption", () => {
 describe("recovery", () => {
   it("dispatches the backend's bounded eligible IDs", async () => {
     const env = environment(), http = httpMock();
-    http.mockResolvedValueOnce(json({ candidate_ids: [first, second] })).mockResolvedValueOnce(json({ dispatched: true }));
+    http.mockResolvedValueOnce(json({ candidates: [{ candidate_id: first, generation: 1 }, { candidate_id: second, generation: 1 }] })).mockResolvedValueOnce(json({ dispatched: true }));
     await recover(env, http);
     expect(String(http.mock.calls[0][0])).toContain("/recovery?limit=10");
-    expect(env.EXTRACTION_QUEUE.sendBatch).toHaveBeenCalledWith([{ body: { candidate_id: first } }, { body: { candidate_id: second } }]);
+    expect(env.EXTRACTION_QUEUE.sendBatch).toHaveBeenCalledWith([{ body: { candidate_id: first, generation: 1 } }, { body: { candidate_id: second, generation: 1 } }]);
     expect(String(http.mock.calls[1][0])).toContain("/dispatched");
   });
 
   it("does not mark failed Queue sends as accepted", async () => {
     const env = environment(), http = httpMock();
-    http.mockResolvedValueOnce(json({ candidate_ids: [first] }));
+    http.mockResolvedValueOnce(json({ candidates: [{ candidate_id: first, generation: 1 }] }));
     vi.mocked(env.EXTRACTION_QUEUE.sendBatch).mockRejectedValueOnce(new Error("queue unavailable"));
     await expect(recover(env, http)).rejects.toThrow("queue unavailable");
     expect(http).toHaveBeenCalledOnce();

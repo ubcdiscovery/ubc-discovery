@@ -5,6 +5,7 @@ export interface Env extends Omit<CloudflareBindings, "EXTRACTION_QUEUE"> {
 
 export interface ExtractionMessage {
   candidate_id: string;
+  generation: number;
 }
 
 export interface Extraction {
@@ -20,7 +21,8 @@ export interface Extraction {
 
 export interface EvidenceItem {
   candidate_id: string;
-  state: "ready" | "waiting" | "extracted" | "completed" | "terminal" | "missing";
+  generation: number;
+  state: "ready" | "waiting" | "extracted" | "completed" | "terminal" | "missing" | "stale";
   caption: string;
   source_account: string;
   source_type: string;
@@ -38,7 +40,7 @@ export interface EvidenceBatch {
   items: EvidenceItem[];
 }
 
-type ResultStatus = { candidate_id: string; status: "completed" | "retry" | "terminal" | "missing"; error?: string };
+type ResultStatus = { candidate_id: string; status: "completed" | "retry" | "terminal" | "missing" | "stale"; error?: string };
 type HttpClient = typeof fetch;
 
 // Log statuses and candidate IDs only. Upstream bodies may contain captions or secrets.
@@ -57,16 +59,22 @@ async function matchesDispatchSecret(provided: string, expected: string): Promis
   return crypto.subtle.timingSafeEqual(providedHash, expectedHash);
 }
 
-function candidateIds(value: unknown): string[] {
-  if (!value || typeof value !== "object" || !("candidate_ids" in value)) {
-    throw new Error("candidate_ids required");
+function deliveries(value: unknown): ExtractionMessage[] {
+  if (!value || typeof value !== "object" || !("candidates" in value)) {
+    throw new Error("candidates required");
   }
-  const ids = value.candidate_ids;
-  if (!Array.isArray(ids) || ids.length < 1 || ids.length > 10 ||
-    ids.some(id => typeof id !== "string" || !/^[A-Za-z0-9_-]{8}$/.test(id))) {
-    throw new Error("expected 1–10 candidate IDs");
+  const candidates = value.candidates;
+  if (!Array.isArray(candidates) || candidates.length < 1 || candidates.length > 10 ||
+    candidates.some(item => !item || typeof item !== "object" ||
+      typeof item.candidate_id !== "string" || !/^[A-Za-z0-9_-]{8}$/.test(item.candidate_id) ||
+      !Number.isSafeInteger(item.generation) || item.generation < 1)) {
+    throw new Error("expected 1–10 candidate IDs with generation");
   }
-  return [...new Set(ids)] as string[];
+  return [...new Map(candidates.map(item => [identity(item), { candidate_id: item.candidate_id, generation: item.generation }])).values()];
+}
+
+function identity(item: ExtractionMessage): string {
+  return `${item.candidate_id}:${item.generation}`;
 }
 
 function validDatetime(value: string): boolean {
@@ -149,7 +157,7 @@ async function failed(message: Message<ExtractionMessage>, env: Env, error: unkn
   console.error(JSON.stringify({ candidate_id: message.body.candidate_id, attempts: message.attempts, error: detail }));
   // Reporting failure is best effort here; the DLQ consumer repeats it durably.
   if (message.attempts >= Number(env.MAX_ATTEMPTS)) {
-    try { await api(env, "/terminal", { candidate_id: message.body.candidate_id, error: detail }, http); }
+    try { await api(env, "/terminal", { ...message.body, error: detail }, http); }
     catch { console.error("Terminal reporting deferred to dead-letter consumer"); }
   }
   message.retry({ delaySeconds: Math.min(60 * message.attempts, 600) });
@@ -159,7 +167,7 @@ export async function consume(batch: MessageBatch<ExtractionMessage>, env: Env, 
   if (batch.queue.endsWith("-dlq")) {
     for (const message of batch.messages) {
       try {
-        await api(env, "/terminal", { candidate_id: message.body.candidate_id, error: "Queue retries exhausted" }, http);
+        await api(env, "/terminal", { ...message.body, error: "Queue retries exhausted" }, http);
         message.ack();
       } catch { message.retry({ delaySeconds: 600 }); }
     }
@@ -167,29 +175,29 @@ export async function consume(batch: MessageBatch<ExtractionMessage>, env: Env, 
   }
 
   let evidence: EvidenceBatch;
-  try { evidence = await api(env, "/evidence", { candidate_ids: [...new Set(batch.messages.map(message => message.body.candidate_id))] }, http); }
+  try { evidence = await api(env, "/evidence", { candidates: [...new Map(batch.messages.map(message => [identity(message.body), message.body])).values()] }, http); }
   catch (error) {
     for (const message of batch.messages) await failed(message, env, error, http);
     return;
   }
   const messages = new Map<string, Message<ExtractionMessage>[]>();
   for (const message of batch.messages) {
-    const list = messages.get(message.body.candidate_id) ?? [];
+    const list = messages.get(identity(message.body)) ?? [];
     list.push(message);
-    messages.set(message.body.candidate_id, list);
+    messages.set(identity(message.body), list);
   }
   const ready: EvidenceItem[] = [];
-  const results: { candidate_id: string; extraction: Extraction | null }[] = [];
+  const results: (ExtractionMessage & { extraction: Extraction | null })[] = [];
   const seen = new Set<string>();
   for (const item of evidence.items) {
-    seen.add(item.candidate_id);
-    const delivery = messages.get(item.candidate_id) ?? [];
-    if (["completed", "terminal", "missing"].includes(item.state)) {
+    seen.add(identity(item));
+    const delivery = messages.get(identity(item)) ?? [];
+    if (["completed", "terminal", "missing", "stale"].includes(item.state)) {
       for (const message of delivery) message.ack();
     } else if (item.state === "waiting") {
       for (const message of delivery) message.retry({ delaySeconds: 15 });
     } else if (item.state === "extracted") {
-      results.push({ candidate_id: item.candidate_id, extraction: null });
+      results.push({ candidate_id: item.candidate_id, generation: item.generation, extraction: null });
     } else {
       ready.push(item);
     }
@@ -200,15 +208,20 @@ export async function consume(batch: MessageBatch<ExtractionMessage>, env: Env, 
   // Match the current packed-call fallback: only failed items are redelivered.
   if (ready.length) {
     try {
-      for (const result of await extract(env, evidence, ready, http)) results.push({ candidate_id: result.candidate_id, extraction: result });
+      for (const result of await extract(env, evidence, ready, http)) {
+        const item = ready.find(item => item.candidate_id === result.candidate_id)!;
+        results.push({ candidate_id: result.candidate_id, generation: item.generation, extraction: result });
+      }
     } catch (error) {
       // Rate limits/auth failures affect the entire batch; avoid ten more paid calls.
-      if (error instanceof UpstreamError) {
-        for (const item of ready) for (const message of messages.get(item.candidate_id) ?? []) await failed(message, env, error, http);
+      // A bad image or oversized packed request (400/413) can affect just one
+      // candidate. Isolate those; shared auth/rate/server failures use backoff.
+      if (error instanceof UpstreamError && ![400, 413].includes(error.status)) {
+        for (const item of ready) for (const message of messages.get(identity(item)) ?? []) await failed(message, env, error, http);
       } else {
         for (const item of ready) {
-          try { results.push({ candidate_id: item.candidate_id, extraction: (await extract(env, evidence, [item], http))[0] }); }
-          catch (individualError) { for (const message of messages.get(item.candidate_id) ?? []) await failed(message, env, individualError, http); }
+          try { results.push({ candidate_id: item.candidate_id, generation: item.generation, extraction: (await extract(env, evidence, [item], http))[0] }); }
+          catch (individualError) { for (const message of messages.get(identity(item)) ?? []) await failed(message, env, individualError, http); }
         }
       }
     }
@@ -218,21 +231,21 @@ export async function consume(batch: MessageBatch<ExtractionMessage>, env: Env, 
     const saved = await api<{ results: ResultStatus[] }>(env, "/results", { model: evidence.model, results }, http);
     for (const result of results) {
       const status = saved.results.find(item => item.candidate_id === result.candidate_id);
-      for (const message of messages.get(result.candidate_id) ?? []) {
-        if (status && ["completed", "terminal", "missing"].includes(status.status)) message.ack();
+      for (const message of messages.get(identity(result)) ?? []) {
+        if (status && ["completed", "terminal", "missing", "stale"].includes(status.status)) message.ack();
         else await failed(message, env, new Error("Result persistence or publication failed"), http);
       }
     }
   } catch (error) {
-    for (const result of results) for (const message of messages.get(result.candidate_id) ?? []) await failed(message, env, error, http);
+    for (const result of results) for (const message of messages.get(identity(result)) ?? []) await failed(message, env, error, http);
   }
 }
 
 export async function recover(env: Env, http: HttpClient = fetch): Promise<void> {
-  const recovery = await api<{ candidate_ids: string[] }>(env, "/recovery?limit=10", undefined, http);
-  if (recovery.candidate_ids.length) {
-    await env.EXTRACTION_QUEUE.sendBatch(recovery.candidate_ids.map(candidate_id => ({ body: { candidate_id } })));
-    await api(env, "/dispatched", { candidate_ids: recovery.candidate_ids }, http);
+  const recovery = await api<{ candidates: ExtractionMessage[] }>(env, "/recovery?limit=10", undefined, http);
+  if (recovery.candidates.length) {
+    await env.EXTRACTION_QUEUE.sendBatch(recovery.candidates.map(body => ({ body })));
+    await api(env, "/dispatched", { candidates: recovery.candidates }, http);
   }
 }
 
@@ -244,11 +257,11 @@ export default {
     if (!env.EXTRACTION_DISPATCH_SECRET || !await matchesDispatchSecret(request.headers.get("Authorization") ?? "", `Bearer ${env.EXTRACTION_DISPATCH_SECRET}`)) {
       return new Response("Unauthorized", { status: 401 });
     }
-    let ids: string[];
-    try { ids = candidateIds(await request.json()); }
-    catch { return new Response("Expected 1–10 candidate IDs", { status: 400 }); }
-    await env.EXTRACTION_QUEUE.sendBatch(ids.map(candidate_id => ({ body: { candidate_id } })));
-    return Response.json({ enqueued: ids.length }, { status: 202 });
+    let candidates: ExtractionMessage[];
+    try { candidates = deliveries(await request.json()); }
+    catch { return new Response("Expected 1–10 candidate IDs with generation", { status: 400 }); }
+    await env.EXTRACTION_QUEUE.sendBatch(candidates.map(body => ({ body })));
+    return Response.json({ enqueued: candidates.length }, { status: 202 });
   },
   async queue(batch: MessageBatch<ExtractionMessage>, env: Env): Promise<void> { await consume(batch, env); },
   async scheduled(_event: ScheduledController, env: Env): Promise<void> { await recover(env); },

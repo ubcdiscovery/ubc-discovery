@@ -14,13 +14,14 @@ its existing ingestion key. A retry of an existing capture must also retry its
 returned upload targets. Before the image wait timeout, missing images produce
 409; after the timeout the existing caption/available-image fallback applies.
 
-The API sends `{ "candidate_ids": ["xxxxxxxx"] }` to the Worker's `/enqueue`
+The API sends `{ "candidates": [{ "candidate_id": "xxxxxxxx", "generation": 1 }] }`
+to the Worker's `/enqueue`
 endpoint, authenticated with a separate Bearer dispatch secret. The Queue holds
-only Candidate IDs. Queue delivery groups up to ten Candidates; the Worker
+only Candidate IDs and their processing generation. Queue delivery groups up to ten Candidates; the Worker
 fetches fresh signed image URLs from `/extraction/evidence`, calls OpenAI once
 with the packed evidence, and submits `/extraction/results`. Invalid packed
-output falls back to individual Candidates. HTTP upstream failures use Queue
-backoff rather than multiplying requests.
+output falls back to individual Candidates. Candidate-specific HTTP 400/413 failures also fall back individually. Shared
+authentication, rate-limit, and server failures use Queue backoff.
 
 The result endpoint saves extraction before publication and sorts publication
 by `(created_at, id)` within a batch. Existing same-club/day locking and review
@@ -40,7 +41,8 @@ Candidates every fifteen minutes. After Queue acceptance it calls `/extraction/d
 to record acceptance. Failed sends leave the Candidate undispatched. A crash
 after acceptance but before recording it can enqueue a duplicate; persistence and
 publication are idempotent, though duplicate AI charges remain possible before
-either extraction is saved. Completed and terminal Candidates are excluded.
+either extraction is saved. Acceptance, evidence, results, and terminal reports
+carry the generation; reports from an earlier explicit replay are ignored. Completed and terminal Candidates are excluded.
 
 An accepted Candidate that has not completed after twenty-five hours is marked
 terminal for explicit replay. It is not automatically resubmitted; this keeps
@@ -54,9 +56,13 @@ acknowledges. It does not call OpenAI. Failures remain visible in Candidate
 processing state even after the dead-letter message is acknowledged.
 
 For deliberate replay, call `POST /extraction/replay` with Candidate IDs using
-an extraction key, then enqueue the IDs again (or allow scheduled recovery).
-This explicitly clears the terminal processing error. Replaying a DLQ message
-alone would skip its terminal Candidate.
+an extraction key. Its response returns `candidates` containing each new
+generation; pass that response to `/enqueue` (or allow scheduled recovery).
+Replay advances the generation atomically while clearing the terminal error and
+acceptance timestamp. Old primary and DLQ deliveries are acknowledged as stale
+and cannot terminate or overwrite the replay. Saved extraction survives replay,
+so publication resumes without another AI call. Completed/reviewed Candidates
+are not replayed.
 
 ## Local development
 
@@ -119,22 +125,61 @@ is created by tests or dry-run builds.
    made before cutover stay complete. The legacy job table remains available
    for rollback and is unused in queue mode.
 
-Rollback sets mode to legacy and enables the existing worker. Pause Queue
-consumption during rollback to avoid dual processing. Retain the additive
-columns and old job table until the cutover has been observed and a follow-up
-cleanup is reviewed. Do not let a SQL downgrade erase progress needed to resume.
+Rollback requires rebuilding legacy delivery state because queue-mode ingestion
+does not create PostgreSQL jobs:
+
+1. Stop ingestion traffic and disable the backend legacy worker with
+   `EXTRACTION_ENABLED=false`. Pause both Queue and DLQ consumers and disable the
+   recovery cron. Wait for in-flight API/Worker invocations to finish before
+   reconciliation; pausing new deliveries does not cancel running invocations.
+2. Keep the additive schema and take a database backup. From `backend/`, use the
+   verified rollback database configuration and run
+   `uv run python scripts/reconcile_extraction_rollback.py`. This default dry run
+   reports create/reset/complete/fail/unchanged counts without modifying rows.
+3. Review those counts, then run
+   `uv run python scripts/reconcile_extraction_rollback.py --apply --processors-stopped`
+   with `EXTRACTION_ENABLED=false`. The acknowledgement covers remote processors
+   that the script cannot inspect. One transaction creates or resets jobs for
+   unfinished pending nonterminal Candidates, including saved extractions.
+   Existing jobs for completed or reviewed Candidates become succeeded; terminal
+   Candidates retain their error and any existing job becomes failed. No terminal
+   error, saved extraction, or review decision is cleared. Re-running is safe.
+4. Re-run the dry run: only unchanged rows should remain. Set mode to legacy,
+   clear the backend Queue producer configuration, and enable the existing worker
+   before resuming ingestion. Keep Queues/DLQ/recovery paused and confirm legacy
+   backlog completion. Saved extractions resume publication without another AI
+   call; terminal work still requires deliberate replay.
+
+Retain additive columns and the old job table until cutover or rollback has been
+observed and a follow-up cleanup is reviewed. Do not let a SQL downgrade erase
+progress needed to resume.
+
+To return to Queue mode after rollback, stop ingestion and the legacy worker,
+then wait for its in-flight work to finish. Keep Queue consumers and recovery
+paused while switching the API to Queue mode. Select Candidates whose status is
+`pending`, whose `processing_completed_at` is null, and whose `processing_error`
+is null; call `/extraction/replay` for those IDs in batches of ten. This preserves
+saved extraction, advances generations to fence retained pre-rollback messages,
+and clears their old acceptance timestamps. Leave terminal failures excluded
+unless explicitly replaying them. Resume consumers, recovery, and ingestion only
+after reconciliation; completed review drafts must remain excluded.
 
 Worker logs include Candidate IDs, attempt counts, and upstream HTTP statuses;
 they exclude captions, signed URLs, tokens, and upstream response bodies.
 Monitor oldest unfinished Candidate, terminal failures, Queue retry counts, and
 time since the last completion; API health alone does not prove extraction runs.
 
-Validation on 2026-10-11: 182 backend tests and 14 Worker tests passed, with
+Validation on 2026-10-11: 192 backend tests and 20 Worker tests passed, with
 Ruff, ty, TypeScript and Worker build checks passing. A local Queue test and an
 isolated deployed Queue test each processed a batch of ten saved-extraction
 fixtures, without AWS credentials or OpenAI calls. The live consumer reported
 3 ms CPU and 87 ms wall time for that fixture batch; this does not measure live
 AI extraction cost. All temporary Workers and Queues were removed afterward.
+
+After review fixes, a local workerd Queue test acknowledged ten mixed-generation
+messages and submitted only the five current-generation saved results, with no
+AI calls. Regression tests cover stale DLQ/result/acceptance reports, HTTP 400
+isolation, and rollback reconciliation.
 
 Wrangler generates binding types during type checking. Worker logs are enabled,
 and traces sample one percent of invocations. Dispatch-secret comparisons use

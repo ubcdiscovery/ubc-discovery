@@ -97,6 +97,9 @@ class EventListingCandidate(Base):
         DateTime(timezone=True)
     )
     processing_error: Mapped[str | None] = mapped_column(Text)
+    processing_generation: Mapped[int] = mapped_column(
+        Integer, default=1, server_default="1"
+    )
 
     status: Mapped[CandidateStatus] = mapped_column(
         String(32),

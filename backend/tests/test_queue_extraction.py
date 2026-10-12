@@ -15,6 +15,12 @@ from app.models.event_listing_candidate import (
 from app.services import api_credentials
 
 
+def deliveries(*ids, generation=1):
+    return {
+        "candidates": [{"candidate_id": item, "generation": generation} for item in ids]
+    }
+
+
 async def credential(db, user, scope):
     secret = api_credentials.generate_secret()
     item = ApiCredential(
@@ -52,7 +58,7 @@ async def test_scopes_isolate_ingestion_and_extraction(
 ):
     headers = await credential(db_session, test_user, "candidates:ingest")
     denied = await unauthed_client.post(
-        "/extraction/evidence", json={"candidate_ids": ["qtest001"]}, headers=headers
+        "/extraction/evidence", json=deliveries("qtest001"), headers=headers
     )
     assert denied.status_code == 403
     headers = await credential(db_session, test_user, "candidates:extract")
@@ -112,7 +118,7 @@ async def test_evidence_uses_signed_urls_and_reports_waiting(
     with patch("app.services.s3.object_exists", return_value=True):
         response = await unauthed_client.post(
             "/extraction/evidence",
-            json={"candidate_ids": [ready.id, waiting.id, "missing0"]},
+            json=deliveries(ready.id, waiting.id, "missing0"),
             headers=headers,
         )
     assert response.status_code == 200
@@ -132,6 +138,7 @@ async def test_extraction_survives_publication_retry_and_duplicate(
         "results": [
             {
                 "candidate_id": candidate_id,
+                "generation": 1,
                 "extraction": {"candidate_id": candidate_id, "is_event": False},
             }
         ],
@@ -173,21 +180,29 @@ async def test_recovery_requires_acceptance_completion_terminal_and_replay(
     )
     await candidate(db_session, "qtest004", created_at=now - timedelta(seconds=400))
     response = await unauthed_client.get("/extraction/recovery", headers=headers)
-    assert set(response.json()["candidate_ids"]) == {ready.id, "qtest004"}
+    assert {item["candidate_id"] for item in response.json()["candidates"]} == {
+        ready.id,
+        "qtest004",
+    }
     response = await unauthed_client.get("/extraction/recovery", headers=headers)
-    assert set(response.json()["candidate_ids"]) == {ready.id, "qtest004"}
+    assert {item["candidate_id"] for item in response.json()["candidates"]} == {
+        ready.id,
+        "qtest004",
+    }
     await unauthed_client.post(
         "/extraction/dispatched",
-        json={"candidate_ids": [ready.id, "qtest004"]},
+        json=deliveries(ready.id, "qtest004"),
         headers=headers,
     )
     response = await unauthed_client.get("/extraction/recovery", headers=headers)
-    assert response.json()["candidate_ids"] == []
+    assert response.json()["candidates"] == []
     await unauthed_client.post(
         "/extraction/replay", json={"candidate_ids": ["qtest003"]}, headers=headers
     )
     response = await unauthed_client.get("/extraction/recovery", headers=headers)
-    assert response.json()["candidate_ids"] == ["qtest003"]
+    assert response.json()["candidates"] == [
+        {"candidate_id": "qtest003", "generation": 2}
+    ]
 
 
 async def test_results_publish_in_oldest_order(unauthed_client, db_session, test_user):
@@ -206,7 +221,11 @@ async def test_results_publish_in_oldest_order(unauthed_client, db_session, test
         order.append(item.id)
 
     results = [
-        {"candidate_id": cid, "extraction": {"candidate_id": cid, "is_event": False}}
+        {
+            "candidate_id": cid,
+            "generation": 1,
+            "extraction": {"candidate_id": cid, "is_event": False},
+        }
         for cid in ["qtest002", "qtest001"]
     ]
     with patch("app.routers.extraction.process_auto_publication", new=publish):
@@ -233,7 +252,11 @@ async def test_terminal_reporting_does_not_override_completion(
     item = await candidate(db_session, processing_completed_at=datetime.now(UTC))
     response = await unauthed_client.post(
         "/extraction/terminal",
-        json={"candidate_id": item.id, "error": "late duplicate failure"},
+        json={
+            "candidate_id": item.id,
+            "generation": 1,
+            "error": "late duplicate failure",
+        },
         headers=headers,
     )
     assert response.status_code == 200
@@ -251,7 +274,7 @@ async def test_accepted_delivery_expires_terminal_without_redispatch(
         processing_dispatched_at=datetime.now(UTC) - timedelta(hours=26),
     )
     response = await unauthed_client.get("/extraction/recovery", headers=headers)
-    assert response.json()["candidate_ids"] == []
+    assert response.json()["candidates"] == []
     await db_session.refresh(item)
     assert item.processing_error and "explicit replay" in item.processing_error
 
@@ -293,6 +316,7 @@ async def test_same_club_batch_publishes_oldest_only(
     results = [
         {
             "candidate_id": cid,
+            "generation": 1,
             "extraction": {
                 "candidate_id": cid,
                 "is_event": True,
@@ -335,7 +359,7 @@ async def test_legacy_completion_after_migration_excluded_from_queue_recovery(
     await complete_job(db_session, job, now=now)
     await db_session.commit()
     response = await unauthed_client.get("/extraction/recovery", headers=headers)
-    assert response.json()["candidate_ids"] == []
+    assert response.json()["candidates"] == []
     assert item.status == "pending"
     assert item.processing_completed_at == now
 
@@ -354,3 +378,97 @@ async def test_legacy_terminal_failure_and_explicit_reingestion_progress(db_sess
     await db_session.flush()
     await enqueue_extraction_job(db_session, item.id, delay_seconds=0)
     assert item.processing_error is None
+
+
+async def test_replay_fences_old_dlq_and_acceptance(
+    unauthed_client, db_session, test_user
+):
+    headers = await credential(db_session, test_user, "candidates:extract")
+    item = await candidate(
+        db_session,
+        capture_ready_at=datetime.now(UTC),
+        processing_error="Original delivery exhausted",
+        processing_dispatched_at=datetime.now(UTC),
+    )
+    response = await unauthed_client.post(
+        "/extraction/replay", json={"candidate_ids": [item.id]}, headers=headers
+    )
+    assert response.json() == deliveries(item.id, generation=2)
+    # An original DLQ delivery may retry after an operator has replayed the job.
+    response = await unauthed_client.post(
+        "/extraction/terminal",
+        json={
+            "candidate_id": item.id,
+            "generation": 1,
+            "error": "Queue retries exhausted",
+        },
+        headers=headers,
+    )
+    assert response.json()["status"] == "stale"
+    await unauthed_client.post(
+        "/extraction/dispatched", json=deliveries(item.id), headers=headers
+    )
+    await db_session.refresh(item)
+    assert item.processing_generation == 2
+    assert item.processing_error is None
+    assert item.processing_dispatched_at is None
+    response = await unauthed_client.post(
+        "/extraction/evidence",
+        json={
+            "candidates": [
+                {"candidate_id": item.id, "generation": 1},
+                {"candidate_id": item.id, "generation": 2},
+            ]
+        },
+        headers=headers,
+    )
+    assert [value["state"] for value in response.json()["items"]] == ["stale", "ready"]
+    # Receipt order must not let an old generation hide a current acceptance.
+    await unauthed_client.post(
+        "/extraction/dispatched",
+        json={
+            "candidates": [
+                {"candidate_id": item.id, "generation": 2},
+                {"candidate_id": item.id, "generation": 1},
+            ]
+        },
+        headers=headers,
+    )
+    await db_session.refresh(item)
+    assert item.processing_dispatched_at is not None
+
+
+async def test_replay_fences_stale_primary_results(
+    unauthed_client, db_session, test_user
+):
+    headers = await credential(db_session, test_user, "candidates:extract")
+    item = await candidate(db_session, capture_ready_at=datetime.now(UTC))
+    await unauthed_client.post(
+        "/extraction/replay", json={"candidate_ids": [item.id]}, headers=headers
+    )
+    result = {
+        "candidate_id": item.id,
+        "generation": 1,
+        "extraction": {"candidate_id": item.id, "is_event": False},
+    }
+    publish = AsyncMock()
+    with patch("app.routers.extraction.process_auto_publication", new=publish):
+        response = await unauthed_client.post(
+            "/extraction/results",
+            json={"model": "stale", "results": [result]},
+            headers=headers,
+        )
+        assert response.json()["results"][0]["status"] == "stale"
+        await db_session.refresh(item)
+        assert item.extracted_at is None
+        assert item.processing_completed_at is None
+        publish.assert_not_awaited()
+        result["generation"] = 2
+        response = await unauthed_client.post(
+            "/extraction/results",
+            json={"model": "current", "results": [result]},
+            headers=headers,
+        )
+        assert response.json()["results"][0]["status"] == "completed"
+        assert item.extraction_model == "current"
+        publish.assert_awaited_once()

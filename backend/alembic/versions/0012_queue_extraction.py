@@ -40,6 +40,12 @@ def upgrade():
         "event_listing_candidates",
         sa.Column("processing_error", sa.Text(), nullable=True),
     )
+    op.add_column(
+        "event_listing_candidates",
+        sa.Column(
+            "processing_generation", sa.Integer(), nullable=False, server_default="1"
+        ),
+    )
 
     # Historical extraction is already a finished review decision unless the
     # legacy queue explicitly records unfinished processing. Do not republish
@@ -71,6 +77,7 @@ def downgrade():
         "processing_dispatched_at",
         "processing_completed_at",
         "processing_error",
+        "processing_generation",
     ):
         op.drop_column("event_listing_candidates", name)
     op.drop_constraint("ck_api_credential_scopes", "api_credentials", type_="check")

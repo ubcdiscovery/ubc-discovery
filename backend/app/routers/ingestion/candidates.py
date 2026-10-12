@@ -24,7 +24,7 @@ from app.schemas.event_listing_candidate import (
     EventListingCandidateIngestionRequest,
     EventListingCandidateIngestionResponse,
 )
-from app.schemas.extraction import CaptureReadyResponse, CaptureStatus
+from app.schemas.extraction import CaptureReadyResponse, CaptureStatus, Delivery
 from app.schemas.user import PresignedUploadResponse
 from app.services import s3
 from app.services.candidate_images import candidate_image_key
@@ -184,6 +184,7 @@ async def capture_ready(
             "dispatched": False,
         }
     now = datetime.now(UTC)
+    generation = candidate.processing_generation
     if any(
         not s3.object_exists(key) for key in candidate.image_keys or []
     ) and not capture_timed_out(candidate, now):
@@ -199,7 +200,9 @@ async def capture_ready(
         and candidate.processing_dispatched_at is None
     ):
         try:
-            dispatched = await dispatch_candidates([candidate_id])
+            dispatched = await dispatch_candidates(
+                [Delivery(candidate_id=candidate_id, generation=generation)]
+            )
         except Exception:
             logging.getLogger(__name__).exception(
                 "Queue dispatch failed for %s", candidate_id
@@ -211,7 +214,13 @@ async def capture_ready(
                 .with_for_update()
                 .execution_options(populate_existing=True)
             )
-            if candidate is not None and candidate.processing_dispatched_at is None:
+            if (
+                candidate is not None
+                and candidate.processing_generation == generation
+                and candidate.processing_dispatched_at is None
+                and candidate.processing_error is None
+                and candidate.processing_completed_at is None
+            ):
                 candidate.processing_dispatched_at = datetime.now(UTC)
             await db.commit()
     return {

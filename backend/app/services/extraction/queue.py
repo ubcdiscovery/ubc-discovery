@@ -6,6 +6,7 @@ import httpx
 
 from app.config import settings
 from app.models.event_listing_candidate import EventListingCandidate
+from app.schemas.extraction import Delivery
 
 
 def capture_timed_out(candidate: EventListingCandidate, now: datetime) -> bool:
@@ -15,7 +16,7 @@ def capture_timed_out(candidate: EventListingCandidate, now: datetime) -> bool:
     return (now - created).total_seconds() >= settings.extraction_image_wait_seconds
 
 
-async def dispatch_candidates(candidate_ids: list[str]) -> bool:
+async def dispatch_candidates(candidates: list[Delivery]) -> bool:
     if (
         not settings.extraction_queue_producer_url
         or not settings.extraction_queue_producer_secret
@@ -27,7 +28,7 @@ async def dispatch_candidates(candidate_ids: list[str]) -> bool:
             headers={
                 "Authorization": f"Bearer {settings.extraction_queue_producer_secret}"
             },
-            json={"candidate_ids": candidate_ids},
+            json={"candidates": [item.model_dump() for item in candidates]},
         )
         response.raise_for_status()
     return True
