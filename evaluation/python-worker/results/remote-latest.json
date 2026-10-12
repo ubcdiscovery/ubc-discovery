@@ -1,0 +1,51 @@
+[
+  {
+    "probe": "runtime",
+    "start_utc": "2026-10-11T22:57:03.815713+00:00",
+    "end_utc": "2026-10-11T22:57:03.877059+00:00",
+    "status": "200",
+    "body": "{\"python\": \"3.14.2 (main, Aug 25 2026, 05:50:55) [Clang 23.0.0git (https:/github.com/llvm/llvm-project e5927fecf8a6ce89e1a4eac5b8\"}"
+  },
+  {
+    "probe": "thread",
+    "start_utc": "2026-10-11T22:57:03.877110+00:00",
+    "end_utc": "2026-10-11T22:57:04.125172+00:00",
+    "status": "200",
+    "body": "{\"ok\": true, \"main_thread_id\": 4012832, \"callback_thread_id\": 4012832, \"distinct_thread\": false}"
+  },
+  {
+    "probe": "signing",
+    "start_utc": "2026-10-11T22:57:04.125213+00:00",
+    "end_utc": "2026-10-11T22:57:05.973746+00:00",
+    "status": "200",
+    "body": "{\"ok\": true, \"value\": {\"presigned_get\": true, \"presigned_post\": true, \"other_signatures\": {\"ses\": true, \"bedrock\": true}}, \"wall_ms\": 0.0}"
+  },
+  {
+    "probe": "s3-http",
+    "start_utc": "2026-10-11T22:57:05.973785+00:00",
+    "end_utc": "2026-10-11T22:57:06.145002+00:00",
+    "status": "200",
+    "body": "{\"ok\": false, \"error\": \"HTTPClientError\", \"detail\": \"An HTTP Client raised an unhandled exception: 'JsNull' object has no attribute 'getReader'\", \"wall_ms\": 69.0}"
+  },
+  {
+    "probe": "ses-http",
+    "start_utc": "2026-10-11T22:57:06.145042+00:00",
+    "end_utc": "2026-10-11T22:57:08.316950+00:00",
+    "status": "503",
+    "body": "error code: 1102\n"
+  },
+  {
+    "probe": "firebase",
+    "start_utc": "2026-10-11T22:57:08.316994+00:00",
+    "end_utc": "2026-10-11T22:57:08.697529+00:00",
+    "status": "500",
+    "body": "error code: 1101\n"
+  },
+  {
+    "probe": "crypto",
+    "start_utc": "2026-10-11T22:57:08.697583+00:00",
+    "end_utc": "2026-10-11T22:57:08.780068+00:00",
+    "status": "503",
+    "body": "error code: 1102\n"
+  }
+]

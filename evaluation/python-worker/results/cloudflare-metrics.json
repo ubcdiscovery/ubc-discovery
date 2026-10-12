@@ -1,0 +1,166 @@
+{
+  "measured_at": "2026-10-11T23:00:52.118174+00:00",
+  "variables": {
+    "accountTag": "5637cded1864726ba930947d2f6138af",
+    "datetimeStart": "2026-10-11T22:56:50Z",
+    "datetimeEnd": "2026-10-11T23:00:52.118174+00:00",
+    "scriptName": "ubc-discovery-python-evaluation"
+  },
+  "response": {
+    "data": {
+      "viewer": {
+        "accounts": [
+          {
+            "workersInvocationsAdaptive": [
+              {
+                "dimensions": {
+                  "datetime": "2026-10-11T22:59:13Z",
+                  "scriptName": "ubc-discovery-python-evaluation",
+                  "status": "scriptThrewException"
+                },
+                "quantiles": {
+                  "cpuTimeP50": 1897,
+                  "cpuTimeP99": 4999
+                },
+                "sum": {
+                  "errors": 3,
+                  "requests": 3,
+                  "subrequests": 0
+                }
+              },
+              {
+                "dimensions": {
+                  "datetime": "2026-10-11T22:59:09Z",
+                  "scriptName": "ubc-discovery-python-evaluation",
+                  "status": "exceededResources"
+                },
+                "quantiles": {
+                  "cpuTimeP50": 29609,
+                  "cpuTimeP99": 2020000
+                },
+                "sum": {
+                  "errors": 2,
+                  "requests": 2,
+                  "subrequests": 0
+                }
+              },
+              {
+                "dimensions": {
+                  "datetime": "2026-10-11T22:59:00Z",
+                  "scriptName": "ubc-discovery-python-evaluation",
+                  "status": "success"
+                },
+                "quantiles": {
+                  "cpuTimeP50": 13949,
+                  "cpuTimeP99": 13949
+                },
+                "sum": {
+                  "errors": 0,
+                  "requests": 1,
+                  "subrequests": 0
+                }
+              },
+              {
+                "dimensions": {
+                  "datetime": "2026-10-11T22:57:05Z",
+                  "scriptName": "ubc-discovery-python-evaluation",
+                  "status": "success"
+                },
+                "quantiles": {
+                  "cpuTimeP50": 51011,
+                  "cpuTimeP99": 51011
+                },
+                "sum": {
+                  "errors": 0,
+                  "requests": 1,
+                  "subrequests": 1
+                }
+              },
+              {
+                "dimensions": {
+                  "datetime": "2026-10-11T22:57:06Z",
+                  "scriptName": "ubc-discovery-python-evaluation",
+                  "status": "exceededResources"
+                },
+                "quantiles": {
+                  "cpuTimeP50": 2030000,
+                  "cpuTimeP99": 2030000
+                },
+                "sum": {
+                  "errors": 1,
+                  "requests": 1,
+                  "subrequests": 0
+                }
+              },
+              {
+                "dimensions": {
+                  "datetime": "2026-10-11T22:57:03Z",
+                  "scriptName": "ubc-discovery-python-evaluation",
+                  "status": "success"
+                },
+                "quantiles": {
+                  "cpuTimeP50": 16746,
+                  "cpuTimeP99": 16746
+                },
+                "sum": {
+                  "errors": 0,
+                  "requests": 1,
+                  "subrequests": 0
+                }
+              },
+              {
+                "dimensions": {
+                  "datetime": "2026-10-11T22:59:06Z",
+                  "scriptName": "ubc-discovery-python-evaluation",
+                  "status": "scriptThrewException"
+                },
+                "quantiles": {
+                  "cpuTimeP50": 2010390,
+                  "cpuTimeP99": 2010390
+                },
+                "sum": {
+                  "errors": 1,
+                  "requests": 1,
+                  "subrequests": 0
+                }
+              },
+              {
+                "dimensions": {
+                  "datetime": "2026-10-11T22:57:08Z",
+                  "scriptName": "ubc-discovery-python-evaluation",
+                  "status": "exceededResources"
+                },
+                "quantiles": {
+                  "cpuTimeP50": 20000,
+                  "cpuTimeP99": 20000
+                },
+                "sum": {
+                  "errors": 1,
+                  "requests": 1,
+                  "subrequests": 0
+                }
+              },
+              {
+                "dimensions": {
+                  "datetime": "2026-10-11T22:57:04Z",
+                  "scriptName": "ubc-discovery-python-evaluation",
+                  "status": "success"
+                },
+                "quantiles": {
+                  "cpuTimeP50": 8576,
+                  "cpuTimeP99": 1757922
+                },
+                "sum": {
+                  "errors": 0,
+                  "requests": 2,
+                  "subrequests": 0
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "errors": null
+  }
+}
