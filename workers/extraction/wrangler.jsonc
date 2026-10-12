@@ -18,7 +18,7 @@
     }
   },
   "vars": {
-    "DISCOVERY_API_URL": "http://localhost:8000",
+    "DISCOVERY_API_URL": "https://ubc-discovery-api.ubcdiscovery.workers.dev",
     "MAX_ATTEMPTS": "5",
     "OPENAI_TIMEOUT_MS": "60000"
   },

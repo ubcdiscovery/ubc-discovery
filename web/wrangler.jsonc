@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  // Hosting validation defaults to a separate staging Worker. Production routes
-  // are intentionally absent until the coordinated API/storage cutover.
+  // Default builds remain staging. Select production at Vite build time.
+  // Custom domain routes are switched separately after cutover validation.
   "name": "ubc-discovery-web-staging",
   "main": "./workers/app.ts",
   "compatibility_date": "2026-10-12",
@@ -14,5 +14,13 @@
   "observability": {
     "enabled": true,
     "traces": { "enabled": true }
+  },
+  "env": {
+    "production": {
+      "name": "ubc-discovery-web",
+      "account_id": "5637cded1864726ba930947d2f6138af",
+      "workers_dev": true,
+      "assets": { "binding": "ASSETS", "directory": "./build/client" }
+    }
   }
 }
