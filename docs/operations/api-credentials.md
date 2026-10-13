@@ -15,11 +15,13 @@ or its hash.
 
 Submit each Candidate source capture and its complete still-image intent in one
 request. UBC Discovery binds the image object keys to the Candidate id and returns
-the S3 upload targets in the same response:
+the R2 upload targets in the same response. `X-Image-File-Sizes` lists each
+image's exact byte count, in the same order as `image_content_types`:
 
     curl -X POST \
       -H 'Authorization: Api-Key ubc_live_<credential-id>.<random-secret>' \
       -H 'Content-Type: application/json' \
+      -H 'X-Image-File-Sizes: [184233, 92011]' \
       -d '{
         "source_type":"instagram",
         "external_source_id":"post-123",
@@ -29,8 +31,10 @@ the S3 upload targets in the same response:
       }' \
       https://api.example/ingestion/event-candidates
 
-POST each returned target to S3 using the matching `image/jpeg`, `image/png`, or
-`image/webp` content type (5MB maximum). Upload targets expire after 300 seconds.
+PUT the raw image bytes to each returned target `url` with the returned headers,
+using the matching `image/jpeg`, `image/png`, or `image/webp` content type (5MB
+maximum). A different size or content type fails signature verification. Upload
+targets expire after 300 seconds.
 Use an empty `image_content_types` array for caption-only captures. Repeated
 submissions use the same source identity and identical image content types;
 conflicting image intent is rejected. If extraction has already completed, an

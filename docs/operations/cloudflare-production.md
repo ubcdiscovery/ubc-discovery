@@ -18,8 +18,7 @@ The manual **Deploy Cloudflare production** workflow uses the GitHub environment
   `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `UPLOAD_SIGNING_SECRET`,
   `EXTRACTION_QUEUE_PRODUCER_SECRET`.
 
-Use the existing production Neon database's direct endpoint. R2 signing
-credentials must be scoped to the production bucket. The dispatch secret must
+Use the existing production Neon database's direct endpoint. The dispatch secret must
 match the existing extraction Worker's `EXTRACTION_DISPATCH_SECRET`. API secrets
 are supplied with code in one Wrangler deployment through a private temporary
 file. Missing secrets, staged/pooled database endpoints, mismatched Firebase
@@ -32,12 +31,10 @@ Worker. It selects `CLOUDFLARE_ENV=production` before the web build and fixes
 retarget an existing Vite build. Public browser configuration is compiled into
 the assets. Both default and production packaging must pass before dispatch.
 
-Dispatch the reviewed revision only after the coordinated write pause, database
-backup and final S3-to-R2 verification described in
-[the migration runbook](cloudflare-api.md#delivery-and-cutover). Bucket CORS,
-Firebase authorized domains and the production API's existing custom-token
-credentials must already be ready. The workflow does not copy data, apply schema migrations, or retarget extraction
-consumers or scraper producers. Web deployment reconciles the checked-in
+Bucket CORS, Firebase authorized domains and the production API's custom-token
+credentials must already be ready. The workflow does not copy data, apply
+[schema migrations](database-migrations.md#applying-to-production), or retarget
+extraction consumers or scraper producers. Web deployment reconciles the checked-in
 `ubcdiscovery.com` custom domain; verify browser traffic against the production API
 afterward.
 Coordinate the existing extraction Worker separately after the API is ready:
@@ -46,23 +43,31 @@ retry policy, cron and deployed secrets remain in place.
 
 `www.ubcdiscovery.com` is configured as Cloudflare rule to redirect to `ubcdiscovery.com`
 
-The retained AWS runtime identity needs `bedrock:InvokeModel` for the existing Titan embedding model. Its least-privilege policy is [titan-embeddings.json](../../infra/prod/policies/titan-embeddings.json); apply it separately from the existing SES/S3 policies:
+The API's AWS identity, IAM user `ubcdiscovery-backend`, is used only for SES
+email and Bedrock Titan embeddings. Inline policy `prod-email-access` allows
+`ses:SendEmail`; inline policy `prod-titan-embeddings` allows
+`bedrock:InvokeModel` on
+`arn:aws:bedrock:us-west-2::foundation-model/amazon.titan-embed-text-v2:0`.
+IAM simulation alone does not prove runtime provider access; validate a real
+1024-dimensional embedding after credential changes. See
+[AWS identity policies](https://docs.aws.amazon.com/bedrock/latest/userguide/security_iam_id-based-policy-examples.html).
 
-```bash
-aws iam put-user-policy --user-name ubcdiscovery-backend \
-  --policy-name prod-titan-embeddings \
-  --policy-document file://infra/prod/policies/titan-embeddings.json
-```
+## Storage and signed URLs
 
-Validate a real 1024-dimensional embedding before cutover. IAM simulation alone does not prove runtime provider access. See [AWS identity policies](https://docs.aws.amazon.com/bedrock/latest/userguide/security_iam_id-based-policy-examples.html).
+Keep `ubc-discovery-media` private, with public development access and custom
+bucket domains disabled. The API serves public images (`profile-pictures/`,
+`event-pictures/`, legacy `event-images/`) through `/media/public/`; everything
+else needs an expiring signed URL. Bucket CORS ([r2-cors.json](../../infra/prod/r2-cors.json))
+allows `PUT` with `Content-Type` from the production web origins.
 
-Keep Lightsail/S3 available for the rollback window. The existing Lightsail
-deployment workflow remains in the repository but is disabled in GitHub for the
-rollback window. Keep it disabled while Cloudflare serves production; enable it
-only as part of a coordinated return to Python.
-Cloudflare production deployment is manual and never runs merely because a PR
-merges. Restore newly written R2 objects to S3 and verify them before routing
-writers back to Python, as described in the storage rollback procedure.
+Upload and download URLs carry their authorization in the query string. Keep
+`observability.redact_query_string: true` in `workers/api/wrangler.jsonc`, and
+never log these URLs.
+
+`R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` must be Object Read & Write
+credentials scoped to `ubc-discovery-media`; they sign upload URLs.
+`UPLOAD_SIGNING_SECRET` signs download links and must be at least 32 random
+bytes. Rotating it invalidates outstanding download links.
 
 References: [Wrangler environments](https://developers.cloudflare.com/workers/wrangler/environments/),
 [Vite environment selection](https://developers.cloudflare.com/workers/vite-plugin/reference/cloudflare-environments/),

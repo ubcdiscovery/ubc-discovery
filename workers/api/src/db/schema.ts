@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
-  boolean, check, doublePrecision, index, integer, json, jsonb, pgTable,
+  boolean, check, doublePrecision, foreignKey, index, integer, json, jsonb, pgTable,
   primaryKey, text, timestamp, unique, uniqueIndex, uuid, varchar, vector,
 } from 'drizzle-orm/pg-core';
 
@@ -21,7 +21,8 @@ export function createShortId(): string {
   return Array.from(crypto.getRandomValues(new Uint8Array(8)), value => alphabet[value & 63]).join('');
 }
 
-// This is a mapping of the existing Alembic schema, not a new migration baseline.
+// Constraint and index names match the database created by the former Alembic history
+// (see drizzle/0000_baseline.sql); generated migrations reference them by name.
 // $defaultFn/$onUpdateFn preserve SQLAlchemy application defaults without changing SQL defaults.
 export const users = pgTable('users', {
   id: uuidId(),
@@ -43,8 +44,8 @@ export const users = pgTable('users', {
 }, table => [
   uniqueIndex('ix_users_firebase_uid').on(table.firebaseUid),
   uniqueIndex('ix_users_email').on(table.email),
-  check('ck_users_faculty_id', sql`${table.facultyId} IS NULL OR ${table.facultyId} IN ('applied-science', 'architecture-landscape-architecture', 'arts', 'sauder', 'dentistry', 'education', 'forestry-environmental-stewardship', 'kinesiology', 'land-food-systems', 'law', 'medicine', 'music', 'nursing', 'pharmaceutical-sciences', 'science', 'social-work', 'vantage-college', 'vancouver-school-economics', 'other')`),
-  check('ck_users_academic_level', sql`${table.academicLevel} IS NULL OR ${table.academicLevel} IN ('year_1', 'year_2', 'year_3', 'year_4', 'year_5_plus', 'graduate', 'postdoc', 'other')`),
+  check('ck_users_faculty_id', sql`${table.facultyId} IN ('applied-science', 'architecture-landscape-architecture', 'arts', 'sauder', 'dentistry', 'education', 'forestry-environmental-stewardship', 'kinesiology', 'land-food-systems', 'law', 'medicine', 'music', 'nursing', 'pharmaceutical-sciences', 'science', 'social-work', 'vantage-college', 'vancouver-school-economics', 'other')`),
+  check('ck_users_academic_level', sql`${table.academicLevel} IN ('year_1', 'year_2', 'year_3', 'year_4', 'year_5_plus', 'graduate', 'postdoc', 'other')`),
   check('ck_users_major_normalized', sql`${table.major} IS NULL OR (${table.major} = btrim(${table.major}) AND ${table.major} <> '')`),
 ]);
 
@@ -68,28 +69,33 @@ export const events = pgTable('events', {
 }, table => [
   check('ck_event_source_label', sql`${table.sourceLabel} IN ('ubc_official', 'ams_club', 'campus_community')`),
   index('ix_events_search_trgm').using('gin', sql`(coalesce(${table.title}, '') || ' ' || coalesce(${table.clubName}, '') || ' ' || coalesce(${table.locationName}, '')) gin_trgm_ops`),
+  index('ix_events_embedding_vector_hnsw').using('hnsw', table.embeddingVector.op('vector_cosine_ops')).where(sql`${table.embeddingVector} IS NOT NULL`),
 ]);
 
 export const eventRatings = pgTable('event_ratings', {
   id: uuidId(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  eventId: varchar('event_id', { length: 8 }).notNull().references(() => events.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull(),
+  eventId: varchar('event_id', { length: 8 }).notNull(),
   stars: doublePrecision('stars').notNull(),
   strongVibes: json('strong_vibes').$type<string[]>().notNull().$defaultFn(() => []),
   note: text('note'),
   createdAt: createdAt(),
 }, table => [
+  foreignKey({ name: 'event_ratings_user_id_fkey', columns: [table.userId], foreignColumns: [users.id] }).onDelete('cascade'),
+  foreignKey({ name: 'event_ratings_event_id_fkey', columns: [table.eventId], foreignColumns: [events.id] }).onDelete('cascade'),
   unique('uq_user_event_rating').on(table.userId, table.eventId),
   index('ix_event_ratings_user_id').on(table.userId),
   index('ix_event_ratings_event_id').on(table.eventId),
 ]);
 
 export const savedEvents = pgTable('saved_events', {
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  eventId: varchar('event_id', { length: 8 }).notNull().references(() => events.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull(),
+  eventId: varchar('event_id', { length: 8 }).notNull(),
   savedAt: instant('saved_at').notNull().defaultNow(),
 }, table => [
-  primaryKey({ columns: [table.userId, table.eventId] }),
+  primaryKey({ name: 'saved_events_pkey', columns: [table.userId, table.eventId] }),
+  foreignKey({ name: 'saved_events_user_id_fkey', columns: [table.userId], foreignColumns: [users.id] }).onDelete('cascade'),
+  foreignKey({ name: 'saved_events_event_id_fkey', columns: [table.eventId], foreignColumns: [events.id] }).onDelete('cascade'),
   index('ix_saved_events_user_id').on(table.userId),
   index('ix_saved_events_event_id').on(table.eventId),
 ]);
@@ -109,12 +115,13 @@ export const apiCredentials = pgTable('api_credentials', {
   label: varchar('label', { length: 80 }).notNull(),
   scopes: jsonb('scopes').$type<CredentialScope[]>().notNull().default(sql`'["candidates:ingest"]'::jsonb`),
   secretHash: varchar('secret_hash', { length: 255 }).notNull(),
-  createdByUserId: uuid('created_by_user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+  createdByUserId: uuid('created_by_user_id').notNull(),
   createdAt: createdAt(),
   expiresAt: instant('expires_at'),
   revokedAt: instant('revoked_at'),
   lastUsedAt: instant('last_used_at'),
 }, table => [
+  foreignKey({ name: 'api_credentials_created_by_user_id_fkey', columns: [table.createdByUserId], foreignColumns: [users.id] }).onDelete('restrict'),
   index('ix_api_credentials_created_by_user_id').on(table.createdByUserId),
   index('ix_api_credentials_created_at').on(table.createdAt),
   check('ck_api_credential_scopes', sql`jsonb_typeof(${table.scopes}) = 'array' AND jsonb_array_length(${table.scopes}) > 0 AND ${table.scopes} <@ '["candidates:ingest","candidates:extract"]'::jsonb`),
@@ -122,13 +129,14 @@ export const apiCredentials = pgTable('api_credentials', {
 
 export const apiCredentialAuditLogs = pgTable('api_credential_audit_logs', {
   id: uuidId(),
-  credentialId: uuid('credential_id').notNull().references(() => apiCredentials.id, { onDelete: 'restrict' }),
+  credentialId: uuid('credential_id').notNull(),
   actorType: varchar('actor_type', { length: 50 }).$type<AuditActorType>().notNull(),
   actorId: uuid('actor_id').notNull(),
   action: varchar('action', { length: 50 }).$type<'create' | 'replace' | 'revoke'>().notNull(),
   details: jsonb('details').$type<Record<string, unknown>>(),
   createdAt: createdAt(),
 }, table => [
+  foreignKey({ name: 'api_credential_audit_logs_credential_id_fkey', columns: [table.credentialId], foreignColumns: [apiCredentials.id] }).onDelete('restrict'),
   index('ix_api_credential_audit_logs_credential_id').on(table.credentialId),
   index('ix_api_credential_audit_logs_created_at').on(table.createdAt),
   check('ck_api_credential_audit_actor_type', sql`${table.actorType} IN ('member', 'api_key')`),
@@ -137,7 +145,7 @@ export const apiCredentialAuditLogs = pgTable('api_credential_audit_logs', {
 
 export const eventAuditLogs = pgTable('event_audit_logs', {
   id: uuidId(),
-  eventId: varchar('event_id', { length: 8 }).notNull().references(() => events.id, { onDelete: 'restrict' }),
+  eventId: varchar('event_id', { length: 8 }).notNull(),
   actorType: varchar('actor_type', { length: 50 }).$type<AuditActorType | 'system'>().notNull(),
   actorId: uuid('actor_id').notNull(),
   action: varchar('action', { length: 50 }).$type<'create' | 'update' | 'image_upload' | 'archive' | 'restore'>().notNull(),
@@ -145,6 +153,7 @@ export const eventAuditLogs = pgTable('event_audit_logs', {
   after: jsonb('after').$type<Record<string, unknown>>(),
   createdAt: createdAt(),
 }, table => [
+  foreignKey({ name: 'event_audit_logs_event_id_fkey', columns: [table.eventId], foreignColumns: [events.id] }).onDelete('restrict'),
   index('ix_event_audit_logs_event_id').on(table.eventId),
   index('ix_event_audit_logs_created_at').on(table.createdAt),
   check('ck_event_audit_actor_type', sql`${table.actorType} IN ('member', 'api_key', 'system')`),
@@ -190,7 +199,7 @@ export const eventListingCandidates = pgTable('event_listing_candidates', {
 
 export const eventListingCandidateIngestionAudits = pgTable('event_listing_candidate_ingestion_audits', {
   id: uuidId(),
-  candidateId: varchar('candidate_id', { length: 8 }).notNull().references(() => eventListingCandidates.id, { onDelete: 'restrict' }),
+  candidateId: varchar('candidate_id', { length: 8 }).notNull(),
   sourceType: varchar('source_type', { length: 50 }).notNull(),
   externalSourceId: varchar('external_source_id', { length: 512 }).notNull(),
   outcome: varchar('outcome', { length: 32 }).$type<'created' | 'existing'>().notNull(),
@@ -199,6 +208,7 @@ export const eventListingCandidateIngestionAudits = pgTable('event_listing_candi
   credentialLabel: varchar('credential_label', { length: 80 }).notNull(),
   receivedAt: instant('received_at').notNull().defaultNow(),
 }, table => [
+  foreignKey({ name: 'event_listing_candidate_ingestion_audits_candidate_id_fkey', columns: [table.candidateId], foreignColumns: [eventListingCandidates.id] }).onDelete('restrict'),
   index('ix_event_listing_candidate_ingestion_audits_candidate_id').on(table.candidateId),
   index('ix_event_listing_candidate_ingestion_audits_received_at').on(table.receivedAt),
   check('ck_candidate_ingestion_audit_actor_type', sql`${table.actorType} IN ('member', 'api_key')`),
@@ -208,7 +218,7 @@ export const eventListingCandidateIngestionAudits = pgTable('event_listing_candi
 /** Retained solely for rollback compatibility; Cloudflare Queues owns dispatch. */
 export const candidateExtractionJobs = pgTable('candidate_extraction_jobs', {
   id: uuidId(),
-  candidateId: varchar('candidate_id', { length: 8 }).notNull().references(() => eventListingCandidates.id, { onDelete: 'restrict' }),
+  candidateId: varchar('candidate_id', { length: 8 }).notNull(),
   status: varchar('status', { length: 32 }).$type<'pending' | 'claimed' | 'succeeded' | 'failed'>().notNull().default('pending'),
   availableAt: instant('available_at').notNull().defaultNow(),
   attempts: integer('attempts').notNull().default(0),
@@ -217,6 +227,7 @@ export const candidateExtractionJobs = pgTable('candidate_extraction_jobs', {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, table => [
+  foreignKey({ name: 'candidate_extraction_jobs_candidate_id_fkey', columns: [table.candidateId], foreignColumns: [eventListingCandidates.id] }).onDelete('restrict'),
   unique('uq_candidate_extraction_job_candidate_id').on(table.candidateId),
   check('ck_candidate_extraction_job_status', sql`${table.status} IN ('pending', 'claimed', 'succeeded', 'failed')`),
   index('ix_candidate_extraction_jobs_status_available_at').on(table.status, table.availableAt),

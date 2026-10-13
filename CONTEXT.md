@@ -73,7 +73,7 @@ An outbound contact action for flagging incorrect or inappropriate Event Listing
 _Avoid_: In-app report queue
 
 **Event Listing**:
-A public, shareable pointer to an external campus or club event, usually with an organizer name, source link, and human-readable location text. Location text is the human-facing source of truth; Event Listings are not a location-browsing or attendance system. Event Listing sharing starts with canonical public URL sharing, and each Event Listing detail page should open directly on web without requiring the app or prior in-app state; interactions are outbound-only in the current product model, and an Event Listing is not an RSVP, attendance record, ticket, or organizer-managed registration inside UBC Discovery.
+A public, shareable pointer to an external campus or club event, usually with an organizer name, source link, and human-readable location text. Location text is the human-facing source of truth; Event Listings are not a location-browsing or attendance system. Event Listing sharing starts with canonical public URL sharing, and each Event Listing detail page should open directly on web without requiring the app or prior in-app state; interactions are outbound-only in the current product model, and an Event Listing is not an RSVP, attendance record, ticket, or organizer-managed registration inside UBC Discovery. When a listing has no source link, show the known details without inventing a participation action.
 _Avoid_: RSVP, attendance, booking
 
 **Event Source**:
@@ -115,92 +115,3 @@ _Avoid_: Public review (in v1), Yelp-style rating, organizer feedback
 **Personalized Event Feed**:
 A member-only For You mode inside Discover that ranks Event Listings for a Member using their Interests, Event Listing Vibes, Event Ratings, Saved Events, timing, and other preference signals. For You sits on top of public event discovery and does not replace the general public feed.
 _Avoid_: Public feed, all events
-
-## Example Dialogue
-
-Dev: "Can a Visitor browse campus events?"
-Domain expert: "Yes, Visitors should be able to explore public discovery content before signing up."
-
-Dev: "Can a Gmail signup become a Member?"
-Domain expert: "Yes. Email domain does not determine membership."
-
-Dev: "Does a Member need to use their legal name?"
-Domain expert: "No. Members can use a Preferred Name; trust comes from profile context and optional UBC verification."
-
-Dev: "Can Members type any Interest they want?"
-Domain expert: "No. Interests should come from a fixed preference vocabulary so discovery and matching stay consistent."
-
-Dev: "Are Interests and Vibes the same thing?"
-Domain expert: "No. Interests describe a Member's preferences; Vibes describe an Event Listing's feel or intent."
-
-Dev: "Is every Member a Newcomer?"
-Domain expert: "No. Newcomers are a core audience, but campus and event discovery can serve other UBC community members too."
-
-Dev: "Who is the public launch for?"
-Domain expert: "Campus Explorers broadly, while making the first version especially useful to Newcomers."
-
-Dev: "Should Events be a separate bottom tab?"
-Domain expert: "No. Events are the primary content of Discover itself."
-
-Dev: "Should public launch require downloading the native app?"
-Domain expert: "No. Launch is web-first so Visitors can discover value before installing anything."
-
-Dev: "Should Visitors sign in before browsing Discover?"
-Domain expert: "No. Sign-up should be prompted only when a Visitor reaches for a member-only capability."
-
-Dev: "Can a Member RSVP to an Event Listing?"
-Domain expert: "No. UBC Discovery only points people to the external club or organizer page."
-
-Dev: "Can Members submit Event Listings inside the app?"
-Domain expert: "No, not in the current product model. Listings can come from external Event Sources or manually reviewed submissions received outside the app."
-
-Dev: "Where should users send event submissions or issue reports?"
-Domain expert: "Use Project Instagram as the v1 contact and intake channel."
-
-Dev: "Does manual import mean an Event Listing is official?"
-Domain expert: "No. Manual import means the project team reviewed and added it; it does not imply organizer verification."
-
-Dev: "How should an unofficial public event around campus be labeled?"
-Domain expert: "Use Campus Community when it is relevant and manually reviewed, without implying UBC or AMS endorsement."
-
-Dev: "Are Event Source labels verification badges?"
-Domain expert: "No. They explain source type only; UBC Discovery does not verify or guarantee events."
-
-Dev: "Do all Event Listings need a disclaimer?"
-Domain expert: "No. UBC Official and AMS Club listings can rely on source labels and outbound links; Campus Community listings need lightweight clarification."
-
-Dev: "Can a Member save an Event Listing?"
-Domain expert: "Yes. Saving marks interest for later and can improve personalization, but it does not register attendance."
-
-Dev: "Where should Members find their Saved Events?"
-Domain expert: "Saved should be a primary navigation surface, not only a Profile section."
-
-Dev: "Should Visitors see Profile in the bottom tab?"
-Domain expert: "No. Visitors should see Sign In in that navigation position; Members should see Profile."
-
-Dev: "Can other Members see which Event Listings I saved?"
-Domain expert: "No. Saved Events are private by default."
-
-Dev: "Can matching use Saved Events?"
-Domain expert: "Yes, internally. The app should not reveal exact saved-event overlap to other Members by default."
-
-Dev: "Should Event Listings show how many Members saved them?"
-Domain expert: "No, not in the current product model. Saved Events are private and early usage counts may be misleading or identifying."
-
-Dev: "What if an Event Listing does not have an external source link?"
-Domain expert: "Show the event details that are known, but do not invent a participation action."
-
-Dev: "How should users report an incorrect Event Listing?"
-Domain expert: "For now, Report Issue should send them to the project's Instagram inbox."
-
-Dev: "Can AI decide an Event Listing's Vibe?"
-Domain expert: "AI can suggest Vibes, but only from the fixed student-facing taxonomy."
-
-Dev: "Do Visitors need a profile to browse events?"
-Domain expert: "No. Visitors can browse the public feed; Members can get a Personalized Event Feed."
-
-Dev: "Is For You a separate top-level page?"
-Domain expert: "No, not in the current product model. For You is a signed-in mode inside Discover."
-
-Dev: "Can Members review events?"
-Domain expert: "Members can rate events, but in v1 ratings are framed as recommendation input, not public reviews. The data is collected for future public display on recurring events."

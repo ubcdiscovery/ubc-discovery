@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - workers/api/**
-      - backend/alembic/**
       - .github/workflows/api-worker-pr-checks.yml
 
 permissions:
@@ -48,16 +47,19 @@ jobs:
           cache: pnpm
           cache-dependency-path: workers/api/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
-        with:
-          version: "0.13.0"
-          enable-cache: true
-      - name: Apply existing schema to disposable test database
-        working-directory: backend
+      - name: Check migrations match the Drizzle schema
+        run: |
+          pnpm run db:check
+          pnpm run db:generate --name uncommitted
+          if [ -n "$(git status --porcelain -- drizzle)" ]; then
+            echo "::error::src/db/schema.ts has changes without a committed migration. Run pnpm run db:generate."
+            git status --short -- drizzle
+            exit 1
+          fi
+      - name: Apply migrations to disposable test database
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/ubc_discovery_test
-          DATABASE_SSL: "false"
-        run: uv run --locked alembic upgrade head
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+        run: pnpm run db:migrate
       - run: pnpm run check
       - run: pnpm run test:runtime
       - run: pnpm run build
