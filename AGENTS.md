@@ -123,6 +123,7 @@ docs/operations/                 # Runbooks for production, migrations, storage,
 - React Router 8 routes live in `web/app/routes/`; shared web UI lives in `web/app/components/`. See `web/AGENTS.md` for UI conventions.
 - Use PascalCase for shared component filenames and exported component identifiers in `web/app/components/` (for example, `EventCard.tsx` exports `EventCard`). Keep route module filenames in `web/app/routes/` lowercase/kebab-case.
 - API helpers live in `web/app/lib/api.ts`.
+- Google Analytics (Firebase Analytics) lives in `web/app/lib/analytics.ts`; `AnalyticsTracker` sends page views and the member's Firebase UID. Never send emails, names, or other direct identifiers to analytics. See `docs/operations/analytics.md`.
 
 ## Deployment
 

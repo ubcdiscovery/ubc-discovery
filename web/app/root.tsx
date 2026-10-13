@@ -11,6 +11,7 @@ import type { Route } from "./+types/root";
 import { AuthProvider } from "~/lib/auth";
 import { AppQueryProvider } from "~/lib/query";
 import { ThemeProvider } from "~/lib/theme";
+import { AnalyticsTracker } from "~/components/AnalyticsTracker";
 import { AuthFlowCoordinator } from "~/components/AuthFlowCoordinator";
 import { OnboardingCompleteModal } from "~/components/OnboardingCompleteModal";
 import "./app.css";
@@ -58,6 +59,7 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <AppQueryProvider>
+          <AnalyticsTracker />
           <AuthFlowCoordinator />
           <OnboardingCompleteModal />
           <Outlet />
