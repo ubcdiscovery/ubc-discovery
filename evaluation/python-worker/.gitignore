@@ -1,0 +1,10 @@
+.venv*/
+.wrangler/
+.dev.vars
+node_modules/
+__pycache__/
+bundled/
+python_modules/
+.generated-sdk/
+src/firebase_admin/
+src/fixtures.py

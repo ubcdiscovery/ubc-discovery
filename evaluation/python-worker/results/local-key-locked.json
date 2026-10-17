@@ -1,0 +1,30 @@
+[
+  {
+    "probe": "imports",
+    "response": "{\"fastapi\": {\"ok\": true, \"value\": \"0.143.0\"}, \"sqlalchemy\": {\"ok\": true, \"value\": \"2.0.51\"}, \"asyncpg\": {\"ok\": true, \"value\": \"0.31.0\"}, \"pg8000\": {\"ok\": true, \"value\": \"1.31.5\"}, \"pgvector.sqlalchemy\": {\"ok\": true, \"value\": \"imported\"}, \"boto3\": {\"ok\": true, \"value\": \"1.43.67\"}, \"botocore\": {\"ok\": true, \"value\": \"1.43.67\"}, \"httpx\": {\"ok\": true, \"value\": \"0.28.1\"}, \"cryptography\": {\"ok\": true, \"value\": \"47.0.0\"}, \"openai\": {\"ok\": true, \"value\": \"3.3.1\"}, \"pydantic_settings\": {\"ok\": true, \"value\": \"2.15.0\"}}"
+  },
+  {
+    "probe": "signing",
+    "response": "{\"ok\": true, \"value\": {\"presigned_get\": true, \"presigned_post\": true, \"other_signatures\": {\"ses\": true, \"bedrock\": true}}, \"wall_ms\": 81.0}"
+  },
+  {
+    "probe": "ses-http",
+    "response": "{\"ok\": true, \"value\": {\"http_status\": 403, \"aws_error\": \"IncompleteSignatureException\"}, \"wall_ms\": 409.0}"
+  },
+  {
+    "probe": "s3-http",
+    "response": "{\"ok\": false, \"error\": \"HTTPClientError\", \"detail\": \"An HTTP Client raised an unhandled exception: 'JsNull' object has no attribute 'getReader'\", \"wall_ms\": 297.0}"
+  },
+  {
+    "probe": "firebase",
+    "response": "{\"ok\": true, \"value\": {\"custom_token_signed\": true, \"fixture_id_token_verified\": true, \"tamper_rejected\": true, \"sdk\": \"7.5.0\", \"packaging\": \"SDK installed without unrelated Firestore/gRPC dependencies\"}, \"wall_ms\": 1431.0}"
+  },
+  {
+    "probe": "db-pbkdf2",
+    "response": "{\"ok\": true, \"value\": {\"savepoint_rollback\": true, \"outer_rollback\": true, \"pgvector_distance\": 0.0, \"direct_advisory_lock\": true}, \"wall_ms\": 32.0}"
+  },
+  {
+    "probe": "thread",
+    "response": "{\"ok\": true, \"main_thread_id\": 4012832, \"callback_thread_id\": 4012832, \"distinct_thread\": false}"
+  }
+]
