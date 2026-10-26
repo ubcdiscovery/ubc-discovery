@@ -7,10 +7,7 @@ type MemberBoundaryProps = {
   fallback: ReactNode;
 };
 
-export function MemberBoundary({
-  children,
-  fallback,
-}: MemberBoundaryProps) {
+export function MemberBoundary({ children, fallback }: MemberBoundaryProps) {
   const { state } = useAuth();
 
   if (state.status === "loading") return null;

@@ -68,7 +68,7 @@ test("resends a replacement code after the cooldown", async ({ page }) => {
 
   await expect(page.locator("[data-auth-code]:visible")).toHaveValue("");
   await expect(
-    page.getByText(/new code was sent.*earlier codes no longer work/i).filter({ visible: true })
+    page.getByText(/new code was sent.*earlier codes no longer work/i).filter({ visible: true }),
   ).toBeVisible();
   await expect(page.getByText(/code expires in 10:00/i).filter({ visible: true })).toBeVisible();
   expect(sendRequests).toBe(2);
@@ -148,20 +148,14 @@ test("presents actionable OTP and rate-limit errors", async ({ page }) => {
 test("treats Google cancellation as non-fatal and explains blocked popups", async ({ page }) => {
   await mockApi(page);
   await page.addInitScript(() => {
-    window.sessionStorage.setItem(
-      "ubc-discovery-test-google-error",
-      "auth/popup-closed-by-user"
-    );
+    window.sessionStorage.setItem("ubc-discovery-test-google-error", "auth/popup-closed-by-user");
   });
   await page.goto("/sign-in");
   await page.getByRole("button", { name: /continue with google/i }).click();
   await expect(page.getByRole("alert")).toHaveCount(0);
 
   await page.evaluate(() => {
-    window.sessionStorage.setItem(
-      "ubc-discovery-test-google-error",
-      "auth/popup-blocked"
-    );
+    window.sessionStorage.setItem("ubc-discovery-test-google-error", "auth/popup-blocked");
   });
   await page.getByRole("button", { name: /continue with google/i }).click();
   await expect(page.getByRole("alert")).toHaveText(/allow pop-ups/i);
@@ -200,11 +194,9 @@ test("keeps a new member destination through onboarding refreshes", async ({ pag
   await expect
     .poll(() =>
       page.evaluate(() => {
-        const value = window.sessionStorage.getItem(
-          "ubc-discovery-auth-flow"
-        );
+        const value = window.sessionStorage.getItem("ubc-discovery-auth-flow");
         return value ? JSON.parse(value).returnTo : null;
-      })
+      }),
     )
     .toBe("/saved?tab=past");
 });
@@ -230,9 +222,7 @@ test("sends an authenticated incomplete member to onboarding", async ({ page }) 
   await expect(page.getByRole("button", { name: /continue with google/i })).toHaveCount(0);
 });
 
-test("redirects an anonymous visitor away from onboarding routes", async ({
-  page,
-}) => {
+test("redirects an anonymous visitor away from onboarding routes", async ({ page }) => {
   await mockApi(page);
   await page.goto("/welcome/name");
 

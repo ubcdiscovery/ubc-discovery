@@ -1,9 +1,4 @@
-import {
-  type RouteConfig,
-  index,
-  route,
-  layout,
-} from "@react-router/dev/routes";
+import { type RouteConfig, index, route, layout } from "@react-router/dev/routes";
 
 export default [
   layout("routes/app-layout.tsx", [
@@ -13,9 +8,7 @@ export default [
     route("profile", "routes/profile.tsx"),
     route("organizers", "routes/organizers.tsx"),
   ]),
-  layout("routes/anonymous-only-layout.tsx", [
-    route("sign-in", "routes/sign-in.tsx"),
-  ]),
+  layout("routes/anonymous-only-layout.tsx", [route("sign-in", "routes/sign-in.tsx")]),
   layout("routes/onboarding-only-layout.tsx", [
     route("welcome/name", "routes/welcome/name.tsx"),
     route("welcome/academic", "routes/welcome/academic.tsx"),

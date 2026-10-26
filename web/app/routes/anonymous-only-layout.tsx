@@ -20,12 +20,7 @@ export default function AnonymousOnlyLayout() {
   }, [navigate, state.status]);
 
   if (state.status !== "anonymous") {
-    return (
-      <div
-        className="min-h-screen bg-bg"
-        aria-label="Checking sign-in status"
-      />
-    );
+    return <div className="min-h-screen bg-bg" aria-label="Checking sign-in status" />;
   }
 
   return <Outlet />;

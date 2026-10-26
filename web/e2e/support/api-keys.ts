@@ -71,7 +71,7 @@ export function createApiKeysMock(options: {
       apiKeys = apiKeys.map((credential) =>
         credential.id === id
           ? { ...credential, status: "revoked", revoked_at: "2026-08-09T12:00:00Z" }
-          : credential
+          : credential,
       );
       const credential = apiKeys.find((item) => item.id === id);
       await route.fulfill({

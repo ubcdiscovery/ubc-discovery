@@ -32,19 +32,13 @@ export default function AppLayout() {
         aria-hidden={searchOpen || undefined}
       >
         <MobileHeader onOpenSearch={() => setSearchOpen(true)} />
-        <TopNav
-          memberName={memberName}
-          onOpenSearch={() => setSearchOpen(true)}
-        />
+        <TopNav memberName={memberName} onOpenSearch={() => setSearchOpen(true)} />
         <main className="flex flex-1 flex-col pb-24 lg:pb-0">
           <Outlet />
         </main>
         <BottomTabs isMember={isMember} />
       </div>
-      <SearchOverlay
-        isOpen={searchOpen}
-        onClose={() => setSearchOpen(false)}
-      />
+      <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }

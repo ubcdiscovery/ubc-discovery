@@ -40,11 +40,7 @@ export function useSignInFlow() {
     return false;
   }
 
-  function enterCodeStep(
-    nextEmail: string,
-    response: OtpSendResponse,
-    isReplacement: boolean,
-  ) {
+  function enterCodeStep(nextEmail: string, response: OtpSendResponse, isReplacement: boolean) {
     const sentAt = Date.now();
     setEmail(nextEmail);
     setCode("");

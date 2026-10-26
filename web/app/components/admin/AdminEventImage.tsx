@@ -114,7 +114,11 @@ export function AdminEventImage({
           {error && <Alert variant="error">{error}</Alert>}
           {uploaded && <Alert variant="success">Image uploaded.</Alert>}
           {onUpload ? (
-            <Button type="button" onClick={() => void uploadImage()} disabled={!imageFile || uploading}>
+            <Button
+              type="button"
+              onClick={() => void uploadImage()}
+              disabled={!imageFile || uploading}
+            >
               {uploading ? "Uploading…" : "Upload image"}
             </Button>
           ) : null}

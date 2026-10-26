@@ -1,9 +1,4 @@
-import {
-  initializeApp,
-  getApp,
-  getApps,
-  type FirebaseError,
-} from "firebase/app";
+import { initializeApp, getApp, getApps, type FirebaseError } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -23,8 +18,7 @@ const TEST_GOOGLE_USER_KEY = "ubc-discovery-test-google-user";
 const TEST_GOOGLE_ERROR_KEY = "ubc-discovery-test-google-error";
 const TEST_GOOGLE_COLLISION_KEY = "ubc-discovery-test-google-collision-email";
 const TEST_GOOGLE_LINKED_KEY = "ubc-discovery-test-google-linked";
-let pendingGoogleLink: { credential: AuthCredential | null; email: string } | null =
-  null;
+let pendingGoogleLink: { credential: AuthCredential | null; email: string } | null = null;
 
 type TestFirebaseUser = {
   uid: string;
@@ -46,9 +40,9 @@ function isFirebaseConfigured() {
   if (AUTH_TEST_MODE) return true;
   return Boolean(
     firebaseConfig.apiKey &&
-      firebaseConfig.authDomain &&
-      firebaseConfig.projectId &&
-      firebaseConfig.appId
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId &&
+    firebaseConfig.appId,
   );
 }
 
@@ -130,10 +124,7 @@ export async function signInWithCustomToken(customToken: string) {
   if (AUTH_TEST_MODE) {
     const [, uid = "otp-user", email = "member@example.com"] = customToken.split(":");
     const user = { uid, email };
-    if (
-      pendingGoogleLink &&
-      pendingGoogleLink.email.toLowerCase() === email.toLowerCase()
-    ) {
+    if (pendingGoogleLink && pendingGoogleLink.email.toLowerCase() === email.toLowerCase()) {
       window.sessionStorage.setItem(TEST_GOOGLE_LINKED_KEY, "true");
       pendingGoogleLink = null;
     }
@@ -156,9 +147,10 @@ export async function signInWithGoogle() {
     const collisionEmail = window.sessionStorage.getItem(TEST_GOOGLE_COLLISION_KEY);
     if (collisionEmail) {
       pendingGoogleLink = { credential: null, email: collisionEmail };
-      const error = new Error(
-        "An account already exists with the same email address."
-      ) as Error & { code?: string; customData?: { email?: string } };
+      const error = new Error("An account already exists with the same email address.") as Error & {
+        code?: string;
+        customData?: { email?: string };
+      };
       error.code = "auth/account-exists-with-different-credential";
       error.customData = { email: collisionEmail };
       throw error;

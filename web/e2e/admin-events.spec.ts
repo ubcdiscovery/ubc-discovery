@@ -9,7 +9,7 @@ import {
 
 const onePixelPng = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
-  "base64"
+  "base64",
 );
 
 test("administrator enters the admin catalogue from the account menu", async ({
@@ -64,10 +64,7 @@ test("administrator searches the canonical catalogue", async ({ page }) => {
   const queries: string[] = [];
   await mockApi(page, {
     profile: adminProfile,
-    adminEvents: [
-      mockEvent,
-      { ...mockEvent, id: "event-2", title: "Faculty Research Forum" },
-    ],
+    adminEvents: [mockEvent, { ...mockEvent, id: "event-2", title: "Faculty Research Forum" }],
     onAdminList: (query) => queries.push(query),
   });
   await setAuthenticatedUser(page, { uid: "admin-uid", email: adminProfile.email });
@@ -135,7 +132,7 @@ test("administrator edits a canonical Event Listing", async ({ page }) => {
     vibes: ["social", "academic"],
   });
   await expect(
-    page.getByRole("definition").filter({ hasText: /Campus Welcome\s*→\s*Updated Campus Welcome/ })
+    page.getByRole("definition").filter({ hasText: /Campus Welcome\s*→\s*Updated Campus Welcome/ }),
   ).toBeVisible();
 });
 
@@ -192,7 +189,9 @@ test("administrator creates an Event Listing", async ({ page }) => {
   expect(uploads).toBe(1);
 });
 
-test("administrator sees image upload failure after creating an Event Listing", async ({ page }) => {
+test("administrator sees image upload failure after creating an Event Listing", async ({
+  page,
+}) => {
   await mockApi(page, {
     profile: adminProfile,
     adminImageUploadError: { status: 500, detail: "Upload failed" },
@@ -211,7 +210,7 @@ test("administrator sees image upload failure after creating an Event Listing", 
 
   await expect(page).toHaveURL("/admin/events/created-event");
   await expect(page.getByRole("alert")).toContainText(
-    "Event Listing created, but the image could not be uploaded"
+    "Event Listing created, but the image could not be uploaded",
   );
   await expect(page.getByLabel("Choose image")).toBeVisible();
 });

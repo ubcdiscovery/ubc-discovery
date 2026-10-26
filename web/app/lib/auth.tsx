@@ -199,8 +199,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (resized.size > target.max_file_size_bytes) {
         throw new Error("Profile photo is too large after compression.");
       }
-      try { await uploadImage(target, resized); }
-      catch {
+      try {
+        await uploadImage(target, resized);
+      } catch {
         throw new Error("Profile photo upload failed.");
       }
       return refreshProfile();

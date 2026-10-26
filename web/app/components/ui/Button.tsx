@@ -22,12 +22,14 @@ const buttonVariants = cva(
       variant: "secondary",
       size: "md",
     },
-  }
+  },
 );
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
   VariantProps<typeof buttonVariants>;
 
 export function Button({ className, size, variant, type = "button", ...props }: ButtonProps) {
-  return <button type={type} className={cn(buttonVariants({ size, variant }), className)} {...props} />;
+  return (
+    <button type={type} className={cn(buttonVariants({ size, variant }), className)} {...props} />
+  );
 }

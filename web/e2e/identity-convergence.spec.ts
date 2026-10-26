@@ -33,18 +33,14 @@ test("Google first then OTP resolves to the same identity and member", async ({ 
   await expect
     .poll(() =>
       page.evaluate(() =>
-        JSON.parse(
-          window.sessionStorage.getItem(
-            "ubc-discovery-test-firebase-user"
-          ) ?? "null"
-        )
-      )
+        JSON.parse(window.sessionStorage.getItem("ubc-discovery-test-firebase-user") ?? "null"),
+      ),
     )
     .toEqual({ uid: "google-user", email: existingProfile.email });
   expect(
     profileTokens.filter((token) =>
-      token.includes(`mock-token:google-user:${existingProfile.email}`)
-    ).length
+      token.includes(`mock-token:google-user:${existingProfile.email}`),
+    ).length,
   ).toBe(2);
 });
 
@@ -64,33 +60,28 @@ test("OTP first links a colliding Google credential to the same email identity",
 
   await signOutInTest(page);
   await page.evaluate((email) => {
-    window.sessionStorage.setItem(
-      "ubc-discovery-test-google-collision-email",
-      email
-    );
+    window.sessionStorage.setItem("ubc-discovery-test-google-collision-email", email);
   }, existingProfile.email);
   await page.goto("/sign-in");
   await page.getByRole("button", { name: /continue with google/i }).click();
-  await expect(page.getByText(/verify this email to connect google/i).filter({ visible: true })).toBeVisible();
+  await expect(
+    page.getByText(/verify this email to connect google/i).filter({ visible: true }),
+  ).toBeVisible();
   await page.locator("[data-auth-code]:visible").fill("123456");
   await page.locator("[data-auth-code]:visible").press("Enter");
 
   await expect
     .poll(() =>
-      page.evaluate(() =>
-        window.sessionStorage.getItem("ubc-discovery-test-google-linked")
-      )
+      page.evaluate(() => window.sessionStorage.getItem("ubc-discovery-test-google-linked")),
     )
     .toBe("true");
   await expect
     .poll(() =>
-      page.evaluate(() =>
-        JSON.parse(
-          window.sessionStorage.getItem(
-            "ubc-discovery-test-firebase-user"
-          ) ?? "null"
-        )?.uid
-      )
+      page.evaluate(
+        () =>
+          JSON.parse(window.sessionStorage.getItem("ubc-discovery-test-firebase-user") ?? "null")
+            ?.uid,
+      ),
     )
     .toBe("otp-first-uid");
   await page.goto("/profile");
@@ -98,44 +89,35 @@ test("OTP first links a colliding Google credential to the same email identity",
 
   await signOutInTest(page);
   await page.evaluate(() => {
-    window.sessionStorage.removeItem(
-      "ubc-discovery-test-google-collision-email"
-    );
+    window.sessionStorage.removeItem("ubc-discovery-test-google-collision-email");
     window.sessionStorage.setItem(
       "ubc-discovery-test-google-user",
       JSON.stringify({
         uid: "otp-first-uid",
         email: "member@example.com",
-      })
+      }),
     );
   });
   await page.goto("/sign-in");
   await page.getByRole("button", { name: /continue with google/i }).click();
   await expect
     .poll(() =>
-      page.evaluate(() =>
-        JSON.parse(
-          window.sessionStorage.getItem(
-            "ubc-discovery-test-firebase-user"
-          ) ?? "null"
-        )?.uid
-      )
+      page.evaluate(
+        () =>
+          JSON.parse(window.sessionStorage.getItem("ubc-discovery-test-firebase-user") ?? "null")
+            ?.uid,
+      ),
     )
     .toBe("otp-first-uid");
 });
 
-test("does not link a pending Google credential to a different email", async ({
-  page,
-}) => {
+test("does not link a pending Google credential to a different email", async ({ page }) => {
   await mockApi(page, {
     profile: existingProfile,
     otpUid: "different-email-uid",
   });
   await page.addInitScript(() => {
-    window.sessionStorage.setItem(
-      "ubc-discovery-test-google-collision-email",
-      "first@example.com"
-    );
+    window.sessionStorage.setItem("ubc-discovery-test-google-collision-email", "first@example.com");
   });
   await page.goto("/sign-in");
   await page.getByRole("button", { name: /continue with google/i }).click();
@@ -147,9 +129,7 @@ test("does not link a pending Google credential to a different email", async ({
 
   await expect
     .poll(() =>
-      page.evaluate(() =>
-        window.sessionStorage.getItem("ubc-discovery-test-google-linked")
-      )
+      page.evaluate(() => window.sessionStorage.getItem("ubc-discovery-test-google-linked")),
     )
     .toBeNull();
 });

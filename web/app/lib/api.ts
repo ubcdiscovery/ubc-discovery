@@ -65,7 +65,8 @@ async function apiFetch<T>(
       ? detail.find((item: unknown) => isRecord(item) && typeof item.msg === "string")?.msg
       : undefined;
     const detailObject = isRecord(detail) ? detail : {};
-    const objectMessage = typeof detailObject.message === "string" ? detailObject.message : undefined;
+    const objectMessage =
+      typeof detailObject.message === "string" ? detailObject.message : undefined;
     const message =
       validationMessage ??
       objectMessage ??

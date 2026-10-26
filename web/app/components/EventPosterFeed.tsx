@@ -106,8 +106,12 @@ function CardDetails({ event }: { event: ApiEvent | ApiPastEvent }) {
             "No ratings yet"
           ) : (
             <>
-              <span style={{ color: "#FFAD00" }}>{"★".repeat(Math.round(pastEvent.average_rating))}{"☆".repeat(5 - Math.round(pastEvent.average_rating))}</span>
-              {" "}{pastEvent.average_rating.toFixed(1)} · {pastEvent.rating_count} {pastEvent.rating_count === 1 ? "rating" : "ratings"}
+              <span style={{ color: "#FFAD00" }}>
+                {"★".repeat(Math.round(pastEvent.average_rating))}
+                {"☆".repeat(5 - Math.round(pastEvent.average_rating))}
+              </span>{" "}
+              {pastEvent.average_rating.toFixed(1)} · {pastEvent.rating_count}{" "}
+              {pastEvent.rating_count === 1 ? "rating" : "ratings"}
             </>
           )}
         </div>

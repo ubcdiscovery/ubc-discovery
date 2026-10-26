@@ -1,5 +1,5 @@
-import type { User } from '../db/schema';
-import type { ObjectStorage } from '../services/storage';
+import type { User } from "../db/schema";
+import type { ObjectStorage } from "../services/storage";
 
 export function presentUser(user: User, storage?: ObjectStorage) {
   return {
@@ -11,7 +11,8 @@ export function presentUser(user: User, storage?: ObjectStorage) {
     faculty_id: user.facultyId,
     interests: user.interests,
     bio: user.bio,
-    profile_picture_url: storage && user.profilePictureKey ? storage.publicUrl(user.profilePictureKey) : null,
+    profile_picture_url:
+      storage && user.profilePictureKey ? storage.publicUrl(user.profilePictureKey) : null,
     is_admin: user.isAdmin,
     ubc_verified: user.ubcVerified,
     created_at: user.createdAt.toISOString(),

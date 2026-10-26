@@ -49,7 +49,7 @@ export default function AdminCandidates() {
   const queryClient = useQueryClient();
   const query = searchParams.get("q")?.trim() ?? "";
   const [storedStatus, setStoredStatus] = useState(readStoredStatusFilter);
-  const status = searchParams.has("status") ? searchParams.get("status") ?? "" : storedStatus;
+  const status = searchParams.has("status") ? (searchParams.get("status") ?? "") : storedStatus;
   const sourceType = searchParams.get("source_type")?.trim() ?? "";
   const pageValue = Number.parseInt(searchParams.get("page") ?? "0", 10);
   const page = Number.isFinite(pageValue) && pageValue > 0 ? pageValue : 0;
@@ -72,9 +72,8 @@ export default function AdminCandidates() {
       void queryClient.invalidateQueries({ queryKey: ["admin-candidate", variables.candidate.id] });
     },
   });
-  const decisionError = decisionMutation.error instanceof Error
-    ? decisionMutation.error.message
-    : null;
+  const decisionError =
+    decisionMutation.error instanceof Error ? decisionMutation.error.message : null;
 
   useEffect(() => setSearchDraft(query), [query]);
   useEffect(() => setSourceDraft(sourceType), [sourceType]);
@@ -122,7 +121,11 @@ export default function AdminCandidates() {
     <div className="px-4.5 py-6 md:px-8 md:py-10">
       <h1 className="sr-only">Candidates</h1>
 
-      <form onSubmit={submitFilters} role="search" className="grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]">
+      <form
+        onSubmit={submitFilters}
+        role="search"
+        className="grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]"
+      >
         <label htmlFor="admin-candidate-search" className="sr-only">
           Search Event Listing Candidates
         </label>
@@ -162,13 +165,19 @@ export default function AdminCandidates() {
 
       <div className="mt-5 flex items-center justify-between border-b border-ink pb-2 font-mono text-xs uppercase tracking-wide text-muted">
         <span>{candidatesQuery.isPending ? "Loading candidates…" : `${total} records`}</span>
-        {total > 0 && <span>{firstRecord}–{lastRecord}</span>}
+        {total > 0 && (
+          <span>
+            {firstRecord}–{lastRecord}
+          </span>
+        )}
       </div>
 
       {candidatesQuery.isError ? (
         <Alert variant="error" className="mt-5 bg-surface p-5">
           <h2 className="font-display text-xl font-extrabold">Could not load Candidates.</h2>
-          <p className="mt-1 text-sm text-ink-soft">Check your connection or administrator access, then try again.</p>
+          <p className="mt-1 text-sm text-ink-soft">
+            Check your connection or administrator access, then try again.
+          </p>
           <Button type="button" className="mt-4" onClick={() => void candidatesQuery.refetch()}>
             Try again
           </Button>
@@ -176,7 +185,9 @@ export default function AdminCandidates() {
       ) : candidatesQuery.data?.candidates.length === 0 ? (
         <Card className="mt-5 p-6 text-center md:p-10">
           <h2 className="font-display text-2xl font-extrabold">No matching Candidates.</h2>
-          <p className="mt-2 text-sm text-ink-soft">Try another status, source type, or search term.</p>
+          <p className="mt-2 text-sm text-ink-soft">
+            Try another status, source type, or search term.
+          </p>
         </Card>
       ) : (
         <CandidateTable
@@ -190,7 +201,12 @@ export default function AdminCandidates() {
           <Button type="button" size="sm" disabled={page === 0} onClick={() => goToPage(page - 1)}>
             ← Previous
           </Button>
-          <Button type="button" size="sm" disabled={lastRecord >= total} onClick={() => goToPage(page + 1)}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={lastRecord >= total}
+            onClick={() => goToPage(page + 1)}
+          >
             Next →
           </Button>
         </nav>

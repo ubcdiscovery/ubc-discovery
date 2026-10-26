@@ -1,14 +1,17 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { CandidateDraftForm, draftFromCandidate, draftInput, type CandidateDraft } from "~/components/admin/CandidateDraftForm";
+import {
+  CandidateDraftForm,
+  draftFromCandidate,
+  draftInput,
+  type CandidateDraft,
+} from "~/components/admin/CandidateDraftForm";
 import { CandidateIngestionReceipts } from "~/components/admin/CandidateIngestionReceipts";
 import { ReviewDecisionCard } from "~/components/admin/ReviewDecisionCard";
 import { Alert } from "~/components/ui/Alert";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/Card";
-import {
-  adminCandidatesApi,
-} from "~/lib/admin-candidates";
+import { adminCandidatesApi } from "~/lib/admin-candidates";
 
 export function meta() {
   return [{ title: "Review Candidate — UBC Discovery Admin" }];

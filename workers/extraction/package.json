@@ -2,23 +2,23 @@
   "name": "ubc-discovery-extraction",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.11.2",
-  "engines": {
-    "node": "24.x"
-  },
   "scripts": {
     "dev": "wrangler dev",
     "typecheck": "pnpm run types && tsc --noEmit",
-    "test": "vitest run",
-    "check": "pnpm typecheck && pnpm test",
+    "lint": "pnpm --workspace-root exec vp lint workers/extraction && pnpm --workspace-root exec vp fmt --check workers/extraction",
+    "test": "vp test run",
+    "check": "pnpm typecheck && pnpm lint && pnpm test",
     "deploy": "wrangler deploy",
     "build": "wrangler deploy --dry-run",
     "types": "wrangler types worker-configuration.d.ts --env-interface CloudflareBindings --include-runtime=false --strict-vars=false"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20261011.1",
-    "typescript": "7.0.2",
-    "vitest": "5.0.3",
-    "wrangler": "4.149.0"
+    "@cloudflare/workers-types": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:",
+    "wrangler": "catalog:"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

@@ -1,19 +1,19 @@
-import { AwsClient } from 'aws4fetch';
-import type { ApiEnv } from '../env';
-import { ApiError } from '../http/errors';
+import { AwsClient } from "aws4fetch";
+import type { ApiEnv } from "../env";
+import { ApiError } from "../http/errors";
 
 export type Fetcher = typeof fetch;
-export type AwsService = 'ses' | 'bedrock' | 's3';
+export type AwsService = "ses" | "bedrock" | "s3";
 
 export function awsCredentials(env: ApiEnv) {
   if (!env.AWS_ACCESS_KEY_ID || !env.AWS_SECRET_ACCESS_KEY) {
-    throw new ApiError(503, 'AWS credentials are not configured');
+    throw new ApiError(503, "AWS credentials are not configured");
   }
   return {
     accessKeyId: env.AWS_ACCESS_KEY_ID,
     secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
     sessionToken: env.AWS_SESSION_TOKEN,
-    region: env.AWS_REGION || 'us-west-2',
+    region: env.AWS_REGION || "us-west-2",
   };
 }
 
@@ -41,7 +41,7 @@ export async function readBoundedBytes(
   maxBytes: number,
 ): Promise<Uint8Array<ArrayBuffer>> {
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1) {
-    throw new ApiError(500, 'Invalid object size limit');
+    throw new ApiError(500, "Invalid object size limit");
   }
   if (!stream) return new Uint8Array(0);
   const reader = stream.getReader();
@@ -54,7 +54,7 @@ export async function readBoundedBytes(
       total += value.byteLength;
       if (total > maxBytes) {
         await reader.cancel();
-        throw new ApiError(413, 'File exceeds the allowed size');
+        throw new ApiError(413, "File exceeds the allowed size");
       }
       chunks.push(value);
     }
@@ -72,17 +72,26 @@ export async function readBoundedBytes(
 
 export async function hmacSha256(key: Uint8Array, value: string) {
   const cryptoKey = await crypto.subtle.importKey(
-    'raw', new Uint8Array(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+    "raw",
+    new Uint8Array(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
   );
-  return new Uint8Array(await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(value)));
+  return new Uint8Array(
+    await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(value)),
+  );
 }
 
 export async function signPostPolicy(env: ApiEnv, date: string, policy: string) {
   const credentials = awsCredentials(env);
-  const dateKey = await hmacSha256(new TextEncoder().encode(`AWS4${credentials.secretAccessKey}`), date);
+  const dateKey = await hmacSha256(
+    new TextEncoder().encode(`AWS4${credentials.secretAccessKey}`),
+    date,
+  );
   const regionKey = await hmacSha256(dateKey, credentials.region);
-  const serviceKey = await hmacSha256(regionKey, 's3');
-  const signingKey = await hmacSha256(serviceKey, 'aws4_request');
+  const serviceKey = await hmacSha256(regionKey, "s3");
+  const signingKey = await hmacSha256(serviceKey, "aws4_request");
   const signature = await hmacSha256(signingKey, policy);
-  return Array.from(signature, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return Array.from(signature, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }

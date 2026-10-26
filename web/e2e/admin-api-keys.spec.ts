@@ -21,7 +21,7 @@ test("administrator generates and copies an API key once", async ({ page }) => {
   await page.getByLabel("Name").fill("Nightly importer");
   await page.getByRole("button", { name: "Generate" }).click();
   await expect(page.getByTestId("generated-api-token")).toHaveText(
-    "ubc_live_22222222-2222-2222-2222-222222222222.generated-secret"
+    "ubc_live_22222222-2222-2222-2222-222222222222.generated-secret",
   );
   expect(created).toMatchObject({ label: "Nightly importer", expires_at: null });
 

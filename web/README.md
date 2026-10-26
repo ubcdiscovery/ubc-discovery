@@ -6,7 +6,7 @@ run the server in the Cloudflare Workers runtime through the Cloudflare Vite plu
 ## Local development
 
 ```bash
-pnpm install --frozen-lockfile
+pnpm install --frozen-lockfile # installs the whole workspace
 cp .env.example .env
 pnpm dev
 ```

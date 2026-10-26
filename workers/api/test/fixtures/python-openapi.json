@@ -29,10 +29,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "events",
-          "total"
-        ],
+        "required": ["events", "total"],
         "title": "AdminEventListResponse",
         "type": "object"
       },
@@ -50,10 +47,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "candidates",
-          "total"
-        ],
+        "required": ["candidates", "total"],
         "title": "AdminEventListingCandidateListResponse",
         "type": "object"
       },
@@ -201,11 +195,7 @@
         "type": "object"
       },
       "ApiCredentialAuditAction": {
-        "enum": [
-          "create",
-          "replace",
-          "revoke"
-        ],
+        "enum": ["create", "replace", "revoke"],
         "title": "ApiCredentialAuditAction",
         "type": "string"
       },
@@ -219,9 +209,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "entries"
-        ],
+        "required": ["entries"],
         "title": "ApiCredentialAuditListResponse",
         "type": "object"
       },
@@ -299,9 +287,7 @@
             "type": "string"
           },
           "scopes": {
-            "default": [
-              "candidates:ingest"
-            ],
+            "default": ["candidates:ingest"],
             "items": {
               "$ref": "#/components/schemas/ApiCredentialScope"
             },
@@ -310,9 +296,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "label"
-        ],
+        "required": ["label"],
         "title": "ApiCredentialCreateRequest",
         "type": "object"
       },
@@ -393,11 +377,7 @@
             "type": "array"
           },
           "status": {
-            "enum": [
-              "active",
-              "expired",
-              "revoked"
-            ],
+            "enum": ["active", "expired", "revoked"],
             "title": "Status",
             "type": "string"
           }
@@ -429,9 +409,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "credentials"
-        ],
+        "required": ["credentials"],
         "title": "ApiCredentialListResponse",
         "type": "object"
       },
@@ -508,11 +486,7 @@
             "type": "array"
           },
           "status": {
-            "enum": [
-              "active",
-              "expired",
-              "revoked"
-            ],
+            "enum": ["active", "expired", "revoked"],
             "title": "Status",
             "type": "string"
           }
@@ -534,34 +508,22 @@
         "type": "object"
       },
       "ApiCredentialScope": {
-        "enum": [
-          "candidates:ingest",
-          "candidates:extract"
-        ],
+        "enum": ["candidates:ingest", "candidates:extract"],
         "title": "ApiCredentialScope",
         "type": "string"
       },
       "AuditActorType": {
-        "enum": [
-          "member",
-          "api_key"
-        ],
+        "enum": ["member", "api_key"],
         "title": "AuditActorType",
         "type": "string"
       },
       "CandidateIngestionOutcome": {
-        "enum": [
-          "created",
-          "existing"
-        ],
+        "enum": ["created", "existing"],
         "title": "CandidateIngestionOutcome",
         "type": "string"
       },
       "CandidateMatchKind": {
-        "enum": [
-          "candidate",
-          "event"
-        ],
+        "enum": ["candidate", "event"],
         "title": "CandidateMatchKind",
         "type": "string"
       },
@@ -584,21 +546,12 @@
             "type": "string"
           }
         },
-        "required": [
-          "kind",
-          "id",
-          "title",
-          "event_date"
-        ],
+        "required": ["kind", "id", "title", "event_date"],
         "title": "CandidateMatchResponse",
         "type": "object"
       },
       "CandidateStatus": {
-        "enum": [
-          "pending",
-          "approved",
-          "rejected"
-        ],
+        "enum": ["pending", "approved", "rejected"],
         "title": "CandidateStatus",
         "type": "string"
       },
@@ -616,19 +569,12 @@
             "$ref": "#/components/schemas/CaptureStatus"
           }
         },
-        "required": [
-          "candidate_id",
-          "status",
-          "dispatched"
-        ],
+        "required": ["candidate_id", "status", "dispatched"],
         "title": "CaptureReadyResponse",
         "type": "object"
       },
       "CaptureStatus": {
-        "enum": [
-          "ready",
-          "completed"
-        ],
+        "enum": ["ready", "completed"],
         "title": "CaptureStatus",
         "type": "string"
       },
@@ -809,11 +755,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "title",
-          "location_name",
-          "event_date"
-        ],
+        "required": ["title", "location_name", "event_date"],
         "title": "CreateEventRequest",
         "type": "object"
       },
@@ -844,9 +786,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "stars"
-        ],
+        "required": ["stars"],
         "title": "CreateRatingRequest",
         "type": "object"
       },
@@ -862,9 +802,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "candidates"
-        ],
+        "required": ["candidates"],
         "title": "DeliveriesRequest",
         "type": "object"
       },
@@ -880,30 +818,17 @@
             "type": "integer"
           }
         },
-        "required": [
-          "candidate_id",
-          "generation"
-        ],
+        "required": ["candidate_id", "generation"],
         "title": "Delivery",
         "type": "object"
       },
       "EventAuditAction": {
-        "enum": [
-          "create",
-          "update",
-          "image_upload",
-          "archive",
-          "restore"
-        ],
+        "enum": ["create", "update", "image_upload", "archive", "restore"],
         "title": "EventAuditAction",
         "type": "string"
       },
       "EventAuditActorType": {
-        "enum": [
-          "member",
-          "api_key",
-          "system"
-        ],
+        "enum": ["member", "api_key", "system"],
         "title": "EventAuditActorType",
         "type": "string"
       },
@@ -917,9 +842,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "entries"
-        ],
+        "required": ["entries"],
         "title": "EventAuditListResponse",
         "type": "object"
       },
@@ -998,9 +921,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "events"
-        ],
+        "required": ["events"],
         "title": "EventListResponse",
         "type": "object"
       },
@@ -1632,12 +1553,7 @@
             "title": "Source Url"
           }
         },
-        "required": [
-          "source_type",
-          "external_source_id",
-          "source_account",
-          "image_content_types"
-        ],
+        "required": ["source_type", "external_source_id", "source_account", "image_content_types"],
         "title": "EventListingCandidateIngestionRequest",
         "type": "object"
       },
@@ -1662,12 +1578,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "outcome",
-          "receipt_id",
-          "candidate",
-          "uploads"
-        ],
+        "required": ["outcome", "receipt_id", "candidate", "uploads"],
         "title": "EventListingCandidateIngestionResponse",
         "type": "object"
       },
@@ -1906,11 +1817,7 @@
         "type": "object"
       },
       "EventSourceLabel": {
-        "enum": [
-          "ubc_official",
-          "ams_club",
-          "campus_community"
-        ],
+        "enum": ["ubc_official", "ams_club", "campus_community"],
         "title": "EventSourceLabel",
         "type": "string"
       },
@@ -1942,9 +1849,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "candidate_ids"
-        ],
+        "required": ["candidate_ids"],
         "title": "EvidenceRequest",
         "type": "object"
       },
@@ -1994,11 +1899,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "events",
-          "scores",
-          "source"
-        ],
+        "required": ["events", "scores", "source"],
         "title": "ForYouResponse",
         "type": "object"
       },
@@ -2023,9 +1924,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "email"
-        ],
+        "required": ["email"],
         "title": "OTPSendRequest",
         "type": "object"
       },
@@ -2040,10 +1939,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "message",
-          "expires_in_seconds"
-        ],
+        "required": ["message", "expires_in_seconds"],
         "title": "OTPSendResponse",
         "type": "object"
       },
@@ -2059,10 +1955,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "email",
-          "code"
-        ],
+        "required": ["email", "code"],
         "title": "OTPVerifyRequest",
         "type": "object"
       },
@@ -2081,11 +1974,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "firebase_custom_token",
-          "is_new_user",
-          "ubc_verified"
-        ],
+        "required": ["firebase_custom_token", "is_new_user", "ubc_verified"],
         "title": "OTPVerifyResponse",
         "type": "object"
       },
@@ -2157,9 +2046,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "preferred_name"
-        ],
+        "required": ["preferred_name"],
         "title": "OnboardingRequest",
         "type": "object"
       },
@@ -2173,9 +2060,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "events"
-        ],
+        "required": ["events"],
         "title": "PastEventListResponse",
         "type": "object"
       },
@@ -2337,12 +2222,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "upload_url",
-          "fields",
-          "file_key",
-          "max_file_size_bytes"
-        ],
+        "required": ["upload_url", "fields", "file_key", "max_file_size_bytes"],
         "title": "PresignedUploadResponse",
         "type": "object"
       },
@@ -2424,10 +2304,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "candidate_id",
-          "is_event"
-        ],
+        "required": ["candidate_id", "is_event"],
         "title": "QueueExtraction",
         "type": "object"
       },
@@ -2453,10 +2330,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "candidate_id",
-          "generation"
-        ],
+        "required": ["candidate_id", "generation"],
         "title": "QueueResult",
         "type": "object"
       },
@@ -2474,10 +2348,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "ratings",
-          "total"
-        ],
+        "required": ["ratings", "total"],
         "title": "RatingListResponse",
         "type": "object"
       },
@@ -2499,10 +2370,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "model",
-          "results"
-        ],
+        "required": ["model", "results"],
         "title": "ResultsRequest",
         "type": "object"
       },
@@ -2517,10 +2385,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "saved_at",
-          "event"
-        ],
+        "required": ["saved_at", "event"],
         "title": "SavedEventListItem",
         "type": "object"
       },
@@ -2538,10 +2403,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "saved_events",
-          "total"
-        ],
+        "required": ["saved_events", "total"],
         "title": "SavedEventListResponse",
         "type": "object"
       },
@@ -2557,10 +2419,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "event_id",
-          "saved_at"
-        ],
+        "required": ["event_id", "saved_at"],
         "title": "SavedEventResponse",
         "type": "object"
       },
@@ -2585,11 +2444,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "event_id",
-          "events",
-          "scores"
-        ],
+        "required": ["event_id", "events", "scores"],
         "title": "SimilarEventsResponse",
         "type": "object"
       },
@@ -2611,11 +2466,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "candidate_id",
-          "generation",
-          "error"
-        ],
+        "required": ["candidate_id", "generation", "error"],
         "title": "TerminalRequest",
         "type": "object"
       },
@@ -2631,10 +2482,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "email",
-          "code"
-        ],
+        "required": ["email", "code"],
         "title": "UBCVerifyConfirmRequest",
         "type": "object"
       },
@@ -2646,9 +2494,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "email"
-        ],
+        "required": ["email"],
         "title": "UBCVerifySendRequest",
         "type": "object"
       },
@@ -2973,9 +2819,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "member_since"
-        ],
+        "required": ["member_since"],
         "title": "UserStatsResponse",
         "type": "object"
       },
@@ -3011,11 +2855,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError",
         "type": "object"
       }
@@ -3042,9 +2882,7 @@
           }
         },
         "summary": "Health",
-        "tags": [
-          "Health"
-        ]
+        "tags": ["Health"]
       }
     },
     "/admin/api-keys": {
@@ -3093,9 +2931,7 @@
           }
         },
         "summary": "List Api Credentials",
-        "tags": [
-          "Admin API Credentials"
-        ]
+        "tags": ["Admin API Credentials"]
       },
       "post": {
         "operationId": "create_api_credential_admin_api_keys_post",
@@ -3152,9 +2988,7 @@
           }
         },
         "summary": "Create Api Credential",
-        "tags": [
-          "Admin API Credentials"
-        ]
+        "tags": ["Admin API Credentials"]
       }
     },
     "/admin/api-keys/{credential_id}/audit": {
@@ -3213,9 +3047,7 @@
           }
         },
         "summary": "List Api Credential Audit",
-        "tags": [
-          "Admin API Credentials"
-        ]
+        "tags": ["Admin API Credentials"]
       }
     },
     "/admin/api-keys/{credential_id}/revoke": {
@@ -3274,9 +3106,7 @@
           }
         },
         "summary": "Revoke Api Credential",
-        "tags": [
-          "Admin API Credentials"
-        ]
+        "tags": ["Admin API Credentials"]
       }
     },
     "/admin/candidates": {
@@ -3392,9 +3222,7 @@
           }
         },
         "summary": "List Admin Candidates",
-        "tags": [
-          "Admin Candidates"
-        ]
+        "tags": ["Admin Candidates"]
       }
     },
     "/admin/candidates/{candidate_id}": {
@@ -3452,9 +3280,7 @@
           }
         },
         "summary": "Get Admin Candidate",
-        "tags": [
-          "Admin Candidates"
-        ]
+        "tags": ["Admin Candidates"]
       },
       "put": {
         "operationId": "correct_candidate_admin_candidates__candidate_id__put",
@@ -3520,9 +3346,7 @@
           }
         },
         "summary": "Correct Candidate",
-        "tags": [
-          "Admin Candidates"
-        ]
+        "tags": ["Admin Candidates"]
       }
     },
     "/admin/candidates/{candidate_id}/approve": {
@@ -3580,9 +3404,7 @@
           }
         },
         "summary": "Approve Candidate",
-        "tags": [
-          "Admin Candidates"
-        ]
+        "tags": ["Admin Candidates"]
       }
     },
     "/admin/candidates/{candidate_id}/reject": {
@@ -3640,9 +3462,7 @@
           }
         },
         "summary": "Reject Candidate",
-        "tags": [
-          "Admin Candidates"
-        ]
+        "tags": ["Admin Candidates"]
       }
     },
     "/admin/candidates/{candidate_id}/return-to-review": {
@@ -3700,9 +3520,7 @@
           }
         },
         "summary": "Return Candidate To Review",
-        "tags": [
-          "Admin Candidates"
-        ]
+        "tags": ["Admin Candidates"]
       }
     },
     "/admin/events": {
@@ -3748,11 +3566,7 @@
             "required": false,
             "schema": {
               "default": "all",
-              "enum": [
-                "all",
-                "active",
-                "archived"
-              ],
+              "enum": ["all", "active", "archived"],
               "title": "Status",
               "type": "string"
             }
@@ -3799,9 +3613,7 @@
           }
         },
         "summary": "List Admin Events",
-        "tags": [
-          "Admin Events"
-        ]
+        "tags": ["Admin Events"]
       },
       "post": {
         "operationId": "create_event_admin_events_post",
@@ -3858,9 +3670,7 @@
           }
         },
         "summary": "Create Event",
-        "tags": [
-          "Admin Events"
-        ]
+        "tags": ["Admin Events"]
       }
     },
     "/admin/events/{event_id}": {
@@ -3911,9 +3721,7 @@
           }
         },
         "summary": "Delete Event",
-        "tags": [
-          "Admin Events"
-        ]
+        "tags": ["Admin Events"]
       },
       "get": {
         "operationId": "get_admin_event_admin_events__event_id__get",
@@ -3969,9 +3777,7 @@
           }
         },
         "summary": "Get Admin Event",
-        "tags": [
-          "Admin Events"
-        ]
+        "tags": ["Admin Events"]
       },
       "put": {
         "operationId": "update_event_admin_events__event_id__put",
@@ -4037,9 +3843,7 @@
           }
         },
         "summary": "Update Event",
-        "tags": [
-          "Admin Events"
-        ]
+        "tags": ["Admin Events"]
       }
     },
     "/admin/events/{event_id}/archive": {
@@ -4097,9 +3901,7 @@
           }
         },
         "summary": "Archive Event",
-        "tags": [
-          "Admin Events"
-        ]
+        "tags": ["Admin Events"]
       }
     },
     "/admin/events/{event_id}/audit": {
@@ -4157,9 +3959,7 @@
           }
         },
         "summary": "List Event Audit",
-        "tags": [
-          "Admin Events"
-        ]
+        "tags": ["Admin Events"]
       }
     },
     "/admin/events/{event_id}/presigned-upload": {
@@ -4217,9 +4017,7 @@
           }
         },
         "summary": "Get Event Presigned Upload",
-        "tags": [
-          "Admin Events"
-        ]
+        "tags": ["Admin Events"]
       }
     },
     "/admin/events/{event_id}/restore": {
@@ -4277,9 +4075,7 @@
           }
         },
         "summary": "Restore Event",
-        "tags": [
-          "Admin Events"
-        ]
+        "tags": ["Admin Events"]
       }
     },
     "/auth/otp/send": {
@@ -4318,9 +4114,7 @@
           }
         },
         "summary": "Send Otp",
-        "tags": [
-          "Auth"
-        ]
+        "tags": ["Auth"]
       }
     },
     "/auth/otp/verify": {
@@ -4359,9 +4153,7 @@
           }
         },
         "summary": "Verify Otp",
-        "tags": [
-          "Auth"
-        ]
+        "tags": ["Auth"]
       }
     },
     "/auth/ubc-verify/confirm": {
@@ -4420,9 +4212,7 @@
           }
         },
         "summary": "Confirm Ubc Verify",
-        "tags": [
-          "Auth"
-        ]
+        "tags": ["Auth"]
       }
     },
     "/auth/ubc-verify/send": {
@@ -4481,9 +4271,7 @@
           }
         },
         "summary": "Send Ubc Verify",
-        "tags": [
-          "Auth"
-        ]
+        "tags": ["Auth"]
       }
     },
     "/events": {
@@ -4536,9 +4324,7 @@
           }
         },
         "summary": "List Events",
-        "tags": [
-          "Events"
-        ]
+        "tags": ["Events"]
       }
     },
     "/events/past": {
@@ -4591,9 +4377,7 @@
           }
         },
         "summary": "List Past Events",
-        "tags": [
-          "Events"
-        ]
+        "tags": ["Events"]
       }
     },
     "/events/search": {
@@ -4646,9 +4430,7 @@
           }
         },
         "summary": "Search Events",
-        "tags": [
-          "Events"
-        ]
+        "tags": ["Events"]
       }
     },
     "/events/{event_id}": {
@@ -4688,9 +4470,7 @@
           }
         },
         "summary": "Get Event",
-        "tags": [
-          "Events"
-        ]
+        "tags": ["Events"]
       }
     },
     "/extraction/dispatched": {
@@ -4747,9 +4527,7 @@
           }
         },
         "summary": "Dispatched",
-        "tags": [
-          "Queue Extraction"
-        ]
+        "tags": ["Queue Extraction"]
       }
     },
     "/extraction/evidence": {
@@ -4806,9 +4584,7 @@
           }
         },
         "summary": "Evidence",
-        "tags": [
-          "Queue Extraction"
-        ]
+        "tags": ["Queue Extraction"]
       }
     },
     "/extraction/recovery": {
@@ -4867,9 +4643,7 @@
           }
         },
         "summary": "Recovery",
-        "tags": [
-          "Queue Extraction"
-        ]
+        "tags": ["Queue Extraction"]
       }
     },
     "/extraction/replay": {
@@ -4927,9 +4701,7 @@
           }
         },
         "summary": "Replay",
-        "tags": [
-          "Queue Extraction"
-        ]
+        "tags": ["Queue Extraction"]
       }
     },
     "/extraction/results": {
@@ -4986,9 +4758,7 @@
           }
         },
         "summary": "Results",
-        "tags": [
-          "Queue Extraction"
-        ]
+        "tags": ["Queue Extraction"]
       }
     },
     "/extraction/terminal": {
@@ -5045,9 +4815,7 @@
           }
         },
         "summary": "Terminal",
-        "tags": [
-          "Queue Extraction"
-        ]
+        "tags": ["Queue Extraction"]
       }
     },
     "/ingestion/event-candidates": {
@@ -5104,9 +4872,7 @@
           }
         },
         "summary": "Ingest Event Listing Candidate",
-        "tags": [
-          "Candidate Ingestion"
-        ]
+        "tags": ["Candidate Ingestion"]
       }
     },
     "/ingestion/event-candidates/{candidate_id}/capture-ready": {
@@ -5162,9 +4928,7 @@
           }
         },
         "summary": "Capture Ready",
-        "tags": [
-          "Candidate Ingestion"
-        ]
+        "tags": ["Candidate Ingestion"]
       }
     },
     "/ratings": {
@@ -5235,9 +4999,7 @@
           }
         },
         "summary": "List Ratings",
-        "tags": [
-          "Ratings"
-        ]
+        "tags": ["Ratings"]
       }
     },
     "/ratings/mine/{event_id}": {
@@ -5295,9 +5057,7 @@
           }
         },
         "summary": "Get Rating",
-        "tags": [
-          "Ratings"
-        ]
+        "tags": ["Ratings"]
       },
       "post": {
         "operationId": "rate_event_ratings_mine__event_id__post",
@@ -5363,9 +5123,7 @@
           }
         },
         "summary": "Rate Event",
-        "tags": [
-          "Ratings"
-        ]
+        "tags": ["Ratings"]
       }
     },
     "/ratings/{event_id}": {
@@ -5409,9 +5167,7 @@
           }
         },
         "summary": "Get Event Ratings",
-        "tags": [
-          "Ratings"
-        ]
+        "tags": ["Ratings"]
       }
     },
     "/recommendations/events/for-you": {
@@ -5472,9 +5228,7 @@
           }
         },
         "summary": "Get For You",
-        "tags": [
-          "Recommendations"
-        ]
+        "tags": ["Recommendations"]
       }
     },
     "/recommendations/events/{event_id}/similar": {
@@ -5538,9 +5292,7 @@
           }
         },
         "summary": "Get Similar Events",
-        "tags": [
-          "Recommendations"
-        ]
+        "tags": ["Recommendations"]
       }
     },
     "/saved-events": {
@@ -5611,9 +5363,7 @@
           }
         },
         "summary": "List Saved Events",
-        "tags": [
-          "Saved Events"
-        ]
+        "tags": ["Saved Events"]
       }
     },
     "/saved-events/{event_id}": {
@@ -5664,9 +5414,7 @@
           }
         },
         "summary": "Unsave Event",
-        "tags": [
-          "Saved Events"
-        ]
+        "tags": ["Saved Events"]
       },
       "put": {
         "operationId": "save_event_saved_events__event_id__put",
@@ -5732,9 +5480,7 @@
           }
         },
         "summary": "Save Event",
-        "tags": [
-          "Saved Events"
-        ]
+        "tags": ["Saved Events"]
       }
     },
     "/users/me": {
@@ -5783,9 +5529,7 @@
           }
         },
         "summary": "Get Me",
-        "tags": [
-          "Users"
-        ]
+        "tags": ["Users"]
       },
       "put": {
         "operationId": "update_profile_users_me_put",
@@ -5842,9 +5586,7 @@
           }
         },
         "summary": "Update Profile",
-        "tags": [
-          "Users"
-        ]
+        "tags": ["Users"]
       }
     },
     "/users/me/presigned-upload": {
@@ -5893,9 +5635,7 @@
           }
         },
         "summary": "Get Presigned Upload",
-        "tags": [
-          "Users"
-        ]
+        "tags": ["Users"]
       }
     },
     "/users/me/stats": {
@@ -5944,9 +5684,7 @@
           }
         },
         "summary": "Get Stats",
-        "tags": [
-          "Users"
-        ]
+        "tags": ["Users"]
       }
     },
     "/users/onboarding": {
@@ -6005,9 +5743,7 @@
           }
         },
         "summary": "Complete Onboarding",
-        "tags": [
-          "Users"
-        ]
+        "tags": ["Users"]
       }
     }
   }

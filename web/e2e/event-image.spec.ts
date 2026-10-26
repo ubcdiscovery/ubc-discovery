@@ -18,19 +18,15 @@ test("shows an Instagram portrait poster without cropping", async ({ page }) => 
         ...mockEvent,
         event_picture_url: posterDataUrl,
       }),
-    })
+    }),
   );
 
   await page.goto("/events/event-1");
 
-  const poster = page
-    .locator('main img[src^="data:image/svg+xml"]')
-    .filter({ visible: true });
+  const poster = page.locator('main img[src^="data:image/svg+xml"]').filter({ visible: true });
   await expect(poster).toBeVisible();
   await expect
-    .poll(() =>
-      poster.evaluate((image) => (image as HTMLImageElement).naturalWidth)
-    )
+    .poll(() => poster.evaluate((image) => (image as HTMLImageElement).naturalWidth))
     .toBe(1080);
 
   const renderedRatio = await poster.evaluate((image) => {

@@ -2,16 +2,9 @@ import { Link } from "react-router";
 import { MobileUtilityMenu } from "~/components/MobileUtilityMenu";
 import { NavIconButton } from "~/components/NavIconButton";
 
-export function MobileHeader({
-  onOpenSearch,
-}: {
-  onOpenSearch: () => void;
-}) {
+export function MobileHeader({ onOpenSearch }: { onOpenSearch: () => void }) {
   return (
-    <header
-      className="h-14 border-b-2 border-ink lg:hidden"
-      data-testid="compact-header"
-    >
+    <header className="h-14 border-b-2 border-ink lg:hidden" data-testid="compact-header">
       <div className="flex h-full items-center justify-between gap-1 px-3 sm:px-4.5">
         <Link
           to="/"

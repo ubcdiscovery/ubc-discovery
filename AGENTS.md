@@ -30,14 +30,19 @@ The API enqueues Candidates for the extraction Worker, which calls back into the
 
 ## Getting started
 
-Requires Node 24, pnpm, and Docker. Each of `web/`, `workers/api/`, and `workers/extraction/` is a separate pnpm project.
+Requires Node 24, pnpm, and Docker. `web/`, `workers/api/`, and `workers/extraction/` are packages in one pnpm workspace. Install them all once from the repository root:
+
+```bash
+pnpm install
+```
+
+Shared tool versions (TypeScript, Wrangler, Vite+) live in the `catalog` in `pnpm-workspace.yaml`; reference them from a package as `"catalog:"`. Oxlint and Oxfmt settings for every package live in the root `vite.config.ts`.
 
 ### Database
 
 ```bash
 docker compose up -d postgres
 cd workers/api
-pnpm install
 DATABASE_URL=postgresql://ubc_discovery:ubc_discovery@localhost:5432/ubc_discovery pnpm run db:migrate
 ```
 
@@ -57,7 +62,6 @@ Browsing events needs only the database. Sign-in needs the Firebase values (plus
 
 ```bash
 cd web
-pnpm install
 cp .env.example .env # fill in the Firebase web config
 pnpm dev # http://localhost:5173
 ```
@@ -70,11 +74,13 @@ Only needed when working on Candidate extraction. See [Queue extraction](docs/op
 
 CI runs these on pull requests; run them for the projects you change.
 
-| Project | Commands |
-|---|---|
-| `workers/api` | `pnpm check`, `pnpm test:runtime`, `pnpm build` |
-| `web` | `pnpm run lint`, `pnpm run typecheck`, `pnpm run build`, `pnpm run test:e2e` |
-| `workers/extraction` | `pnpm check`, `pnpm build` |
+| Project              | Commands                                                                     |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `workers/api`        | `pnpm check`, `pnpm test:runtime`, `pnpm build`                              |
+| `web`                | `pnpm run lint`, `pnpm run typecheck`, `pnpm run build`, `pnpm run test:e2e` |
+| `workers/extraction` | `pnpm check`, `pnpm build`                                                   |
+
+`pnpm check` in each Worker includes its lint. `pnpm lint` from the repository root lints every package with the shared config.
 
 API database tests and `test:runtime` need `TEST_DATABASE_URL` pointing at a disposable local database:
 
@@ -111,6 +117,7 @@ docs/operations/                 # Runbooks for production, migrations, storage,
 ## Key Patterns
 
 ### API
+
 - Auth: event discovery is public; saved events, ratings, profiles, and personalized recommendations are member-only
 - API requests authenticate with Firebase ID tokens; ingestion integrations use managed API credentials
 - UBC email is not required for membership; `*.ubc.ca` is only used to confirm the optional `ubc_verified` entry for future functionality
@@ -120,6 +127,7 @@ docs/operations/                 # Runbooks for production, migrations, storage,
 - Recommender: Content-based event similarity using Bedrock Titan embeddings + vibe Jaccard weighted blend. Embeddings are pre-computed at event creation and stored as 1024-dimensional pgvector values.
 
 ### Web
+
 - React Router 8 routes live in `web/app/routes/`; shared web UI lives in `web/app/components/`. See `web/AGENTS.md` for UI conventions.
 - Use PascalCase for shared component filenames and exported component identifiers in `web/app/components/` (for example, `EventCard.tsx` exports `EventCard`). Keep route module filenames in `web/app/routes/` lowercase/kebab-case.
 - API helpers live in `web/app/lib/api.ts`.

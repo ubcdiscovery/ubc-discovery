@@ -6,12 +6,9 @@ type AuthError = Error & { code?: string };
 const API_AUTH_ERROR_MESSAGES: Record<string, string> = {
   OTP_INVALID: "That code is incorrect. Check the email and try again.",
   OTP_EXPIRED: "That code has expired. Request a new code to continue.",
-  OTP_TOO_MANY_ATTEMPTS:
-    "Too many incorrect attempts. Request a new code to continue.",
-  OTP_RATE_LIMITED:
-    "Too many codes were requested. Wait 15 minutes before trying again.",
-  OTP_DELIVERY_FAILED:
-    "The sign-in email could not be sent. Try again shortly.",
+  OTP_TOO_MANY_ATTEMPTS: "Too many incorrect attempts. Request a new code to continue.",
+  OTP_RATE_LIMITED: "Too many codes were requested. Wait 15 minutes before trying again.",
+  OTP_DELIVERY_FAILED: "The sign-in email could not be sent. Try again shortly.",
 };
 
 const FIREBASE_AUTH_ERROR_MESSAGES: Record<string, string> = {
@@ -28,9 +25,7 @@ export function authErrorMessage(error: unknown): string | null {
   const authError = error as AuthError;
 
   if (error instanceof ApiError) {
-    const message = error.code
-      ? API_AUTH_ERROR_MESSAGES[error.code]
-      : undefined;
+    const message = error.code ? API_AUTH_ERROR_MESSAGES[error.code] : undefined;
     return (
       message ??
       (error.status >= 500

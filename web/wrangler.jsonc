@@ -9,19 +9,25 @@
   "workers_dev": true,
   "assets": {
     "binding": "ASSETS",
-    "directory": "./build/client"
+    "directory": "./build/client",
   },
   "observability": {
     "enabled": true,
-    "traces": { "enabled": true }
+    "traces": { "enabled": true },
   },
   "env": {
     "production": {
       "name": "ubc-discovery-web",
       "account_id": "5637cded1864726ba930947d2f6138af",
       "workers_dev": true,
-      "routes": [{ "pattern": "ubcdiscovery.com", "custom_domain": true, "zone_id": "bcd291566a7b602657d980a51d542c5f" }],
-      "assets": { "binding": "ASSETS", "directory": "./build/client" }
-    }
-  }
+      "routes": [
+        {
+          "pattern": "ubcdiscovery.com",
+          "custom_domain": true,
+          "zone_id": "bcd291566a7b602657d980a51d542c5f",
+        },
+      ],
+      "assets": { "binding": "ASSETS", "directory": "./build/client" },
+    },
+  },
 }

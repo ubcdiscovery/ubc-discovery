@@ -27,7 +27,9 @@ type AdminEventFormProps = {
 };
 
 export function AdminEventForm({ event, onSave, onCreate, onUploadImage }: AdminEventFormProps) {
-  const [draft, setDraft] = useState(() => (event ? draftFromEvent(event) : emptyAdminEventDraft()));
+  const [draft, setDraft] = useState(() =>
+    event ? draftFromEvent(event) : emptyAdminEventDraft(),
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -200,7 +202,7 @@ export function AdminEventForm({ event, onSave, onCreate, onUploadImage }: Admin
       <div className="grid gap-4 self-start lg:sticky lg:top-5">
         <Card className="border-2">
           <CardHeader>
-              <CardTitle>{event ? "Canonical record" : "New Event Listing"}</CardTitle>
+            <CardTitle>{event ? "Canonical record" : "New Event Listing"}</CardTitle>
           </CardHeader>
           <CardContent>
             {event ? (
@@ -215,7 +217,9 @@ export function AdminEventForm({ event, onSave, onCreate, onUploadImage }: Admin
                 </div>
                 <div>
                   <dt className="uppercase tracking-wide text-muted">Created</dt>
-                  <dd className="mt-1 font-bold text-ink">{new Date(event.created_at).toLocaleString()}</dd>
+                  <dd className="mt-1 font-bold text-ink">
+                    {new Date(event.created_at).toLocaleString()}
+                  </dd>
                 </div>
               </dl>
             ) : (

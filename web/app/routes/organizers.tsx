@@ -16,8 +16,8 @@ export default function Organizers() {
           Get your event discovered
         </h1>
         <p className="font-body text-base/relaxed text-muted mb-10">
-          UBC Discovery helps students find events happening on campus. If
-          you're organizing an event, we'd love to feature it.
+          UBC Discovery helps students find events happening on campus. If you're organizing an
+          event, we'd love to feature it.
         </p>
 
         <section className="border-2 border-ink p-6 mb-8">
@@ -25,8 +25,8 @@ export default function Organizers() {
             How to submit
           </h2>
           <p className="font-body text-sm/relaxed text-muted mb-4">
-            For now, send us a DM on Instagram with your event details and we'll
-            add it to the platform.
+            For now, send us a DM on Instagram with your event details and we'll add it to the
+            platform.
           </p>
           <a
             href="https://instagram.com/ubcdiscovery"
@@ -44,20 +44,17 @@ export default function Organizers() {
           </h2>
           <ul className="space-y-2 font-body text-sm/relaxed text-muted">
             <li className="flex gap-2">
-              <span className="text-accent font-bold">→</span> Event name and
-              description
+              <span className="text-accent font-bold">→</span> Event name and description
             </li>
             <li className="flex gap-2">
-              <span className="text-accent font-bold">→</span> Date, time, and
-              location
+              <span className="text-accent font-bold">→</span> Date, time, and location
             </li>
             <li className="flex gap-2">
-              <span className="text-accent font-bold">→</span> A cover image
-              (optional but recommended)
+              <span className="text-accent font-bold">→</span> A cover image (optional but
+              recommended)
             </li>
             <li className="flex gap-2">
-              <span className="text-accent font-bold">→</span> Link to register
-              or RSVP (if any)
+              <span className="text-accent font-bold">→</span> Link to register or RSVP (if any)
             </li>
           </ul>
         </section>

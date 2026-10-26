@@ -18,10 +18,7 @@ test("preserves line breaks in the Event Listing description", async ({ page }) 
 
   await page.goto("/events/event-1");
 
-  const description = page
-    .locator("p")
-    .filter({ hasText: "First line" })
-    .filter({ visible: true });
+  const description = page.locator("p").filter({ hasText: "First line" }).filter({ visible: true });
   await expect(description).toHaveCount(1);
   await expect(description).toHaveText(multilineDescription);
   await expect(description).toHaveCSS("white-space", "pre-wrap");

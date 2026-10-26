@@ -1,8 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { mockApi, mockEvent } from "./support/auth";
 
-const longTitle =
-  "Community climate workshop and garden supper on the Main Mall";
+const longTitle = "Community climate workshop and garden supper on the Main Mall";
 const posterDataUrl = `data:image/svg+xml,${encodeURIComponent(`
   <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
     <rect width="400" height="400" fill="#1e40ff" />
@@ -25,7 +24,7 @@ test.beforeEach(async ({ page }) => {
         })),
         total: 6,
       }),
-    })
+    }),
   );
 });
 
@@ -34,10 +33,7 @@ test("renders a semantic poster-led Event Listing with a comfortable save target
 }) => {
   await page.goto("/");
 
-  const listing = page
-    .getByRole("region", { name: "Upcoming events" })
-    .locator("article")
-    .first();
+  const listing = page.getByRole("region", { name: "Upcoming events" }).locator("article").first();
   const listingLink = listing.getByRole("link", {
     name: new RegExp(longTitle),
   });
@@ -81,27 +77,17 @@ test("uses an unboxed, full-width poster feed at 320 and 390 pixels", async ({
     expect(headingBox!.x).toBeCloseTo(articleBox!.x, 0);
     expect(posterBox!.width / articleBox!.width).toBeGreaterThan(0.95);
     expect(posterBox!.y).toBeLessThan(headingBox!.y);
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth)
-    ).toBe(width);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
     await expect(poster).toBeVisible();
   }
 });
 
-test("uses a large poster above the event details on desktop", async ({
-  page,
-  isMobile,
-}) => {
+test("uses a large poster above the event details on desktop", async ({ page, isMobile }) => {
   test.skip(isMobile, "This checks the desktop poster wall.");
   await page.goto("/");
 
-  const article = page
-    .getByRole("region", { name: "Upcoming events" })
-    .locator("article")
-    .first();
-  const headingBox = await article
-    .getByRole("heading", { name: longTitle })
-    .boundingBox();
+  const article = page.getByRole("region", { name: "Upcoming events" }).locator("article").first();
+  const headingBox = await article.getByRole("heading", { name: longTitle }).boundingBox();
   const articleBox = await article.boundingBox();
   const poster = article.locator("img").last();
   const posterBox = await poster.boundingBox();
@@ -138,31 +124,23 @@ test("keeps posters centered and bounded in a wall of at most three columns", as
       articles.map((article) => {
         const box = article.getBoundingClientRect();
         return { x: box.x, y: box.y, width: box.width };
-      })
+      }),
     );
     const firstPoster = feed.locator("article").first().locator("img").last();
-    const gridColumns = await feed.evaluate((element) =>
-      getComputedStyle(element).gridTemplateColumns.split(" ").length
+    const gridColumns = await feed.evaluate(
+      (element) => getComputedStyle(element).gridTemplateColumns.split(" ").length,
     );
     const feedBox = await feed.boundingBox();
     const posterBox = await firstPoster.boundingBox();
-    const firstRow = articleBoxes.filter(
-      (box) => Math.abs(box.y - articleBoxes[0].y) < 1
-    );
+    const firstRow = articleBoxes.filter((box) => Math.abs(box.y - articleBoxes[0].y) < 1);
     const rowLeft = firstRow[0].x;
-    const rowRight = firstRow[firstRow.length - 1].x +
-      firstRow[firstRow.length - 1].width;
+    const rowRight = firstRow[firstRow.length - 1].x + firstRow[firstRow.length - 1].width;
 
     expect(gridColumns).toBe(columns);
     expect(feedBox).not.toBeNull();
     expect(posterBox).not.toBeNull();
     expect(posterBox!.width).toBeLessThanOrEqual(maxPosterWidth);
-    expect((rowLeft + rowRight) / 2).toBeCloseTo(
-      feedBox!.x + feedBox!.width / 2,
-      0
-    );
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth)
-    ).toBe(width);
+    expect((rowLeft + rowRight) / 2).toBeCloseTo(feedBox!.x + feedBox!.width / 2, 0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
   }
 });

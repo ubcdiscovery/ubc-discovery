@@ -21,9 +21,7 @@ export type CandidateDraft = {
 function localInput(value: string | null | undefined) {
   if (!value) return "";
   const date = new Date(value);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 16);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 }
 
 export function draftFromCandidate(candidate: ApiCandidate): CandidateDraft {

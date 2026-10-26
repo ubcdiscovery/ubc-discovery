@@ -20,8 +20,9 @@ export async function uploadAdminEventImage(eventId: string, file: File): Promis
     throw new Error("Event image is too large after compression.");
   }
 
-  try { await uploadImage(target, image, "event.webp"); }
-  catch {
+  try {
+    await uploadImage(target, image, "event.webp");
+  } catch {
     throw new Error("Event image upload failed.");
   }
 

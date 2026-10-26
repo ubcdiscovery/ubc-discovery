@@ -12,7 +12,10 @@ const FIREBASE_PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID;
 function proxyFirebaseAuth(request: Request) {
   const url = new URL(request.url);
   if (!FIREBASE_PROJECT_ID || !/^\/__\/(auth|firebase)\//.test(url.pathname)) return null;
-  const target = new URL(url.pathname + url.search, `https://${FIREBASE_PROJECT_ID}.firebaseapp.com`);
+  const target = new URL(
+    url.pathname + url.search,
+    `https://${FIREBASE_PROJECT_ID}.firebaseapp.com`,
+  );
   return fetch(new Request(target, request));
 }
 

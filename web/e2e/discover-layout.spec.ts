@@ -12,7 +12,7 @@ test("desktop filter rail reaches the viewport without a bottom rule", async ({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ events: [mockEvent], total: 1 }),
-    })
+    }),
   );
 
   await page.goto("/");
@@ -29,10 +29,7 @@ test("desktop filter rail reaches the viewport without a bottom rule", async ({
   await expect(rail.locator("..")).toHaveCSS("border-bottom-width", "0px");
 });
 
-test("desktop Discover scrolls the page instead of a nested feed", async ({
-  page,
-  isMobile,
-}) => {
+test("desktop Discover scrolls the page instead of a nested feed", async ({ page, isMobile }) => {
   test.skip(isMobile, "The filter rail is only rendered on desktop.");
   await mockApi(page);
   await page.route("http://api.test/events?**", (route) =>
@@ -46,7 +43,7 @@ test("desktop Discover scrolls the page instead of a nested feed", async ({
         })),
         total: 12,
       }),
-    })
+    }),
   );
 
   await page.goto("/");
@@ -55,14 +52,14 @@ test("desktop Discover scrolls the page instead of a nested feed", async ({
   const feed = page.getByRole("region", { name: "Discover events" });
   await expect(feed).toHaveCSS("overflow-y", "visible");
   expect(
-    await page.evaluate(
-      () => document.documentElement.scrollHeight > window.innerHeight
-    )
+    await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight),
   ).toBe(true);
 
   await page.mouse.wheel(0, 1200);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-  const railTop = await page.locator("aside > div").evaluate((el) => el.getBoundingClientRect().top);
+  const railTop = await page
+    .locator("aside > div")
+    .evaluate((el) => el.getBoundingClientRect().top);
   const headerBottom = await page
     .getByTestId("desktop-header")
     .evaluate((el) => el.getBoundingClientRect().bottom);
