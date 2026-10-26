@@ -1,7 +1,7 @@
 import { Elysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { eq, sql } from "drizzle-orm";
-import { vi } from "vitest";
+import { vi } from "vite-plus/test";
 import { withDatabase } from "../src/db";
 import { apiCredentials, eventListingCandidates, users } from "../src/db/schema";
 import type { ApiEnv } from "../src/env";

@@ -7,7 +7,7 @@
     "types": "wrangler types worker-configuration.d.ts --env-interface CloudflareBindings --include-runtime=false --strict-vars=false",
     "typecheck": "pnpm run types && tsc --noEmit",
     "lint": "pnpm --workspace-root exec vp lint workers/api && pnpm --workspace-root exec vp fmt --check workers/api",
-    "test": "vitest run",
+    "test": "vp test run",
     "test:runtime": "node scripts/runtime-check.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "build": "wrangler deploy --dry-run",
@@ -30,7 +30,7 @@
     "@types/pg": "8.23.1",
     "drizzle-kit": "0.31.11",
     "typescript": "catalog:",
-    "vitest": "catalog:",
+    "vite-plus": "catalog:",
     "wrangler": "catalog:"
   },
   "engines": {

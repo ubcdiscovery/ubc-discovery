@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { createApp } from "../src/app";
 import type { ApiEnv } from "../src/env";
 import { errorResponse, ApiError } from "../src/http/errors";

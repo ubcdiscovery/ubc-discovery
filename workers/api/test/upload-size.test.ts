@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { withDatabase } from "../src/db";
 import {
   eventAuditLogs,

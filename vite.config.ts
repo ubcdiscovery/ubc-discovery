@@ -177,10 +177,9 @@ export default defineConfig({
         jsPlugins: ["eslint-plugin-better-tailwindcss"],
       },
       {
-        // Workers test with Vitest directly, and their modules predate the line limit.
+        // Worker modules predate the line limit.
         files: ["workers/**"],
         rules: {
-          "vite-plus/prefer-vite-plus-imports": "off",
           "max-lines": "off",
         },
       },

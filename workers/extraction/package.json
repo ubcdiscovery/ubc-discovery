@@ -6,7 +6,7 @@
     "dev": "wrangler dev",
     "typecheck": "pnpm run types && tsc --noEmit",
     "lint": "pnpm --workspace-root exec vp lint workers/extraction && pnpm --workspace-root exec vp fmt --check workers/extraction",
-    "test": "vitest run",
+    "test": "vp test run",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "deploy": "wrangler deploy",
     "build": "wrangler deploy --dry-run",
@@ -15,7 +15,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
+    "vite-plus": "catalog:",
     "wrangler": "catalog:"
   },
   "engines": {

@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
 import { withDatabase } from "../src/db";
 import { apiCredentials, events, eventAuditLogs } from "../src/db/schema";
 import { extractionFixture, testUrl } from "./extraction-fixture";

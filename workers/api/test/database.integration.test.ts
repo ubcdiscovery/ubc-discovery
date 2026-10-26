@@ -1,6 +1,6 @@
 import { getTableColumns, getTableName, is, sql } from "drizzle-orm";
 import { PgTable } from "drizzle-orm/pg-core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { ApiEnv } from "../src/env";
 import { schema, withDatabase, withTransaction } from "../src/db";
 

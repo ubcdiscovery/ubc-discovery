@@ -36,7 +36,7 @@ Requires Node 24, pnpm, and Docker. `web/`, `workers/api/`, and `workers/extract
 pnpm install
 ```
 
-Shared tool versions (TypeScript, Wrangler, Vitest, Vite+) live in the `catalog` in `pnpm-workspace.yaml`; reference them from a package as `"catalog:"`. Oxlint and Oxfmt settings for every package live in the root `vite.config.ts`.
+Shared tool versions (TypeScript, Wrangler, Vite+) live in the `catalog` in `pnpm-workspace.yaml`; reference them from a package as `"catalog:"`. Oxlint and Oxfmt settings for every package live in the root `vite.config.ts`.
 
 ### Database
 

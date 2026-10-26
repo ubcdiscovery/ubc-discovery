@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { r2S3Transport } from "../scripts/r2-s3.mjs";
 
 function fixture(fetcher) {

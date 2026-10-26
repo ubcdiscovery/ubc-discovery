@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import type { ApiEnv } from "../src/env";
 import { awsRequest, readBoundedBytes, signPostPolicy } from "../src/services/aws";
 

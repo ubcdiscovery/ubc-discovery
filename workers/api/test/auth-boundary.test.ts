@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { hashSecret, parseApiToken, requireIdentity, verifySecret } from "../src/http/auth";
 import type { FirebaseService } from "../src/services/firebase";
 

@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { withDatabase } from "../src/db";
 import { eventRatings, events, otpCodes, savedEvents, users } from "../src/db/schema";
 import type { ApiEnv } from "../src/env";

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { mkdtemp, readFile, rm, writeFile, stat } from "node:fs/promises";
 import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

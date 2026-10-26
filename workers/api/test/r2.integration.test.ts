@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { eq } from "drizzle-orm";
 import { createApp } from "../src/app";
 import { withDatabase } from "../src/db";

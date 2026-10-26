@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vite-plus/test";
 import { decodeJwt, exportPKCS8, generateKeyPair, jwtVerify, SignJWT, type JWTPayload } from "jose";
 import type { ApiEnv } from "../src/env";
 import { createFirebase } from "../src/services/firebase";

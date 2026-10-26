@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import type { ClientConfig } from "pg";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import type { ApiEnv } from "../src/env";
 
 const clients = vi.hoisted(
