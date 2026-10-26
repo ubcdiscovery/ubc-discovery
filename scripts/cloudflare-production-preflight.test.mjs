@@ -7,6 +7,12 @@ import {
   validateProductionConfiguration,
 } from "./cloudflare-production-preflight.mjs";
 
+// Wrangler configs are JSONC: full-line comments and trailing commas are allowed.
+function readJsonc(path) {
+  const text = readFileSync(new URL(path, import.meta.url), "utf8");
+  return JSON.parse(text.replace(/^\s*\/\/.*$/gm, "").replace(/,(\s*[}\]])/g, "$1"));
+}
+
 const fixture = {
   DATABASE_URL: "postgresql+asyncpg://fixture:private@ep-fixture.us-west-2.aws.neon.tech/neondb",
   FIREBASE_PROJECT_ID: "fixture",
@@ -111,9 +117,7 @@ test("production preflight rejects PostgreSQL connection-target query overrides"
 });
 
 test("production bindings remain distinct from the default staging deployment", () => {
-  const config = JSON.parse(
-    readFileSync(new URL("../workers/api/wrangler.jsonc", import.meta.url), "utf8"),
-  );
+  const config = readJsonc("../workers/api/wrangler.jsonc");
   assert.equal(config.name, "ubc-discovery-api-staging");
   const production = config.env.production;
   assert.equal(production.name, "ubc-discovery-api");
@@ -134,8 +138,7 @@ test("production bindings remain distinct from the default staging deployment", 
 });
 
 test("web build defaults remain staged and extractor callback is deployable", () => {
-  const text = readFileSync(new URL("../web/wrangler.jsonc", import.meta.url), "utf8");
-  const web = JSON.parse(text.replace(/^\s*\/\/.*$/gm, ""));
+  const web = readJsonc("../web/wrangler.jsonc");
   assert.equal(web.name, "ubc-discovery-web-staging");
   assert.equal(web.env.production.name, "ubc-discovery-web");
   assert.equal(web.env.production.account_id, account);
@@ -148,9 +151,7 @@ test("web build defaults remain staged and extractor callback is deployable", ()
       zone_id: "bcd291566a7b602657d980a51d542c5f",
     },
   ]);
-  const extraction = JSON.parse(
-    readFileSync(new URL("../workers/extraction/wrangler.jsonc", import.meta.url), "utf8"),
-  );
+  const extraction = readJsonc("../workers/extraction/wrangler.jsonc");
   assert.equal(extraction.vars.DISCOVERY_API_URL, apiOrigin);
   assert.equal(extraction.name, "ubc-discovery-extraction");
   assert.equal(extraction.queues.producers[0].queue, "ubc-discovery-extraction");
