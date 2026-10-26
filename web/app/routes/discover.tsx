@@ -69,10 +69,7 @@ export default function Discover() {
     }
   }, [sortBy, pastEvents, pastLoading]);
 
-  const allUpcoming = useMemo(
-    () => [...(data?.events ?? []), ...extraEvents],
-    [data, extraEvents],
-  );
+  const allUpcoming = useMemo(() => [...(data?.events ?? []), ...extraEvents], [data, extraEvents]);
 
   const events = useMemo(() => {
     const pool: ApiEvent[] = sortBy === "past" ? (pastEvents ?? []) : allUpcoming;

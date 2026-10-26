@@ -80,7 +80,13 @@ export function DisplayToggle({
           title="Poster grid"
           className={`cursor-pointer border p-2 transition-colors ${display === "poster" ? "border-accent text-ink" : "border-rule-soft text-muted hover:border-ink hover:text-ink"}`}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <rect x="1" y="1" width="6" height="6" fill="currentColor" />
             <rect x="9" y="1" width="6" height="6" fill="currentColor" />
             <rect x="1" y="9" width="6" height="6" fill="currentColor" />
@@ -92,7 +98,13 @@ export function DisplayToggle({
           title="List"
           className={`cursor-pointer border p-2 transition-colors ${display === "list" ? "border-accent text-ink" : "border-rule-soft text-muted hover:border-ink hover:text-ink"}`}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <rect x="1" y="2" width="14" height="2" fill="currentColor" />
             <rect x="1" y="7" width="14" height="2" fill="currentColor" />
             <rect x="1" y="12" width="14" height="2" fill="currentColor" />

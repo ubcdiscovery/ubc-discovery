@@ -1,8 +1,8 @@
-import type { ApiEnv } from '../env';
-import { createFirebase, type FirebaseService } from './firebase';
-import { createStorage, type ObjectStorage } from './storage';
-import { sendOtpEmail } from './email';
-import { generateEventEmbedding, type EmbeddingEvent } from './embeddings';
+import type { ApiEnv } from "../env";
+import { createFirebase, type FirebaseService } from "./firebase";
+import { createStorage, type ObjectStorage } from "./storage";
+import { sendOtpEmail } from "./email";
+import { generateEventEmbedding, type EmbeddingEvent } from "./embeddings";
 
 export interface RequestServices {
   firebase: FirebaseService;
@@ -20,7 +20,7 @@ export function createServices(env: ApiEnv): RequestServices {
     firebase: createFirebase(env),
     storage: createStorage(env),
     sendOtpEmail: (email, code) => sendOtpEmail(env, email, code),
-    embedEvent: event => generateEventEmbedding(env, event),
+    embedEvent: (event) => generateEventEmbedding(env, event),
     now: () => new Date(),
   };
 }

@@ -6,7 +6,7 @@
     "build": "react-router build",
     "deadcode": "knip",
     "dev": "react-router dev",
-    "lint": "pnpm run types && pnpm --workspace-root exec vp lint web",
+    "lint": "pnpm run types && pnpm --workspace-root exec vp lint web && pnpm --workspace-root exec vp fmt --check web",
     "start": "vp preview --host 127.0.0.1 --port 4173",
     "types": "wrangler types worker-configuration.d.ts --env-interface CloudflareEnvironment",
     "typecheck": "pnpm run types && react-router typegen && tsc",

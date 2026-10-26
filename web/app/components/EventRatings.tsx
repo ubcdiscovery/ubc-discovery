@@ -34,7 +34,12 @@ export function StarPicker({
 }
 
 export function Stars({ count, total = 5 }: { count: number; total?: number }) {
-  return <span style={{ color: "#FFAD00" }}>{"★".repeat(count)}{"☆".repeat(total - count)}</span>;
+  return (
+    <span style={{ color: "#FFAD00" }}>
+      {"★".repeat(count)}
+      {"☆".repeat(total - count)}
+    </span>
+  );
 }
 
 export function RatingRow({
@@ -97,7 +102,13 @@ export function RatingRow({
               (acc, el, i) =>
                 i === 0
                   ? [el]
-                  : [...acc, <span key={`sep-${i}`} className="text-muted font-mono text-2xs">·</span>, el],
+                  : [
+                      ...acc,
+                      <span key={`sep-${i}`} className="text-muted font-mono text-2xs">
+                        ·
+                      </span>,
+                      el,
+                    ],
               [],
             )}
         </div>
@@ -129,9 +140,7 @@ export function RatingsSection({
       : null;
 
   const others = useMemo(() => {
-    const base = myRating
-      ? allRatings.filter((r) => r.user_id !== myRating.user_id)
-      : allRatings;
+    const base = myRating ? allRatings.filter((r) => r.user_id !== myRating.user_id) : allRatings;
     return [...base].sort((a, b) => {
       if (sort === "newest")
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -235,12 +244,7 @@ export function RatingDraftModal({
         <div className="font-mono text-xs text-muted tracking-wider uppercase mb-4">
           Rate this event
         </div>
-        <StarPicker
-          className="mb-5"
-          size="2xl"
-          value={draft.stars}
-          onPick={onStarsChange}
-        />
+        <StarPicker className="mb-5" size="2xl" value={draft.stars} onPick={onStarsChange} />
         <div className="mb-4">
           <div className="font-mono text-xs text-muted tracking-wide uppercase mb-2">
             Strong vibes

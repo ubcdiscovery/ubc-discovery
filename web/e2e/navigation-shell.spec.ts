@@ -1,9 +1,5 @@
 import { expect, test } from "@playwright/test";
-import {
-  existingProfile,
-  mockApi,
-  setAuthenticatedUser,
-} from "./support/auth";
+import { existingProfile, mockApi, setAuthenticatedUser } from "./support/auth";
 
 test("keeps compact navigation through tablet widths without horizontal overflow", async ({
   page,
@@ -21,10 +17,8 @@ test("keeps compact navigation through tablet widths without horizontal overflow
     await expect(page.getByTestId("bottom-tabs")).toBeVisible();
     expect(
       await page.evaluate(
-        () =>
-          document.documentElement.scrollWidth ===
-          document.documentElement.clientWidth
-      )
+        () => document.documentElement.scrollWidth === document.documentElement.clientWidth,
+      ),
     ).toBe(true);
   }
 
@@ -37,10 +31,8 @@ test("keeps compact navigation through tablet widths without horizontal overflow
     await expect(page.getByTestId("bottom-tabs")).toBeHidden();
     expect(
       await page.evaluate(
-        () =>
-          document.documentElement.scrollWidth ===
-          document.documentElement.clientWidth
-      )
+        () => document.documentElement.scrollWidth === document.documentElement.clientWidth,
+      ),
     ).toBe(true);
   }
 });
@@ -66,18 +58,11 @@ test("mobile keeps site utilities in the header and identity in the bottom bar",
   await expect(page.getByRole("link", { name: "Profile" })).toHaveCount(0);
 
   await menu.click();
-  await expect(
-    page.getByRole("menuitem", { name: "For organizers" })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("menuitem", { name: "Use dark mode" })
-  ).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "For organizers" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Use dark mode" })).toBeVisible();
 });
 
-test("mobile uses the same bottom position for a Member profile", async ({
-  page,
-  isMobile,
-}) => {
+test("mobile uses the same bottom position for a Member profile", async ({ page, isMobile }) => {
   test.skip(!isMobile, "This checks the mobile Member navigation shell.");
   await mockApi(page, { profile: existingProfile });
   await setAuthenticatedUser(page);
@@ -87,10 +72,7 @@ test("mobile uses the same bottom position for a Member profile", async ({
   await expect(page.getByRole("link", { name: "Sign In" })).toHaveCount(0);
 });
 
-test("navbar icon controls share one hover treatment", async ({
-  page,
-  isMobile,
-}) => {
+test("navbar icon controls share one hover treatment", async ({ page, isMobile }) => {
   await mockApi(page);
   await page.goto("/");
 

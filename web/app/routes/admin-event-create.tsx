@@ -16,8 +16,7 @@ export default function AdminEventCreate() {
       try {
         await uploadAdminEventImage(created.id, image);
       } catch (cause) {
-        const message =
-          cause instanceof Error ? cause.message : "Could not upload event image.";
+        const message = cause instanceof Error ? cause.message : "Could not upload event image.";
         await navigate(`/admin/events/${created.id}`, {
           state: { imageUploadError: message },
         });
@@ -38,7 +37,8 @@ export default function AdminEventCreate() {
           Create Event Listing
         </h1>
         <p className="mt-3 max-w-150 text-sm/relaxed text-ink-soft">
-          Add a reviewed Event Listing to public discovery. The same validation used for edits applies here.
+          Add a reviewed Event Listing to public discovery. The same validation used for edits
+          applies here.
         </p>
       </div>
       <div className="mt-6">

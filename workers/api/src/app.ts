@@ -16,18 +16,31 @@ function corsOrigin(env: ApiEnv, request: Request): string | null {
   const origin = request.headers.get("origin");
   if (!origin) return null;
   const configured: unknown = JSON.parse(env.CORS_ALLOWED_ORIGINS || "[]");
-  if (!Array.isArray(configured) || !configured.every(value => typeof value === "string")) {
+  if (!Array.isArray(configured) || !configured.every((value) => typeof value === "string")) {
     throw new Error("Invalid CORS_ALLOWED_ORIGINS");
   }
   if (configured.includes(origin)) return origin;
-  if (env.CORS_ALLOWED_ORIGIN_REGEX && new RegExp(`^(?:${env.CORS_ALLOWED_ORIGIN_REGEX})$`).test(origin)) return origin;
+  if (
+    env.CORS_ALLOWED_ORIGIN_REGEX &&
+    new RegExp(`^(?:${env.CORS_ALLOWED_ORIGIN_REGEX})$`).test(origin)
+  )
+    return origin;
   return null;
 }
 
 /** Construct and compile once per deployment, with no mutable request state. */
-export function createApp(env: ApiEnv, servicesFactory: ServicesFactory = () => createServices(env)) {
+export function createApp(
+  env: ApiEnv,
+  servicesFactory: ServicesFactory = () => createServices(env),
+) {
   return new Elysia({ name: "ubc-discovery-api", adapter: CloudflareAdapter, normalize: false })
-    .use(openapi({ path: "/docs", specPath: "/openapi.json", documentation: { info: { title: "UBC Discovery API", version: "0.1.0" } } }))
+    .use(
+      openapi({
+        path: "/docs",
+        specPath: "/openapi.json",
+        documentation: { info: { title: "UBC Discovery API", version: "0.1.0" } },
+      }),
+    )
     .onRequest(({ request, set }) => {
       const origin = corsOrigin(env, request);
       if (origin) {
@@ -38,7 +51,8 @@ export function createApp(env: ApiEnv, servicesFactory: ServicesFactory = () => 
       if (request.method === "OPTIONS" && request.headers.has("access-control-request-method")) {
         if (!origin) throw new ApiError(400, "Disallowed CORS origin");
         set.headers["access-control-allow-methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
-        set.headers["access-control-allow-headers"] = request.headers.get("access-control-request-headers") || "authorization, content-type";
+        set.headers["access-control-allow-headers"] =
+          request.headers.get("access-control-request-headers") || "authorization, content-type";
         set.headers["access-control-max-age"] = "600";
         set.status = 200;
         return "OK";

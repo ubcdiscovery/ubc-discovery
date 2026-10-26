@@ -20,16 +20,14 @@ export interface ApiCredentialCreateResponse extends ApiCredential {
 }
 
 export const adminApiKeysApi = {
-  list: () =>
-    authenticatedApiFetch<{ credentials: ApiCredential[] }>("/admin/api-keys"),
+  list: () => authenticatedApiFetch<{ credentials: ApiCredential[] }>("/admin/api-keys"),
   create: (data: { label: string; expires_at?: string | null }) =>
     authenticatedApiFetch<ApiCredentialCreateResponse>("/admin/api-keys", {
       method: "POST",
       body: JSON.stringify(data),
     }),
   revoke: (id: string) =>
-    authenticatedApiFetch<ApiCredential>(
-      `/admin/api-keys/${encodeURIComponent(id)}/revoke`,
-      { method: "POST" }
-    ),
+    authenticatedApiFetch<ApiCredential>(`/admin/api-keys/${encodeURIComponent(id)}/revoke`, {
+      method: "POST",
+    }),
 };

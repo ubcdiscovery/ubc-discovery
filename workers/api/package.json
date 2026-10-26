@@ -2,14 +2,11 @@
   "name": "ubc-discovery-api",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": "24.x"
-  },
   "scripts": {
     "dev": "wrangler dev",
     "types": "wrangler types worker-configuration.d.ts --env-interface CloudflareBindings --include-runtime=false --strict-vars=false",
     "typecheck": "pnpm run types && tsc --noEmit",
-    "lint": "pnpm --workspace-root exec vp lint workers/api",
+    "lint": "pnpm --workspace-root exec vp lint workers/api && pnpm --workspace-root exec vp fmt --check workers/api",
     "test": "vitest run",
     "test:runtime": "node scripts/runtime-check.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
@@ -35,5 +32,8 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "wrangler": "catalog:"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

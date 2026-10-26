@@ -1,5 +1,5 @@
-import { integerSetting, type ApiEnv } from '../env';
-import { awsRequest, readBoundedBytes, type Fetcher } from './aws';
+import { integerSetting, type ApiEnv } from "../env";
+import { awsRequest, readBoundedBytes, type Fetcher } from "./aws";
 
 export interface OutboundEmail {
   to: readonly string[];
@@ -9,11 +9,14 @@ export interface OutboundEmail {
 }
 
 export class EmailDeliveryError extends Error {
-  constructor() { super('SES rejected the email'); this.name = 'EmailDeliveryError'; }
+  constructor() {
+    super("SES rejected the email");
+    this.name = "EmailDeliveryError";
+  }
 }
 
 export function otpEmail(toEmail: string, otpCode: string, expiryMinutes = 10): OutboundEmail {
-  if (!/^\d{6}$/.test(otpCode)) throw new Error('Invalid OTP code');
+  if (!/^\d{6}$/.test(otpCode)) throw new Error("Invalid OTP code");
   const expiryMessage = `This code expires in ${expiryMinutes} minutes.`;
   return {
     to: [toEmail],
@@ -33,28 +36,50 @@ export function otpEmail(toEmail: string, otpCode: string, expiryMinutes = 10): 
   };
 }
 
-export async function sendEmail(env: ApiEnv, message: OutboundEmail, fetcher: Fetcher = fetch): Promise<string> {
+export async function sendEmail(
+  env: ApiEnv,
+  message: OutboundEmail,
+  fetcher: Fetcher = fetch,
+): Promise<string> {
   if (!env.EMAIL_SENDER_EMAIL) throw new EmailDeliveryError();
   try {
-    const response = await awsRequest(env, 'ses',
-      `https://email.${env.AWS_REGION || 'us-west-2'}.amazonaws.com/v2/email/outbound-emails`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+    const response = await awsRequest(
+      env,
+      "ses",
+      `https://email.${env.AWS_REGION || "us-west-2"}.amazonaws.com/v2/email/outbound-emails`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           FromEmailAddress: env.EMAIL_SENDER_EMAIL,
           Destination: { ToAddresses: message.to },
-          Content: { Simple: {
-            Subject: { Data: message.subject, Charset: 'UTF-8' },
-            Body: {
-              Text: { Data: message.text, Charset: 'UTF-8' },
-              Html: { Data: message.html, Charset: 'UTF-8' },
+          Content: {
+            Simple: {
+              Subject: { Data: message.subject, Charset: "UTF-8" },
+              Body: {
+                Text: { Data: message.text, Charset: "UTF-8" },
+                Html: { Data: message.html, Charset: "UTF-8" },
+              },
             },
-          } },
+          },
         }),
-      }, fetcher);
-    if (!response.ok) { await response.body?.cancel(); throw new EmailDeliveryError(); }
-    const body: unknown = JSON.parse(new TextDecoder().decode(await readBoundedBytes(response.body, 64 * 1024)));
-    if (typeof body !== 'object' || body === null || !('MessageId' in body) || typeof body.MessageId !== 'string' || !body.MessageId) {
+      },
+      fetcher,
+    );
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw new EmailDeliveryError();
+    }
+    const body: unknown = JSON.parse(
+      new TextDecoder().decode(await readBoundedBytes(response.body, 64 * 1024)),
+    );
+    if (
+      typeof body !== "object" ||
+      body === null ||
+      !("MessageId" in body) ||
+      typeof body.MessageId !== "string" ||
+      !body.MessageId
+    ) {
       throw new EmailDeliveryError();
     }
     return body.MessageId;
@@ -63,6 +88,15 @@ export async function sendEmail(env: ApiEnv, message: OutboundEmail, fetcher: Fe
   }
 }
 
-export async function sendOtpEmail(env: ApiEnv, toEmail: string, otpCode: string, fetcher: Fetcher = fetch): Promise<void> {
-  await sendEmail(env, otpEmail(toEmail, otpCode, integerSetting(env.OTP_EXPIRY_MINUTES, 10)), fetcher);
+export async function sendOtpEmail(
+  env: ApiEnv,
+  toEmail: string,
+  otpCode: string,
+  fetcher: Fetcher = fetch,
+): Promise<void> {
+  await sendEmail(
+    env,
+    otpEmail(toEmail, otpCode, integerSetting(env.OTP_EXPIRY_MINUTES, 10)),
+    fetcher,
+  );
 }

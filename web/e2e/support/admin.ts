@@ -27,7 +27,7 @@ export function createAdminApiMock(options: {
     eventId: string,
     action: string,
     before: Record<string, unknown> | null = null,
-    after: Record<string, unknown> | null = null
+    after: Record<string, unknown> | null = null,
   ) {
     auditEntries[eventId] ??= [];
     auditEntries[eventId].push({
@@ -51,21 +51,26 @@ export function createAdminApiMock(options: {
         ? events.filter((event) =>
             [event.title, event.description, event.club_name, event.location_name]
               .filter(Boolean)
-              .some((value) => String(value).toLowerCase().includes(normalized))
+              .some((value) => String(value).toLowerCase().includes(normalized)),
           )
-          : events;
+        : events;
       const status = url.searchParams.get("status") ?? "all";
-      const statusMatches = status === "all"
-        ? matches
-        : matches.filter((event) => Boolean(event.is_archived) === (status === "archived"));
+      const statusMatches =
+        status === "all"
+          ? matches
+          : matches.filter((event) => Boolean(event.is_archived) === (status === "archived"));
       const requestedSkip = Number.parseInt(url.searchParams.get("skip") ?? "0", 10);
       const requestedLimit = Number.parseInt(url.searchParams.get("limit") ?? "25", 10);
       const skip = Number.isFinite(requestedSkip) && requestedSkip >= 0 ? requestedSkip : 0;
-      const limit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? requestedLimit : matches.length;
+      const limit =
+        Number.isFinite(requestedLimit) && requestedLimit > 0 ? requestedLimit : matches.length;
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ events: statusMatches.slice(skip, skip + limit), total: statusMatches.length }),
+        body: JSON.stringify({
+          events: statusMatches.slice(skip, skip + limit),
+          total: statusMatches.length,
+        }),
       });
       return true;
     }
@@ -82,8 +87,15 @@ export function createAdminApiMock(options: {
         archived_by: null,
       };
       events = [...events, event];
-      addAudit(event.id, "create", null, { title: event.title, location_name: event.location_name });
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(event) });
+      addAudit(event.id, "create", null, {
+        title: event.title,
+        location_name: event.location_name,
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(event),
+      });
       return true;
     }
 
@@ -113,7 +125,7 @@ export function createAdminApiMock(options: {
                 file_key: `event-pictures/${eventId}.webp`,
                 max_file_size_bytes: 3 * 1024 * 1024,
               }
-            : { detail: "Event not found" }
+            : { detail: "Event not found" },
         ),
       });
       return true;
@@ -126,7 +138,7 @@ export function createAdminApiMock(options: {
       events = events.map((candidate) =>
         candidate.id === eventId
           ? { ...candidate, event_picture_url: `http://images.test/${eventId}.webp` }
-          : candidate
+          : candidate,
       );
       addAudit(eventId, "image_upload", null, {
         event_picture_key: `event-pictures/${eventId}.webp`,
@@ -152,19 +164,36 @@ export function createAdminApiMock(options: {
       const archived = lifecyclePath[2] === "archive";
       const event = events.find((candidate) => candidate.id === eventId);
       if (!event) {
-        await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ detail: "Event not found" }) });
+        await route.fulfill({
+          status: 404,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: "Event not found" }),
+        });
         return true;
       }
       options.onArchive?.(archived);
       const previous = event;
-      events = events.map((candidate) => candidate.id === eventId ? { ...candidate, is_archived: archived, archived_at: archived ? "2026-01-01T00:00:00Z" : null, archived_by: archived ? adminActorId : null } : candidate);
+      events = events.map((candidate) =>
+        candidate.id === eventId
+          ? {
+              ...candidate,
+              is_archived: archived,
+              archived_at: archived ? "2026-01-01T00:00:00Z" : null,
+              archived_by: archived ? adminActorId : null,
+            }
+          : candidate,
+      );
       addAudit(
         eventId,
         archived ? "archive" : "restore",
         { is_archived: Boolean(previous.is_archived) },
-        { is_archived: archived }
+        { is_archived: archived },
       );
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(events.find((candidate) => candidate.id === eventId)) });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(events.find((candidate) => candidate.id === eventId)),
+      });
       return true;
     }
     const eventId = decodeURIComponent(url.pathname.slice("/admin/events/".length));
@@ -191,12 +220,12 @@ export function createAdminApiMock(options: {
     }
     const updated = event ? { ...event, ...body } : null;
     if (updated) {
-      events = events.map((candidate) => candidate.id === eventId ? updated : candidate);
+      events = events.map((candidate) => (candidate.id === eventId ? updated : candidate));
       addAudit(
         eventId,
         "update",
         event ? { title: event.title, location_name: event.location_name } : null,
-        { title: updated.title, location_name: updated.location_name }
+        { title: updated.title, location_name: updated.location_name },
       );
     }
     await route.fulfill({

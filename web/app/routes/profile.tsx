@@ -27,8 +27,8 @@ function VisitorProfile() {
             Save events. Rate them. Unlock the re-ranked For You feed.
           </span>
           <span className="hidden md:inline">
-            Members get a profile with their interests and academic context, a saved-event
-            saved events, and a re-ranked <em>For you</em> feed.
+            Members get a profile with their interests and academic context, a saved-event saved
+            events, and a re-ranked <em>For you</em> feed.
           </span>
         </p>
         <Link

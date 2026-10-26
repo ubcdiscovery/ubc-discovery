@@ -30,6 +30,7 @@ export interface ApiEnv extends CloudflareBindings {
 export function integerSetting(value: string | undefined, fallback: number): number {
   if (value === undefined || value === "") return fallback;
   const parsed = Number(value);
-  if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new Error("Invalid positive integer setting");
+  if (!Number.isSafeInteger(parsed) || parsed <= 0)
+    throw new Error("Invalid positive integer setting");
   return parsed;
 }

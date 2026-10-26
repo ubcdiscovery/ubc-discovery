@@ -1,10 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ApiError,
-  api,
-  type ApiEvent,
-  type SavedEventListItem,
-} from "~/lib/api";
+import { ApiError, api, type ApiEvent, type SavedEventListItem } from "~/lib/api";
 import { useAuth } from "~/lib/auth";
 
 type SaveMutationInput = {
@@ -59,9 +54,7 @@ export function useSavedEventDetails() {
 export function useSavedEventMutations() {
   const { state } = useAuth();
   const queryClient = useQueryClient();
-  const queryKey = savedEventsQueryKey(
-    state.status === "member" ? state.profile.id : null
-  );
+  const queryKey = savedEventsQueryKey(state.status === "member" ? state.profile.id : null);
 
   const save = useMutation({
     mutationFn: async ({ eventId }: SaveMutationInput) => {
@@ -72,8 +65,7 @@ export function useSavedEventMutations() {
     },
     onMutate: async ({ eventId, event }) => {
       await queryClient.cancelQueries({ queryKey });
-      const previous =
-        queryClient.getQueryData<SavedEventListItem[]>(queryKey);
+      const previous = queryClient.getQueryData<SavedEventListItem[]>(queryKey);
       queryClient.setQueryData<SavedEventListItem[]>(queryKey, (current) => {
         if (!event || current?.some((saved) => saved.event.id === eventId)) {
           return current ?? [];
@@ -112,8 +104,7 @@ export function useSavedEventMutations() {
     },
     onMutate: async (eventId) => {
       await queryClient.cancelQueries({ queryKey });
-      const previous =
-        queryClient.getQueryData<SavedEventListItem[]>(queryKey);
+      const previous = queryClient.getQueryData<SavedEventListItem[]>(queryKey);
       queryClient.setQueryData<SavedEventListItem[]>(queryKey, (current) => {
         return (current ?? []).filter((saved) => saved.event.id !== eventId);
       });

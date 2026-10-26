@@ -1,10 +1,7 @@
 import { Link, NavLink } from "react-router";
 import { AccountMenu } from "~/components/AccountMenu";
 import { NavIconButton } from "~/components/NavIconButton";
-import {
-  ORGANIZER_NAVIGATION,
-  PRIMARY_NAVIGATION,
-} from "~/lib/app-navigation";
+import { ORGANIZER_NAVIGATION, PRIMARY_NAVIGATION } from "~/lib/app-navigation";
 import { useTheme } from "~/lib/theme";
 
 export function TopNav({
@@ -26,9 +23,7 @@ export function TopNav({
           <div className="size-7.5 bg-ink text-bg flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
             UBC
           </div>
-          <span className="font-display font-extrabold text-lg tracking-tight">
-            DISCOVERY
-          </span>
+          <span className="font-display font-extrabold text-lg tracking-tight">DISCOVERY</span>
         </Link>
         <nav className="flex gap-5">
           {PRIMARY_NAVIGATION.map((item) => (
@@ -38,9 +33,7 @@ export function TopNav({
               end={item.end}
               className={({ isActive }) =>
                 `font-mono text-xs font-semibold tracking-wide uppercase pb-1 border-b-2 ${
-                  isActive
-                    ? "text-ink border-accent"
-                    : "text-muted border-transparent"
+                  isActive ? "text-ink border-accent" : "text-muted border-transparent"
                 }`
               }
             >
@@ -57,9 +50,7 @@ export function TopNav({
           aria-label="Search events"
           aria-haspopup="dialog"
         >
-          <span className="absolute left-3 top-1.5 font-mono text-accent">
-            ⌕
-          </span>
+          <span className="absolute left-3 top-1.5 font-mono text-accent">⌕</span>
           Search · ⌘K
         </button>
         <Link

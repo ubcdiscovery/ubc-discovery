@@ -12,10 +12,10 @@ foreground and is attributed to the most recent `page_view`.
 
 ## Configuration
 
-| Variable | Where |
-| --- | --- |
+| Variable                                    | Where                                                                          |
+| ------------------------------------------- | ------------------------------------------------------------------------------ |
 | `VITE_FIREBASE_MEASUREMENT_ID=G-KMBQ9XTMXF` | `cloudflare-production` GitHub environment variable only, and local `web/.env` |
-| `VITE_ANALYTICS_DEBUG=true` | Local `web/.env` only, when testing |
+| `VITE_ANALYTICS_DEBUG=true`                 | Local `web/.env` only, when testing                                            |
 
 Analytics stays off when the measurement ID is missing, when
 `VITE_AUTH_TEST_MODE=true` (Playwright), and on the dev server unless
@@ -58,12 +58,12 @@ Discord) often drop it and the visit appears as direct. Tag every link we share.
 
 Use lowercase values and snake_case campaign names:
 
-| Placement | `utm_source` | `utm_medium` |
-| --- | --- | --- |
-| Instagram bio or story | `instagram` | `social` |
-| Discord or Reddit post | `discord`, `reddit` | `social` |
-| Newsletter or email | newsletter name | `email` |
-| Poster QR code | `poster` | `qr` |
+| Placement              | `utm_source`        | `utm_medium` |
+| ---------------------- | ------------------- | ------------ |
+| Instagram bio or story | `instagram`         | `social`     |
+| Discord or Reddit post | `discord`, `reddit` | `social`     |
+| Newsletter or email    | newsletter name     | `email`      |
+| Poster QR code         | `poster`            | `qr`         |
 
 Example: `https://<site>/?utm_source=instagram&utm_medium=social&utm_campaign=fall_launch`.
 

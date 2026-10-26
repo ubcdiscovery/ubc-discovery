@@ -14,7 +14,9 @@ function VisitorSaved() {
   return (
     <div>
       <div className="border-b border-rule-soft px-4.5 py-3.5 md:hidden">
-        <div className="font-mono text-xs tracking-wider text-muted uppercase">Your saved events</div>
+        <div className="font-mono text-xs tracking-wider text-muted uppercase">
+          Your saved events
+        </div>
         <h1 className="mt-1 font-display text-4xl leading-none font-extrabold tracking-tight text-ink">
           Saved
         </h1>
@@ -101,11 +103,7 @@ function SavedTabs({
   ];
 
   return (
-    <div
-      className="flex items-stretch"
-      role="tablist"
-      aria-label="Saved events"
-    >
+    <div className="flex items-stretch" role="tablist" aria-label="Saved events">
       {tabs.map((tab) => {
         const active = tab.id === selected;
         return (
@@ -117,9 +115,7 @@ function SavedTabs({
             aria-selected={active}
             onClick={() => onSelect(tab.id)}
             className={`flex cursor-pointer items-center gap-2 border-0 border-b-2 px-4 py-3 font-mono text-xs font-bold tracking-wide uppercase -mb-0.5 ${
-              active
-                ? "border-b-accent text-ink"
-                : "border-b-transparent text-muted"
+              active ? "border-b-accent text-ink" : "border-b-transparent text-muted"
             }`}
           >
             <span>{tab.label}</span>

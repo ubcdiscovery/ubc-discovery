@@ -1,5 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/Card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/Table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/Table";
 import type { ApiCandidateDetail } from "~/lib/admin-candidates";
 
 type CandidateIngestionReceiptsProps = {

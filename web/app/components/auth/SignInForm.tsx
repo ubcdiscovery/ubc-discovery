@@ -116,9 +116,7 @@ export function SignInForm() {
               required
               placeholder="123456"
               value={flow.code}
-              onChange={(event) =>
-                flow.setCode(event.target.value.replace(/\D/g, "").slice(0, 6))
-              }
+              onChange={(event) => flow.setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
               className="border border-ink bg-surface px-3.5 py-3 text-center font-mono text-base tracking-otp text-ink outline-none md:w-full md:px-3 md:py-2.5 md:text-lg"
             />
           </div>

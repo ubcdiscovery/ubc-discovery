@@ -113,14 +113,10 @@ function parseAuthFlow(value: string | null): AuthFlow | null {
     if (
       !isRecord(flow) ||
       flow.version !== AUTH_FLOW_VERSION ||
-      !validateAuthReturnTo(
-        typeof flow.returnTo === "string" ? flow.returnTo : null
-      ) ||
+      !validateAuthReturnTo(typeof flow.returnTo === "string" ? flow.returnTo : null) ||
       !Array.isArray(flow.actions) ||
       !flow.actions.every(isPostAuthAction) ||
-      ("notice" in flow &&
-        flow.notice !== undefined &&
-        !isAuthFlowNotice(flow.notice)) ||
+      ("notice" in flow && flow.notice !== undefined && !isAuthFlowNotice(flow.notice)) ||
       typeof flow.createdAt !== "number" ||
       typeof flow.updatedAt !== "number"
     ) {
@@ -225,19 +221,14 @@ export function completeAuthFlow(): AuthFlowCompletion | null {
   };
 }
 
-function updateAuthAction(
-  actionId: string,
-  update: (action: PostAuthAction) => PostAuthAction
-) {
+function updateAuthAction(actionId: string, update: (action: PostAuthAction) => PostAuthAction) {
   const flow = readAuthFlow();
   if (!flow || !flow.actions.some((action) => action.id === actionId)) {
     return null;
   }
   const next: AuthFlow = {
     ...flow,
-    actions: flow.actions.map((action) =>
-      action.id === actionId ? update(action) : action
-    ),
+    actions: flow.actions.map((action) => (action.id === actionId ? update(action) : action)),
     updatedAt: Date.now(),
   };
   writeAuthFlow(next);
@@ -259,9 +250,7 @@ export function retryAuthAction(actionId: string) {
   }));
 }
 
-export function completeAuthAction(
-  actionId: string
-): AuthFlowCompletion | null {
+export function completeAuthAction(actionId: string): AuthFlowCompletion | null {
   const flow = readAuthFlow();
   if (!flow) return null;
   const actions = flow.actions.filter((action) => action.id !== actionId);

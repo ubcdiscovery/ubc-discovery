@@ -1,8 +1,10 @@
-import type { Event } from '../db/schema';
-import type { ObjectStorage } from '../services/storage';
+import type { Event } from "../db/schema";
+import type { ObjectStorage } from "../services/storage";
 
-export type PublicEventRow = Omit<Event, 'embeddingVector'>;
-export function eventImageKey(id: string): string { return `event-pictures/${id}.webp`; }
+export type PublicEventRow = Omit<Event, "embeddingVector">;
+export function eventImageKey(id: string): string {
+  return `event-pictures/${id}.webp`;
+}
 
 export function presentEvent(event: PublicEventRow, storage: ObjectStorage) {
   return {
@@ -24,13 +26,20 @@ export function presentEvent(event: PublicEventRow, storage: ObjectStorage) {
 
 export type EventResponse = ReturnType<typeof presentEvent>;
 
-export function presentPastEvent(event: PublicEventRow, average: number | null, count: number, storage: ObjectStorage) {
+export function presentPastEvent(
+  event: PublicEventRow,
+  average: number | null,
+  count: number,
+  storage: ObjectStorage,
+) {
   return { ...presentEvent(event, storage), average_rating: average, rating_count: count };
 }
 
 export function presentAdminEvent(event: PublicEventRow, storage: ObjectStorage) {
   return {
-    ...presentEvent(event, storage), is_archived: event.isArchived,
-    archived_at: event.archivedAt?.toISOString() ?? null, archived_by: event.archivedBy,
+    ...presentEvent(event, storage),
+    is_archived: event.isArchived,
+    archived_at: event.archivedAt?.toISOString() ?? null,
+    archived_by: event.archivedBy,
   };
 }

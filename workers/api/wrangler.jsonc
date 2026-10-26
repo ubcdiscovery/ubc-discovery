@@ -8,7 +8,7 @@
     "enabled": true,
     "redact_query_string": true,
     "logs": { "enabled": true, "head_sampling_rate": 1 },
-    "traces": { "enabled": true, "head_sampling_rate": 0.01 }
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 },
   },
   "vars": {
     "DATABASE_SSL": "true",
@@ -20,11 +20,9 @@
     "OTP_EXPIRY_MINUTES": "10",
     "OTP_MAX_ATTEMPTS": "5",
     "OTP_RATE_LIMIT_PER_15MIN": "3",
-    "EXTRACTION_DELIVERY_TIMEOUT_SECONDS": "90000"
+    "EXTRACTION_DELIVERY_TIMEOUT_SECONDS": "90000",
   },
-  "r2_buckets": [
-    { "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-api-staging-media" }
-  ],
+  "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-api-staging-media" }],
   "env": {
     "production": {
       "name": "ubc-discovery-api",
@@ -42,19 +40,23 @@
         "OTP_MAX_ATTEMPTS": "5",
         "OTP_RATE_LIMIT_PER_15MIN": "3",
         "EXTRACTION_DELIVERY_TIMEOUT_SECONDS": "90000",
-        "EXTRACTION_QUEUE_PRODUCER_URL": "https://ubc-discovery-extraction.ubcdiscovery.workers.dev/enqueue"
+        "EXTRACTION_QUEUE_PRODUCER_URL": "https://ubc-discovery-extraction.ubcdiscovery.workers.dev/enqueue",
       },
-      "r2_buckets": [
-        { "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-media" }
-      ],
+      "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-media" }],
       "secrets": {
         "required": [
-          "DATABASE_URL", "FIREBASE_PROJECT_ID", "FIREBASE_CREDENTIALS_JSON",
-          "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "EMAIL_SENDER_EMAIL",
-          "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "UPLOAD_SIGNING_SECRET",
-          "EXTRACTION_QUEUE_PRODUCER_SECRET"
-        ]
-      }
-    }
-  }
+          "DATABASE_URL",
+          "FIREBASE_PROJECT_ID",
+          "FIREBASE_CREDENTIALS_JSON",
+          "AWS_ACCESS_KEY_ID",
+          "AWS_SECRET_ACCESS_KEY",
+          "EMAIL_SENDER_EMAIL",
+          "R2_ACCESS_KEY_ID",
+          "R2_SECRET_ACCESS_KEY",
+          "UPLOAD_SIGNING_SECRET",
+          "EXTRACTION_QUEUE_PRODUCER_SECRET",
+        ],
+      },
+    },
+  },
 }

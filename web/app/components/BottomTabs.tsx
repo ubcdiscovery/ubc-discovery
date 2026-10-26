@@ -18,9 +18,7 @@ export function BottomTabs({ isMember }: { isMember: boolean }) {
             `flex-1 py-3.5 text-center font-display text-sm font-bold tracking-tight ${
               i < tabs.length - 1 ? "border-r border-rule-soft" : ""
             } ${
-              isActive
-                ? "text-ink bg-accent-soft border-t-2 border-t-accent -mt-0.5"
-                : "text-muted"
+              isActive ? "text-ink bg-accent-soft border-t-2 border-t-accent -mt-0.5" : "text-muted"
             }`
           }
         >

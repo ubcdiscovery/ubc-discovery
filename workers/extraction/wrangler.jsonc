@@ -3,31 +3,29 @@
   "name": "ubc-discovery-extraction",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-11",
-  "compatibility_flags": [
-    "global_fetch_strictly_public"
-  ],
+  "compatibility_flags": ["global_fetch_strictly_public"],
   "observability": {
     "enabled": true,
     "logs": {
       "enabled": true,
-      "head_sampling_rate": 1
+      "head_sampling_rate": 1,
     },
     "traces": {
       "enabled": true,
-      "head_sampling_rate": 0.01
-    }
+      "head_sampling_rate": 0.01,
+    },
   },
   "vars": {
     "DISCOVERY_API_URL": "https://ubc-discovery-api.ubcdiscovery.workers.dev",
     "MAX_ATTEMPTS": "5",
-    "OPENAI_TIMEOUT_MS": "60000"
+    "OPENAI_TIMEOUT_MS": "60000",
   },
   "queues": {
     "producers": [
       {
         "binding": "EXTRACTION_QUEUE",
-        "queue": "ubc-discovery-extraction"
-      }
+        "queue": "ubc-discovery-extraction",
+      },
     ],
     "consumers": [
       {
@@ -36,25 +34,19 @@
         "max_batch_timeout": 60,
         "max_concurrency": 1,
         "max_retries": 4,
-        "dead_letter_queue": "ubc-discovery-extraction-dlq"
+        "dead_letter_queue": "ubc-discovery-extraction-dlq",
       },
       {
         "queue": "ubc-discovery-extraction-dlq",
         "max_batch_size": 10,
-        "max_retries": 20
-      }
-    ]
+        "max_retries": 20,
+      },
+    ],
   },
   "triggers": {
-    "crons": [
-      "*/15 * * * *"
-    ]
+    "crons": ["*/15 * * * *"],
   },
   "secrets": {
-    "required": [
-      "DISCOVERY_API_KEY",
-      "EXTRACTION_DISPATCH_SECRET",
-      "OPENAI_API_KEY"
-    ]
-  }
+    "required": ["DISCOVERY_API_KEY", "EXTRACTION_DISPATCH_SECRET", "OPENAI_API_KEY"],
+  },
 }

@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-test("serves the SSR document and its JavaScript through the Worker asset binding", async ({ request }) => {
+test("serves the SSR document and its JavaScript through the Worker asset binding", async ({
+  request,
+}) => {
   const response = await request.get("/sign-in");
   expect(response.status()).toBe(200);
   expect(response.headers()["content-type"]).toContain("text/html");
@@ -14,7 +16,9 @@ test("serves the SSR document and its JavaScript through the Worker asset bindin
   expect(script.headers()["content-type"]).toContain("javascript");
 });
 
-test("keeps an unknown deep link as an SSR 404 rather than an asset fallback", async ({ request }) => {
+test("keeps an unknown deep link as an SSR 404 rather than an asset fallback", async ({
+  request,
+}) => {
   const response = await request.get("/worker-hosting-missing-route");
   expect(response.status()).toBe(404);
   expect(response.headers()["content-type"]).toContain("text/html");

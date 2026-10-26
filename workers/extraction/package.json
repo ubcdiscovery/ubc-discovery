@@ -2,13 +2,10 @@
   "name": "ubc-discovery-extraction",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": "24.x"
-  },
   "scripts": {
     "dev": "wrangler dev",
     "typecheck": "pnpm run types && tsc --noEmit",
-    "lint": "pnpm --workspace-root exec vp lint workers/extraction",
+    "lint": "pnpm --workspace-root exec vp lint workers/extraction && pnpm --workspace-root exec vp fmt --check workers/extraction",
     "test": "vitest run",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
     "deploy": "wrangler deploy",
@@ -20,5 +17,8 @@
     "typescript": "catalog:",
     "vitest": "catalog:",
     "wrangler": "catalog:"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

@@ -2,15 +2,16 @@
   "name": "ubc-discovery",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.15.0",
-  "engines": {
-    "node": "24.x"
-  },
   "scripts": {
     "lint": "pnpm --recursive run types && vp lint",
-    "fmt": "vp fmt"
+    "fmt": "vp fmt",
+    "fmt:check": "vp fmt --check"
   },
   "devDependencies": {
     "vite-plus": "catalog:"
-  }
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "packageManager": "pnpm@12.15.0"
 }

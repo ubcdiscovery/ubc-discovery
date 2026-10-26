@@ -69,9 +69,7 @@ export function updateInputFromDraft(draft: AdminEventDraft): UpdateEventInput {
     club_name: draft.clubName.trim() || null,
     location_name: draft.locationName.trim(),
     event_date: new Date(draft.eventDate).toISOString(),
-    event_end_date: draft.eventEndDate
-      ? new Date(draft.eventEndDate).toISOString()
-      : null,
+    event_end_date: draft.eventEndDate ? new Date(draft.eventEndDate).toISOString() : null,
     source_label: draft.sourceLabel,
     source_url: draft.sourceUrl.trim() || null,
     vibes: draft.vibes,
@@ -101,7 +99,7 @@ function formatAuditValue(value: unknown): string {
 
 export function auditFieldChanges(
   before: Record<string, unknown> | null,
-  after: Record<string, unknown> | null
+  after: Record<string, unknown> | null,
 ): AuditFieldChange[] {
   const keys = [...new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})])];
   return keys.flatMap((field) => {

@@ -1,9 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { mockApi, mockEvent } from "./support/auth";
 
-test("traps focus in one modal search dialog and restores its opener", async ({
-  page,
-}) => {
+test("traps focus in one modal search dialog and restores its opener", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockApi(page);
   await page.goto("/");
@@ -51,16 +49,14 @@ test("opens the shared search dialog from the desktop keyboard shortcut", async 
   await expect(dialog).toHaveCount(0);
 });
 
-test("does not activate a selected result from the close button", async ({
-  page,
-}) => {
+test("does not activate a selected result from the close button", async ({ page }) => {
   await mockApi(page);
   await page.route("http://api.test/events/search?**", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ events: [mockEvent], total: 1 }),
-    })
+    }),
   );
   await page.goto("/");
 
@@ -71,10 +67,7 @@ test("does not activate a selected result from the close button", async ({
   await expect(dialog.getByRole("option")).toHaveCount(1);
 
   await searchInput.press("ArrowDown");
-  await expect(searchInput).toHaveAttribute(
-    "aria-activedescendant",
-    "event-search-result-event-1"
-  );
+  await expect(searchInput).toHaveAttribute("aria-activedescendant", "event-search-result-event-1");
 
   const closeButton = dialog.getByRole("button", { name: "Close search" });
   await closeButton.focus();

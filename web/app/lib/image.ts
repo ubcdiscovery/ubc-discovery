@@ -2,11 +2,7 @@
  * Resizes and converts an image file to a WebP blob.
  * Output is capped at maxSizePx × maxSizePx, maintaining aspect ratio.
  */
-export async function resizeImage(
-  file: File,
-  maxSizePx = 512,
-  quality = 0.88
-): Promise<Blob> {
+export async function resizeImage(file: File, maxSizePx = 512, quality = 0.88): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
 
   const scale = Math.min(1, maxSizePx / Math.max(bitmap.width, bitmap.height));
@@ -23,7 +19,7 @@ export async function resizeImage(
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error("Canvas toBlob failed"))),
       "image/webp",
-      quality
+      quality,
     );
   });
 }

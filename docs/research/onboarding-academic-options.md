@@ -72,26 +72,26 @@ own and under a parent faculty. The student-facing list should retain units
 that own or visibly identify an undergraduate program, while preserving the
 parent relationship in data.
 
-| Stable ID | Display label | Parent or search aliases |
-| --- | --- | --- |
-| `applied-science` | Faculty of Applied Science (Engineering) | Engineering, APSC |
-| `architecture-landscape-architecture` | School of Architecture and Landscape Architecture | Applied Science, SALA |
-| `arts` | Faculty of Arts | Arts |
-| `sauder` | UBC Sauder School of Business | Business, Commerce, BCom |
-| `dentistry` | Faculty of Dentistry | Dentistry |
-| `education` | Faculty of Education | Education |
-| `forestry-environmental-stewardship` | Faculty of Forestry and Environmental Stewardship | Forestry |
-| `kinesiology` | School of Kinesiology | Education, KIN |
-| `land-food-systems` | Faculty of Land and Food Systems | LFS |
-| `law` | Peter A. Allard School of Law | Allard, Law |
-| `medicine` | Faculty of Medicine | Medicine |
-| `music` | School of Music | Arts, Music |
-| `nursing` | School of Nursing | Applied Science, Nursing |
-| `pharmaceutical-sciences` | Faculty of Pharmaceutical Sciences | Pharmacy, PharmSci |
-| `science` | Faculty of Science | Science |
-| `social-work` | School of Social Work | Arts, Social Work |
-| `vantage-college` | UBC Vantage College | Vantage |
-| `vancouver-school-economics` | Vancouver School of Economics | Arts, Economics, VSE |
+| Stable ID                             | Display label                                     | Parent or search aliases |
+| ------------------------------------- | ------------------------------------------------- | ------------------------ |
+| `applied-science`                     | Faculty of Applied Science (Engineering)          | Engineering, APSC        |
+| `architecture-landscape-architecture` | School of Architecture and Landscape Architecture | Applied Science, SALA    |
+| `arts`                                | Faculty of Arts                                   | Arts                     |
+| `sauder`                              | UBC Sauder School of Business                     | Business, Commerce, BCom |
+| `dentistry`                           | Faculty of Dentistry                              | Dentistry                |
+| `education`                           | Faculty of Education                              | Education                |
+| `forestry-environmental-stewardship`  | Faculty of Forestry and Environmental Stewardship | Forestry                 |
+| `kinesiology`                         | School of Kinesiology                             | Education, KIN           |
+| `land-food-systems`                   | Faculty of Land and Food Systems                  | LFS                      |
+| `law`                                 | Peter A. Allard School of Law                     | Allard, Law              |
+| `medicine`                            | Faculty of Medicine                               | Medicine                 |
+| `music`                               | School of Music                                   | Arts, Music              |
+| `nursing`                             | School of Nursing                                 | Applied Science, Nursing |
+| `pharmaceutical-sciences`             | Faculty of Pharmaceutical Sciences                | Pharmacy, PharmSci       |
+| `science`                             | Faculty of Science                                | Science                  |
+| `social-work`                         | School of Social Work                             | Arts, Social Work        |
+| `vantage-college`                     | UBC Vantage College                               | Vantage                  |
+| `vancouver-school-economics`          | Vancouver School of Economics                     | Arts, Economics, VSE     |
 
 Add `Other UBC faculty or school` as a product fallback, not as a UBC unit.
 

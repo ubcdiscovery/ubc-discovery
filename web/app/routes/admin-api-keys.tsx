@@ -97,12 +97,16 @@ export default function AdminApiKeys() {
           API Keys
         </h1>
         <p className="mt-3 text-sm/relaxed text-ink-soft">
-          Manage machine credentials for Candidate ingestion. Secrets are shown only once
-          and are never recoverable.
+          Manage machine credentials for Candidate ingestion. Secrets are shown only once and are
+          never recoverable.
         </p>
       </div>
 
-      {error ? <Alert variant="error" className="mb-5 max-w-220">{error}</Alert> : null}
+      {error ? (
+        <Alert variant="error" className="mb-5 max-w-220">
+          {error}
+        </Alert>
+      ) : null}
       {generatedToken ? (
         <Alert variant="success" className="mb-5 max-w-220">
           <p className="font-bold">Credential generated. Store this token now.</p>
@@ -180,7 +184,9 @@ export default function AdminApiKeys() {
                 <TableHead>Expires</TableHead>
                 <TableHead>Last used</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead><span className="sr-only">Actions</span></TableHead>
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -190,7 +196,9 @@ export default function AdminApiKeys() {
                   <TableCell className="font-mono text-xs text-ink-soft">{credential.id}</TableCell>
                   <TableCell>
                     <span className="block">{credential.created_by_name}</span>
-                    <span className="font-mono text-2xs text-muted">{credential.created_by_email}</span>
+                    <span className="font-mono text-2xs text-muted">
+                      {credential.created_by_email}
+                    </span>
                   </TableCell>
                   <TableCell className="whitespace-nowrap font-mono text-xs text-ink-soft">
                     {formatDate(credential.created_at)}

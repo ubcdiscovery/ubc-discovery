@@ -46,7 +46,7 @@ function EventTable({ events }: { events: AdminApiEvent[] }) {
             Date
           </TableHead>
           <TableHead scope="col">Location</TableHead>
-        <TableHead scope="col" className="whitespace-nowrap">
+          <TableHead scope="col" className="whitespace-nowrap">
             Source
           </TableHead>
           <TableHead scope="col">Status</TableHead>
@@ -60,14 +60,18 @@ function EventTable({ events }: { events: AdminApiEvent[] }) {
                 to={`/admin/events/${encodeURIComponent(event.id)}`}
                 className="block text-ink no-underline hover:text-accent"
               >
-                <span className="font-display text-xl font-extrabold tracking-tight">{event.title}</span>
+                <span className="font-display text-xl font-extrabold tracking-tight">
+                  {event.title}
+                </span>
                 <span className="mt-1 block font-mono text-2xs uppercase tracking-wide text-muted">
                   {[event.club_name, event.id].filter(Boolean).join(" · ")}
                 </span>
               </Link>
             </TableCell>
             <TableCell className="font-mono text-xs text-ink-soft whitespace-nowrap">
-              <time dateTime={event.event_date ?? undefined}>{formatEventDate(event.event_date)}</time>
+              <time dateTime={event.event_date ?? undefined}>
+                {formatEventDate(event.event_date)}
+              </time>
             </TableCell>
             <TableCell className="text-sm text-ink-soft">{event.location_name}</TableCell>
             <TableCell className="font-mono text-xs font-bold uppercase tracking-wide text-accent whitespace-nowrap">
@@ -87,7 +91,8 @@ export default function AdminEvents() {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q")?.trim() ?? "";
   const statusValue = searchParams.get("status") ?? "all";
-  const status: AdminEventStatus = statusValue === "active" || statusValue === "archived" ? statusValue : "all";
+  const status: AdminEventStatus =
+    statusValue === "active" || statusValue === "archived" ? statusValue : "all";
   const pageValue = Number.parseInt(searchParams.get("page") ?? "0", 10);
   const page = Number.isFinite(pageValue) && pageValue > 0 ? pageValue : 0;
   const [searchDraft, setSearchDraft] = useState(query);
@@ -134,7 +139,10 @@ export default function AdminEvents() {
         <p className="mt-3 max-w-110 text-sm/relaxed text-ink-soft md:mt-0 md:text-right">
           Find past and upcoming listings, inspect their source, and correct the public record.
         </p>
-        <Link to="/admin/events/new" className="mt-4 inline-block border border-ink bg-ink px-4 py-3 font-mono text-xs font-bold uppercase tracking-wide text-bg no-underline md:mt-0">
+        <Link
+          to="/admin/events/new"
+          className="mt-4 inline-block border border-ink bg-ink px-4 py-3 font-mono text-xs font-bold uppercase tracking-wide text-bg no-underline md:mt-0"
+        >
           Create Event Listing
         </Link>
       </div>
@@ -156,11 +164,20 @@ export default function AdminEvents() {
         </Button>
       </form>
 
-      <nav aria-label="Event Listing status" className="mt-4 flex flex-wrap gap-2 font-mono text-xs uppercase tracking-wide">
+      <nav
+        aria-label="Event Listing status"
+        className="mt-4 flex flex-wrap gap-2 font-mono text-xs uppercase tracking-wide"
+      >
         {(["all", "active", "archived"] as const).map((option) => (
           <Link
             key={option}
-            to={{ pathname: "/admin/events", search: new URLSearchParams({ ...(query ? { q: query } : {}), ...(option !== "all" ? { status: option } : {}) }).toString() }}
+            to={{
+              pathname: "/admin/events",
+              search: new URLSearchParams({
+                ...(query ? { q: query } : {}),
+                ...(option !== "all" ? { status: option } : {}),
+              }).toString(),
+            }}
             className={`border px-3 py-2 no-underline ${status === option ? "border-ink bg-ink text-bg" : "border-rule text-muted"}`}
           >
             {option === "all" ? "All records" : `${option} records`}
@@ -170,13 +187,19 @@ export default function AdminEvents() {
 
       <div className="mt-5 flex items-center justify-between border-b border-ink pb-2 font-mono text-xs uppercase tracking-wide text-muted">
         <span>{eventsQuery.isPending ? "Loading records…" : `${total} records`}</span>
-        {total > 0 && <span>{firstRecord}–{lastRecord}</span>}
+        {total > 0 && (
+          <span>
+            {firstRecord}–{lastRecord}
+          </span>
+        )}
       </div>
 
       {eventsQuery.isError ? (
         <Alert variant="error" className="mt-5 bg-surface p-5">
           <h2 className="font-display text-xl font-extrabold">Could not load Event Listings.</h2>
-          <p className="mt-1 text-sm text-ink-soft">Check your connection or administrator access, then try again.</p>
+          <p className="mt-1 text-sm text-ink-soft">
+            Check your connection or administrator access, then try again.
+          </p>
           <Button type="button" className="mt-4" onClick={() => void eventsQuery.refetch()}>
             Try again
           </Button>
@@ -184,7 +207,9 @@ export default function AdminEvents() {
       ) : eventsQuery.data?.events.length === 0 ? (
         <Card className="mt-5 p-6 text-center md:p-10">
           <h2 className="font-display text-2xl font-extrabold">No matching Event Listings.</h2>
-          <p className="mt-2 text-sm text-ink-soft">Try a title, organizer, or location with fewer words.</p>
+          <p className="mt-2 text-sm text-ink-soft">
+            Try a title, organizer, or location with fewer words.
+          </p>
         </Card>
       ) : (
         <EventTable events={eventsQuery.data?.events ?? []} />
@@ -195,7 +220,12 @@ export default function AdminEvents() {
           <Button type="button" size="sm" disabled={page === 0} onClick={() => goToPage(page - 1)}>
             ← Previous
           </Button>
-          <Button type="button" size="sm" disabled={lastRecord >= total} onClick={() => goToPage(page + 1)}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={lastRecord >= total}
+            onClick={() => goToPage(page + 1)}
+          >
             Next →
           </Button>
         </nav>

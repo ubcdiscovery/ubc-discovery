@@ -8,10 +8,7 @@ import { SourceBadge } from "~/components/SourceBadge";
 import { VibeTag } from "~/components/VibeTag";
 import { RouteErrorState } from "~/components/RouteErrorState";
 import { useAuth } from "~/lib/auth";
-import {
-  RatingDraftModal,
-  RatingsSection,
-} from "~/components/EventRatings";
+import { RatingDraftModal, RatingsSection } from "~/components/EventRatings";
 export function meta({ loaderData }: Route.MetaArgs) {
   const event = loaderData as ApiEvent | undefined;
   return [
@@ -58,7 +55,11 @@ export default function EventDetail() {
   const [allRatings, setAllRatings] = useState<EventRatingResponse[]>([]);
   const [myRating, setMyRating] = useState<EventRatingResponse | null | undefined>(undefined);
   const [imgFailed, setImgFailed] = useState(false);
-  const [ratingDraft, setRatingDraft] = useState<{ stars: number; note: string; strong_vibes: string[] } | null>(null);
+  const [ratingDraft, setRatingDraft] = useState<{
+    stars: number;
+    note: string;
+    strong_vibes: string[];
+  } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [ratingsAvailable, setRatingsAvailable] = useState<boolean | undefined>(undefined);
 
@@ -84,7 +85,10 @@ export default function EventDetail() {
 
   useEffect(() => {
     if (authState.status !== "member") return;
-    api.ratings.get(event.id).then(setMyRating).catch(() => setMyRating(null));
+    api.ratings
+      .get(event.id)
+      .then(setMyRating)
+      .catch(() => setMyRating(null));
   }, [event.id, authState.status]);
 
   async function submitRating() {
@@ -221,7 +225,9 @@ export default function EventDetail() {
               <div className="font-mono text-xs text-muted tracking-wider uppercase mb-3 pb-1.5 border-b border-ink">
                 About this event
               </div>
-              <p className="whitespace-pre-wrap text-base/relaxed text-ink-soft">{event.description}</p>
+              <p className="whitespace-pre-wrap text-base/relaxed text-ink-soft">
+                {event.description}
+              </p>
             </div>
 
             <div className="mt-7">
