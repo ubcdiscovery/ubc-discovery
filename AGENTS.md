@@ -30,14 +30,19 @@ The API enqueues Candidates for the extraction Worker, which calls back into the
 
 ## Getting started
 
-Requires Node 24, pnpm, and Docker. Each of `web/`, `workers/api/`, and `workers/extraction/` is a separate pnpm project.
+Requires Node 24, pnpm, and Docker. `web/`, `workers/api/`, and `workers/extraction/` are packages in one pnpm workspace. Install them all once from the repository root:
+
+```bash
+pnpm install
+```
+
+Shared tool versions (TypeScript, Wrangler, Vitest, Vite+) live in the `catalog` in `pnpm-workspace.yaml`; reference them from a package as `"catalog:"`. Oxlint and Oxfmt settings for every package live in the root `vite.config.ts`.
 
 ### Database
 
 ```bash
 docker compose up -d postgres
 cd workers/api
-pnpm install
 DATABASE_URL=postgresql://ubc_discovery:ubc_discovery@localhost:5432/ubc_discovery pnpm run db:migrate
 ```
 
@@ -57,7 +62,6 @@ Browsing events needs only the database. Sign-in needs the Firebase values (plus
 
 ```bash
 cd web
-pnpm install
 cp .env.example .env # fill in the Firebase web config
 pnpm dev # http://localhost:5173
 ```
@@ -75,6 +79,8 @@ CI runs these on pull requests; run them for the projects you change.
 | `workers/api` | `pnpm check`, `pnpm test:runtime`, `pnpm build` |
 | `web` | `pnpm run lint`, `pnpm run typecheck`, `pnpm run build`, `pnpm run test:e2e` |
 | `workers/extraction` | `pnpm check`, `pnpm build` |
+
+`pnpm check` in each Worker includes its lint. `pnpm lint` from the repository root lints every package with the shared config.
 
 API database tests and `test:runtime` need `TEST_DATABASE_URL` pointing at a disposable local database:
 

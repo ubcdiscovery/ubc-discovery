@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { withDatabase } from '../src/db';
 import { events, eventAuditLogs, eventListingCandidateIngestionAudits, candidateExtractionJobs } from '../src/db/schema';

@@ -77,7 +77,7 @@ the test fixture applies migrations and existing rows affect queries.
    Existing credentials retain the `candidates:ingest` scope. The extraction
    credential cannot ingest, and an ingestion credential cannot operate the
    extraction endpoints.
-3. In `workers/extraction`, run `pnpm install`, copy `.dev.vars.example` to
+3. Run `pnpm install` from the repository root. In `workers/extraction`, copy `.dev.vars.example` to
    `.dev.vars`, and fill the local extraction token and dispatch secret. Set
    the same dispatch secret on the API and Worker. Real extraction additionally
    requires an OpenAI key and incurs model charges.

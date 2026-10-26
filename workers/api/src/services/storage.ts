@@ -31,6 +31,7 @@ export interface ObjectStorage {
 
 export function validateStorageKey(fileKey: string): void {
   if (!fileKey || new TextEncoder().encode(fileKey).length > 1024 || fileKey.startsWith('/')
+    // oxlint-disable-next-line no-control-regex -- rejects control characters in object keys
     || fileKey.includes('\\') || /[\u0000-\u001f\u007f]/.test(fileKey)
     || fileKey.split('/').some((part) => part === '.' || part === '..' || !part)) {
     throw new ApiError(400, 'Invalid storage key');

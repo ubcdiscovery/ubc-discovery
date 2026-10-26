@@ -34,6 +34,7 @@ function metadata(value, format) {
 }
 function safeKey(key) {
   if (typeof key !== 'string' || !key || Buffer.byteLength(key) > 1024 || key.startsWith('/') || key.includes('\\') ||
+      // oxlint-disable-next-line no-control-regex -- rejects control characters in object keys
       /[\u0000-\u001f\u007f]/.test(key) || key.split('/').some(part => !part || part === '.' || part === '..')) throw new Error('Unsupported object key');
 }
 function sourceItem(item) {
@@ -78,6 +79,7 @@ export async function restoreStorage(options, { execute = execFileSync, fetcher 
   const identity = { direction: 'r2-to-s3', source, target, cfAccount, awsAccount, awsRegion };
   let previous;
   try { previous = JSON.parse(await readFile(manifest, 'utf8')); }
+  // oxlint-disable-next-line preserve-caught-error -- keep the private manifest path out of the error
   catch (error) { if (error.code !== 'ENOENT') throw new Error('Cannot read rollback manifest'); }
   if (previous && Object.entries(identity).some(([key, value]) => previous[key] !== value)) throw new Error('Manifest belongs to a different direction, account, region or bucket pair');
   async function checkpoint(report) {
@@ -111,6 +113,7 @@ export async function restoreStorage(options, { execute = execFileSync, fetcher 
   }
   async function cfJson(path, limit = 1024 * 1024) {
     try { return JSON.parse((await boundedBody(await cfGet(path), limit)).toString('utf8')); }
+    // oxlint-disable-next-line preserve-caught-error -- never expose the provider response body
     catch (error) { if (error.message.startsWith('Cloudflare')) throw error; throw new Error('Invalid Cloudflare API response'); }
   }
   const sourcePath = `/accounts/${cfAccount}/r2/buckets/${encodeURIComponent(source)}`;

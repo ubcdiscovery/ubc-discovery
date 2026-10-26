@@ -8,7 +8,7 @@ import { requireApiCredential } from '../../http/auth';
 import { ApiError } from '../../http/errors';
 import { deliveriesSchema, resultsSchema, deliverySchema, type Delivery, type ExtractionValue } from '../../schemas/candidates';
 import { parseDate } from '../../schemas/events';
-import { createServices, type ServicesFactory, type RequestServices } from '../../services';
+import { createServices, type ServicesFactory } from '../../services';
 import { processAutoPublication } from '../../services/candidate-publication';
 import { postgresErrorCode } from '../../services/event-administration';
 import { captureTimedOut } from '../../services/extraction-queue';

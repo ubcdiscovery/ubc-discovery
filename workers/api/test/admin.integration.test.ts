@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { withDatabase } from '../src/db';
-import { apiCredentials, events, eventAuditLogs, apiCredentialAuditLogs } from '../src/db/schema';
+import { apiCredentials, events, eventAuditLogs } from '../src/db/schema';
 import { extractionFixture, testUrl } from './extraction-fixture';
 const fixture = extractionFixture();
 async function json(response: Response): Promise<Record<string, unknown>> { return response.json(); }
@@ -67,7 +67,7 @@ describe.skipIf(!testUrl)('administrator lifecycle against PostgreSQL', () => {
   expect(actions.sort()).toEqual(['create', 'update', 'image_upload', 'archive', 'restore', 'archive'].sort());
  });
  it('validates merged event date updates without mutating event or audit state', async () => {
-  const [event] = await withDatabase(fixture.env, db => db.insert(events).values({ id: 'dates001', title: 'Date fixture', source: 'manual', locationName: 'Nest', eventDate: new Date('2030-01-02Z'), eventEndDate: new Date('2030-01-03Z') }).returning());
+  await withDatabase(fixture.env, db => db.insert(events).values({ id: 'dates001', title: 'Date fixture', source: 'manual', locationName: 'Nest', eventDate: new Date('2030-01-02Z'), eventEndDate: new Date('2030-01-03Z') }).returning());
   expect((await fixture.request('/admin/events/dates001', 'PUT', { event_date: '2030-01-04T00:00:00Z' }, 'admin')).status).toBe(422);
   expect((await fixture.request('/admin/events/dates001', 'PUT', { location_name: '  ' }, 'admin')).status).toBe(422);
   const audits = await withDatabase(fixture.env, db => db.select().from(eventAuditLogs).where(eq(eventAuditLogs.eventId, 'dates001')));

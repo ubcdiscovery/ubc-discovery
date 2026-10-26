@@ -237,3 +237,6 @@ __marimo__/
 
 # Firebase
 firebase-service-account.json
+
+# Node
+node_modules/

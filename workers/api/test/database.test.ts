@@ -43,8 +43,8 @@ describe('request-scoped database connections', () => {
       .rejects.toThrow('Invalid DATABASE_SSL setting');
   });
 
-  it.each(['sslmode=verify-full', 'sslmode=disable', 'ssl=0', 'sslrootcert=/custom/ca.pem', 'sslnegotiation=direct'])
-    ('leaves explicit URL TLS configuration %s to pg', async tlsOption => {
+  it.each(['sslmode=verify-full', 'sslmode=disable', 'ssl=0', 'sslrootcert=/custom/ca.pem', 'sslnegotiation=direct'])(
+    'leaves explicit URL TLS configuration %s to pg', async tlsOption => {
       const connectionString = `postgresql://origin.example.com/app?${tlsOption}`;
       await withDatabase(env({ DATABASE_URL: connectionString, DATABASE_SSL: 'false' }), async () => {});
       expect(clients.at(-1)!.configuration.connectionString).toBe(connectionString);

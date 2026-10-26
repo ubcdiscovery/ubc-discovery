@@ -43,7 +43,7 @@ try {
   const url = `http://127.0.0.1:${port}`;
   let ready = false;
   for (let attempt = 0; attempt < 100 && worker.exitCode === null; attempt++) {
-    try { ready = (await fetch(url, { signal: AbortSignal.timeout(500) })).ok; } catch {}
+    try { ready = (await fetch(url, { signal: AbortSignal.timeout(500) })).ok; } catch { /* not listening yet */ }
     if (ready) break;
     await new Promise(resolve => setTimeout(resolve, 100));
   }

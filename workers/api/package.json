@@ -2,15 +2,17 @@
   "name": "ubc-discovery-api",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.11.2",
-  "engines": { "node": "24.x" },
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "wrangler dev",
     "types": "wrangler types worker-configuration.d.ts --env-interface CloudflareBindings --include-runtime=false --strict-vars=false",
     "typecheck": "pnpm run types && tsc --noEmit",
+    "lint": "pnpm --workspace-root exec vp lint workers/api",
     "test": "vitest run",
     "test:runtime": "node scripts/runtime-check.mjs",
-    "check": "pnpm typecheck && pnpm test",
+    "check": "pnpm typecheck && pnpm lint && pnpm test",
     "build": "wrangler deploy --dry-run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -27,11 +29,11 @@
     "pg": "8.23.1"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20261012.1",
+    "@cloudflare/workers-types": "catalog:",
     "@types/pg": "8.23.1",
     "drizzle-kit": "0.31.11",
-    "typescript": "7.0.2",
-    "vitest": "5.0.3",
-    "wrangler": "4.149.0"
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
   }
 }
