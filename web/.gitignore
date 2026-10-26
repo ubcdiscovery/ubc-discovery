@@ -11,4 +11,5 @@ test-results/
 .wrangler/
 worker-configuration.d.ts
 .dev.vars*
+.dev.deploy.vars
 !.dev.vars.example
