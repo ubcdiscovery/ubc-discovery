@@ -1,6 +1,6 @@
 import { t, type Static } from "elysia";
 import { ApiError } from "../http/errors";
-import type { EventVibe, SourceLabel } from "../db/schema";
+import type { Event, EventVibe, SourceLabel } from "../db/schema";
 export const VIBES = [
   "social",
   "career",
@@ -127,4 +127,26 @@ export function eventValues(body: EventInput) {
     eventDate,
     eventEndDate,
   };
+}
+export function eventChanges(body: EventUpdate): Partial<Event> {
+  const changes: Partial<Event> = {};
+  if (body.title !== undefined) changes.title = body.title;
+  if (body.description !== undefined) changes.description = body.description;
+  if (body.source !== undefined) changes.source = body.source;
+  if (body.source_label !== undefined) changes.sourceLabel = body.source_label;
+  if (body.source_url !== undefined) changes.sourceUrl = body.source_url;
+  if (body.club_name !== undefined) changes.clubName = body.club_name;
+  if (body.vibes !== undefined) changes.vibes = body.vibes;
+  if (body.location_name !== undefined) {
+    const value = body.location_name.trim();
+    if (!value) throw new ApiError(422, "location_name must contain location text");
+    changes.locationName = value;
+  }
+  if (body.event_date !== undefined) {
+    const date = parseDate(body.event_date);
+    if (!date) throw new ApiError(422, "event_date must not be null");
+    changes.eventDate = date;
+  }
+  if (body.event_end_date !== undefined) changes.eventEndDate = parseDate(body.event_end_date);
+  return changes;
 }

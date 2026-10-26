@@ -1,6 +1,7 @@
 // R2's management object endpoint adds download transport headers. Storage
 // verification must use the signed S3 endpoint's genuine object metadata.
 import { AwsClient } from "aws4fetch";
+import { isSafeObjectKey } from "./storage-common.mjs";
 
 export function r2S3Transport({
   account,
@@ -23,17 +24,7 @@ export function r2S3Transport({
     service: "s3",
   });
   return async function request(method, key, { headers = {}, body } = {}) {
-    if (
-      typeof key !== "string" ||
-      !key ||
-      Buffer.byteLength(key) > 1024 ||
-      key.startsWith("/") ||
-      key.includes("\\") ||
-      // oxlint-disable-next-line no-control-regex -- rejects control characters in object keys
-      /[\u0000-\u001f\u007f]/.test(key) ||
-      key.split("/").some((part) => !part || part === "." || part === "..")
-    )
-      throw new Error("Unsupported R2 object key");
+    if (!isSafeObjectKey(key)) throw new Error("Unsupported R2 object key");
     const path = key
       .split("/")
       .map((part) =>

@@ -2,16 +2,15 @@ import { Elysia, t } from "elysia";
 import { presentUpload } from "../../presenters/storage";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
-import { events, eventAuditLogs as audits, type Event } from "../../db/schema";
+import { events, eventAuditLogs as audits } from "../../db/schema";
 import { integerSetting, type ApiEnv } from "../../env";
 import { ApiError } from "../../http/errors";
 import { presentAdminEvent, eventImageKey } from "../../presenters/events";
 import {
   createEventSchema,
   updateEventSchema,
-  parseDate,
   checkEndDate,
-  type EventUpdate,
+  eventChanges,
 } from "../../schemas/events";
 import { uploadFileSize } from "../../schemas/upload-size";
 import type { ServicesFactory } from "../../services";
@@ -285,26 +284,4 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
     { parse: "none", detail: { tags: ["Admin Events"] } },
   );
   return routes;
-}
-function eventChanges(body: EventUpdate): Partial<Event> {
-  const changes: Partial<Event> = {};
-  if (body.title !== undefined) changes.title = body.title;
-  if (body.description !== undefined) changes.description = body.description;
-  if (body.source !== undefined) changes.source = body.source;
-  if (body.source_label !== undefined) changes.sourceLabel = body.source_label;
-  if (body.source_url !== undefined) changes.sourceUrl = body.source_url;
-  if (body.club_name !== undefined) changes.clubName = body.club_name;
-  if (body.vibes !== undefined) changes.vibes = body.vibes;
-  if (body.location_name !== undefined) {
-    const value = body.location_name.trim();
-    if (!value) throw new ApiError(422, "location_name must contain location text");
-    changes.locationName = value;
-  }
-  if (body.event_date !== undefined) {
-    const date = parseDate(body.event_date);
-    if (!date) throw new ApiError(422, "event_date must not be null");
-    changes.eventDate = date;
-  }
-  if (body.event_end_date !== undefined) changes.eventEndDate = parseDate(body.event_end_date);
-  return changes;
 }

@@ -174,3 +174,19 @@ export function extractionFixture() {
     );
   return { env, services, storage, request, setup, teardown, seedCandidate, candidate };
 }
+
+export async function json(response: Response): Promise<Record<string, unknown>> {
+  return response.json();
+}
+
+/** A valid extraction result for a seeded candidate. */
+export const extraction = (id: string, club = "Fixture Club") => ({
+  candidate_id: id,
+  is_event: true,
+  title: `Event ${id}`,
+  event_date: "2030-02-01T20:00:00-08:00",
+  event_end_date: null,
+  location_name: "Nest",
+  club_name: club,
+  vibes: ["social"],
+});

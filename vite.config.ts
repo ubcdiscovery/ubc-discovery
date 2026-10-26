@@ -21,7 +21,6 @@ export default defineConfig({
       "**/worker-configuration.d.ts",
       "**/build/",
       "**/test-results/",
-      "workers/api/drizzle.config.ts",
     ],
     settings: {
       "better-tailwindcss": {
@@ -117,7 +116,7 @@ export default defineConfig({
           "require-yield": "error",
           "use-isnan": "error",
           "valid-typeof": "error",
-          "max-lines": ["error", { max: 300, skipBlankLines: true, skipComments: true }],
+          "max-lines": ["error", 300],
         },
         env: {
           node: true,
@@ -175,13 +174,6 @@ export default defineConfig({
           node: true,
         },
         jsPlugins: ["eslint-plugin-better-tailwindcss"],
-      },
-      {
-        // Worker modules predate the line limit.
-        files: ["workers/**"],
-        rules: {
-          "max-lines": "off",
-        },
       },
     ],
     options: {

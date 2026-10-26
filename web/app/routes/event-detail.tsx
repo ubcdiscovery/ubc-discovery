@@ -1,14 +1,16 @@
 import { useLoaderData } from "react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { Route } from "./+types/event-detail";
-import { ApiError, api, type ApiEvent, type EventRatingResponse } from "~/lib/api";
+import { ApiError, api, type ApiEvent } from "~/lib/api";
 import { fmtDay, fmtRange, fmtTime, fmtMonth, fmtDate02 } from "~/lib/date";
 import { SaveEventButton } from "~/components/SaveEventButton";
 import { SourceBadge } from "~/components/SourceBadge";
 import { VibeTag } from "~/components/VibeTag";
 import { RouteErrorState } from "~/components/RouteErrorState";
 import { useAuth } from "~/lib/auth";
-import { RatingDraftModal, RatingsSection } from "~/components/EventRatings";
+import { useEventRatings } from "~/lib/use-event-ratings";
+import { RatingsSection } from "~/components/EventRatings";
+import { RatingDraftModal } from "~/components/RatingDraftModal";
 export function meta({ loaderData }: Route.MetaArgs) {
   const event = loaderData as ApiEvent | undefined;
   return [
@@ -52,57 +54,16 @@ export default function EventDetail() {
   const isSignedIn = authState.status === "member";
   const d = event.event_date ? new Date(event.event_date) : null;
   const endD = event.event_end_date ? new Date(event.event_end_date) : null;
-  const [allRatings, setAllRatings] = useState<EventRatingResponse[]>([]);
-  const [myRating, setMyRating] = useState<EventRatingResponse | null | undefined>(undefined);
   const [imgFailed, setImgFailed] = useState(false);
-  const [ratingDraft, setRatingDraft] = useState<{
-    stars: number;
-    note: string;
-    strong_vibes: string[];
-  } | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [ratingsAvailable, setRatingsAvailable] = useState<boolean | undefined>(undefined);
-
-  useEffect(() => {
-    api.ratings
-      .getAll(event.id)
-      .then((ratings) => {
-        setAllRatings(Array.isArray(ratings) ? ratings : []);
-        setRatingsAvailable(true);
-      })
-      .catch((err) => {
-        if (
-          err instanceof ApiError &&
-          (err.status === 400 || err.status === 403 || err.status === 404)
-        ) {
-          setRatingsAvailable(false);
-        } else {
-          setAllRatings([]);
-          setRatingsAvailable(true);
-        }
-      });
-  }, [event.id]);
-
-  useEffect(() => {
-    if (authState.status !== "member") return;
-    api.ratings
-      .get(event.id)
-      .then(setMyRating)
-      .catch(() => setMyRating(null));
-  }, [event.id, authState.status]);
-
-  async function submitRating() {
-    if (!ratingDraft) return;
-    setSubmitting(true);
-    try {
-      const result = await api.ratings.rate(event.id, ratingDraft);
-      setMyRating(result);
-      setAllRatings((prev) => [result, ...prev.filter((r) => r.user_id !== result.user_id)]);
-      setRatingDraft(null);
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  const {
+    allRatings,
+    myRating,
+    ratingsAvailable,
+    ratingDraft,
+    setRatingDraft,
+    submitting,
+    submitRating,
+  } = useEventRatings(event.id, authState.status);
 
   return (
     <div className="md:flex md:flex-1 md:flex-col">
