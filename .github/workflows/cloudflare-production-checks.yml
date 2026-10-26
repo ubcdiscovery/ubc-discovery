@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - scripts/cloudflare-production-*.mjs
-      - workers/api/wrangler.jsonc
       - web/wrangler.jsonc
       - workers/extraction/wrangler.jsonc
       - .github/workflows/cloudflare-production-*.yml

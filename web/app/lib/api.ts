@@ -31,7 +31,8 @@ export type {
   EventRatingResponse,
 };
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+// The API is served by the same Worker under /api.
+const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
 
 export class ApiError extends Error {
   constructor(

@@ -35,6 +35,7 @@ jobs:
         run: |
           if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- \
             web \
+            workers/api \
             package.json \
             pnpm-lock.yaml \
             pnpm-workspace.yaml \

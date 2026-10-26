@@ -1,5 +1,19 @@
-/** Application settings augment Wrangler's generated platform bindings. */
-export interface ApiEnv extends CloudflareBindings {
+/**
+ * Bindings and settings the API reads. The web Worker that serves the API under
+ * /api declares them in web/wrangler.jsonc.
+ */
+export interface ApiEnv {
+  R2_BUCKET?: R2Bucket;
+  DATABASE_SSL?: string;
+  AWS_REGION?: string;
+  STORAGE_PROVIDER?: string;
+  R2_ACCOUNT_ID?: string;
+  R2_BUCKET_NAME?: string;
+  CORS_ALLOWED_ORIGINS?: string;
+  OTP_EXPIRY_MINUTES?: string;
+  OTP_MAX_ATTEMPTS?: string;
+  OTP_RATE_LIMIT_PER_15MIN?: string;
+  EXTRACTION_DELIVERY_TIMEOUT_SECONDS?: string;
   DATABASE_URL?: string;
   DIRECT_DATABASE_URL?: string;
   HYPERDRIVE?: Hyperdrive;

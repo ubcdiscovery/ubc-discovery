@@ -83,8 +83,7 @@ test("saves through deployed API, partitions Saved tabs, and removes the event",
   try {
     const hydratedSaves = page.waitForResponse(
       (response) =>
-        new URL(response.url()).origin === live.apiBaseUrl &&
-        new URL(response.url()).pathname === "/saved-events" &&
+        response.url().split("?")[0] === `${live.apiBaseUrl}/saved-events` &&
         response.request().method() === "GET",
       { timeout: 15_000 },
     );

@@ -2,19 +2,18 @@
   "name": "ubc-discovery-api",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/app.ts"
+  },
   "scripts": {
-    "dev": "wrangler dev",
-    "types": "wrangler types worker-configuration.d.ts --env-interface CloudflareBindings --include-runtime=false --strict-vars=false",
-    "typecheck": "pnpm run types && tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "lint": "pnpm --workspace-root exec vp lint workers/api && pnpm --workspace-root exec vp fmt --check workers/api",
     "test": "vp test run",
     "test:runtime": "node scripts/runtime-check.mjs",
     "check": "pnpm typecheck && pnpm lint && pnpm test",
-    "build": "wrangler deploy --dry-run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:check": "drizzle-kit check",
-    "deploy": "wrangler deploy"
+    "db:check": "drizzle-kit check"
   },
   "dependencies": {
     "@elysiajs/openapi": "1.4.16",

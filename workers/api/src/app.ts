@@ -28,12 +28,27 @@ function corsOrigin(env: ApiEnv, request: Request): string | null {
   return null;
 }
 
+export interface AppOptions {
+  /**
+   * Compile routes ahead of time with generated code (the default). Workers allow
+   * that only at startup; the Vite dev server loads modules during a request, so
+   * it uses Elysia's interpreted handlers instead.
+   */
+  aot?: boolean;
+}
+
 /** Construct and compile once per deployment, with no mutable request state. */
 export function createApp(
   env: ApiEnv,
   servicesFactory: ServicesFactory = () => createServices(env),
+  { aot = true }: AppOptions = {},
 ) {
-  return new Elysia({ name: "ubc-discovery-api", adapter: CloudflareAdapter, normalize: false })
+  return new Elysia({
+    name: "ubc-discovery-api",
+    adapter: aot ? CloudflareAdapter : undefined,
+    aot,
+    normalize: false,
+  })
     .use(
       openapi({
         path: "/docs",

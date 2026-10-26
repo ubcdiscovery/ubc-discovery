@@ -46,10 +46,10 @@ export function loadLiveFixture(): LiveFixture {
   const fixture = privateJson(path) as LiveFixture;
   if (
     fixture.webBaseUrl !== "https://ubc-discovery-web-staging.ubcdiscovery.workers.dev" ||
-    fixture.apiBaseUrl !== "https://ubc-discovery-api-staging.ubcdiscovery.workers.dev"
+    fixture.apiBaseUrl !== "https://ubc-discovery-web-staging.ubcdiscovery.workers.dev/api"
   ) {
     throw new Error(
-      "Live tests are restricted to the named staging Workers; production endpoints are refused.",
+      "Live tests are restricted to the staging Worker; production endpoints are refused.",
     );
   }
   if (

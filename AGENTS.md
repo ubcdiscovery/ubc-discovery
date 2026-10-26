@@ -18,9 +18,9 @@ This is a single-context repository using the root domain glossary and root ADR 
 
 ## Architecture
 
-- **API**: Elysia TypeScript Worker in `workers/api/` — Drizzle ORM + node-postgres
+- **Web**: React app in `web/` — React Router 8 SSR + React 19 + Tailwind CSS. Its Cloudflare Worker also serves the API under `/api`
+- **API**: Elysia TypeScript app in `workers/api/` — Drizzle ORM + node-postgres. A library bundled into the web Worker, not a Worker of its own
 - **Extraction**: Cloudflare Queue Worker in `workers/extraction/` — calls OpenAI, no database access
-- **Web**: React app in `web/` — React Router 8 SSR + React 19 + Tailwind CSS, served by a Cloudflare Worker
 - **Database**: Neon PostgreSQL 18 with pgvector; migrations via Drizzle Kit
 - **Storage**: private Cloudflare R2 bucket
 - **AWS (us-west-2)**: Bedrock Titan Embeddings for recommendations, SES for OTP email
@@ -48,23 +48,16 @@ DATABASE_URL=postgresql://ubc_discovery:ubc_discovery@localhost:5432/ubc_discove
 
 The database starts empty. To use admin pages, sign in once, then set `is_admin = true` on your row in `users`.
 
-### API
-
-```bash
-cd workers/api
-cp .dev.vars.example .dev.vars
-pnpm dev # http://localhost:8787
-```
-
-Browsing events needs only the database. Sign-in needs the Firebase values (plus AWS SES for email OTP), and image uploads need staging R2 credentials and `UPLOAD_SIGNING_SECRET`. AWS Bedrock is optional: without it, new events get no embedding and are left out of similarity ranking.
-
-### Web
+### Web and API
 
 ```bash
 cd web
 cp .env.example .env # fill in the Firebase web config
-pnpm dev # http://localhost:5173
+cp .dev.vars.example .dev.vars # API settings and secrets
+pnpm dev # http://localhost:5173, API at http://localhost:5173/api
 ```
+
+Browsing events needs only the database. Sign-in needs the Firebase values (plus AWS SES for email OTP), and image uploads need staging R2 credentials and `UPLOAD_SIGNING_SECRET`. AWS Bedrock is optional: without it, new events get no embedding and are left out of similarity ranking.
 
 ### Extraction Worker
 
@@ -76,11 +69,11 @@ CI runs these on pull requests; run them for the projects you change.
 
 | Project              | Commands                                                                     |
 | -------------------- | ---------------------------------------------------------------------------- |
-| `workers/api`        | `pnpm check`, `pnpm test:runtime`, `pnpm build`                              |
+| `workers/api`        | `pnpm check`, `pnpm test:runtime`                                            |
 | `web`                | `pnpm run lint`, `pnpm run typecheck`, `pnpm run build`, `pnpm run test:e2e` |
 | `workers/extraction` | `pnpm check`, `pnpm build`                                                   |
 
-`pnpm check` in each Worker includes its lint. `pnpm lint` from the repository root lints every package with the shared config.
+`pnpm check` in `workers/api` and `workers/extraction` includes their lint. The API is bundled by the web build, so API changes also run the web checks. `pnpm lint` from the repository root lints every package with the shared config.
 
 API database tests and `test:runtime` need `TEST_DATABASE_URL` pointing at a disposable local database:
 
@@ -96,8 +89,7 @@ DATABASE_URL=$TEST_DATABASE_URL pnpm run db:migrate
 workers/
 ├── api/
 │   ├── src/                     # Routes, services, presenters, Drizzle schema (src/db/schema.ts)
-│   ├── drizzle/                 # Generated SQL migrations
-│   └── wrangler.jsonc           # Staging default + production Worker config
+│   └── drizzle/                 # Generated SQL migrations
 └── extraction/                  # Queue consumer that calls OpenAI
 
 web/
@@ -107,8 +99,8 @@ web/
 │   ├── routes/                  # Discover, event detail, organizers, profile, saved, auth/onboarding, admin
 │   ├── components/              # Web UI components
 │   └── lib/                     # API client, constants, date utilities
-├── workers/app.ts               # Cloudflare Worker SSR entry
-├── wrangler.jsonc               # Staging default + production (ubcdiscovery.com) Worker config
+├── workers/app.ts               # Cloudflare Worker entry: /api, Firebase auth proxy, SSR
+├── wrangler.jsonc               # Staging default, Previews + production (ubcdiscovery.com) Worker config
 └── vite.config.ts
 
 docs/operations/                 # Runbooks for production, migrations, storage, extraction
@@ -130,13 +122,13 @@ docs/operations/                 # Runbooks for production, migrations, storage,
 
 - React Router 8 routes live in `web/app/routes/`; shared web UI lives in `web/app/components/`. See `web/AGENTS.md` for UI conventions.
 - Use PascalCase for shared component filenames and exported component identifiers in `web/app/components/` (for example, `EventCard.tsx` exports `EventCard`). Keep route module filenames in `web/app/routes/` lowercase/kebab-case.
-- API helpers live in `web/app/lib/api.ts`.
+- API helpers live in `web/app/lib/api.ts`. The browser calls the same-origin `/api`.
 - Google Analytics (Firebase Analytics) lives in `web/app/lib/analytics.ts`; `AnalyticsTracker` sends page views and the member's Firebase UID. Never send emails, names, or other direct identifiers to analytics. See `docs/operations/analytics.md`.
 
 ## Deployment
 
-Production (API, then web) is deployed by the manual **Deploy Cloudflare production** GitHub workflow; database migrations are applied by hand before deploying code that needs them. See [Cloudflare production deployment](docs/operations/cloudflare-production.md) and [Database migrations](docs/operations/database-migrations.md#applying-to-production).
+Production (the web Worker with its API) is deployed by the manual **Deploy Cloudflare production** GitHub workflow; database migrations are applied by hand before deploying code that needs them. See [Cloudflare production deployment](docs/operations/cloudflare-production.md) and [Database migrations](docs/operations/database-migrations.md#applying-to-production).
 
 ## Credentials
 
-Local secrets live in `workers/api/.dev.vars`, `workers/extraction/.dev.vars`, and `web/.env` (none committed). Production secrets are Wrangler secrets and GitHub environment secrets.
+Local secrets live in `web/.dev.vars`, `workers/extraction/.dev.vars`, and `web/.env` (none committed). Production secrets are Wrangler secrets and GitHub environment secrets.

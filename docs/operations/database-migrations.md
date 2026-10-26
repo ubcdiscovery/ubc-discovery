@@ -2,7 +2,7 @@
 
 Drizzle Kit is the authoritative schema change tool. The schema lives in
 `workers/api/src/db/schema.ts` and the migrations in `workers/api/drizzle/`. The
-API Worker never creates or alters tables at runtime.
+API never creates or alters tables at runtime.
 
 `0000_baseline` reproduces the schema of the former Alembic head
 (`0012_queue_extraction`), including the `vector` and `pg_trgm` extensions. The
@@ -27,7 +27,7 @@ the migrated `public` tables into temporary schemas.
 2. Run `pnpm run db:generate --name <short_change_name>` and review the SQL.
 3. Commit the SQL file and the updated `drizzle/meta/` files together.
 
-The API Worker PR checks fail when `schema.ts` changes without a committed
+The API PR checks fail when `schema.ts` changes without a committed
 migration, then apply every migration to a fresh database before running tests.
 
 Keep explicit constraint and index names in `schema.ts`. They match the existing

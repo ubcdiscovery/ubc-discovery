@@ -8,13 +8,13 @@ Run from `web/`:
 LIVE_FIXTURE_FILE=/private/path/live-fixture.json pnpm run test:e2e:live
 ```
 
-The private fixture is required; missing input fails before tests execute. Only the named staging Workers are accepted. Place the fixture and SDK session outside Git, readable only by their owner. Do not commit them or print tokens. Traces, screenshots and videos are disabled because real credentials pass through requests.
+The private fixture is required; missing input fails before tests execute. Only the staging Worker is accepted. Place the fixture and SDK session outside Git, readable only by their owner. Do not commit them or print tokens. Traces, screenshots and videos are disabled because real credentials pass through requests.
 
 ```json
 {
   "runId": "unique-live-run",
   "webBaseUrl": "https://ubc-discovery-web-staging.ubcdiscovery.workers.dev",
-  "apiBaseUrl": "https://ubc-discovery-api-staging.ubcdiscovery.workers.dev",
+  "apiBaseUrl": "https://ubc-discovery-web-staging.ubcdiscovery.workers.dev/api",
   "firebaseApiKey": "Firebase web API key",
   "member": {
     "profileId": "staging-only-profile-id",

@@ -1,11 +1,11 @@
 # Cloudflare production deployment
 
-The default API and web configurations remain staging. Production uses API
-`ubc-discovery-api`, web `ubc-discovery-web`, and private R2 bucket
-`ubc-discovery-media` in account `5637cded1864726ba930947d2f6138af`. The production web Worker owns the custom domain `ubcdiscovery.com`; staging
-remains on its own Workers address. The production API origin is
-`https://ubc-discovery-api.ubcdiscovery.workers.dev`; the shadow frontend is
-`https://ubc-discovery-web.ubcdiscovery.workers.dev`.
+The default web configuration remains staging. Production uses Worker
+`ubc-discovery-web` and private R2 bucket `ubc-discovery-media` in account
+`5637cded1864726ba930947d2f6138af`. The web Worker serves the site and, under
+`/api`, the API. It owns the custom domain `ubcdiscovery.com`; staging remains on
+its own Workers address. The production API is `https://ubcdiscovery.com/api`; the
+shadow origin is `https://ubc-discovery-web.ubcdiscovery.workers.dev`.
 
 The manual **Deploy Cloudflare production** workflow uses the GitHub environment
 `cloudflare-production`. Configure these values before dispatching it:
@@ -21,13 +21,13 @@ The manual **Deploy Cloudflare production** workflow uses the GitHub environment
 
 Use the existing production Neon database's direct endpoint. The dispatch secret must
 match the existing extraction Worker's `EXTRACTION_DISPATCH_SECRET`. API secrets
-are supplied with code in one Wrangler deployment through a private temporary
-file. Missing secrets, staged/pooled database endpoints, mismatched Firebase
+are supplied with the web Worker's code in one Wrangler deployment through a
+private temporary file. Missing secrets, staged/pooled database endpoints, mismatched Firebase
 projects and auth test mode fail preflight.
 
-The workflow builds and checks both Workers before deploying the API, checks the
-API's health and database-backed event route, then deploys the compiled web
-Worker. It selects `CLOUDFLARE_ENV=production` before the web build and fixes
+The workflow checks the API, builds and checks the web Worker, deploys it, then
+checks the API's health and database-backed event route on the shadow origin and
+the custom domain. It selects `CLOUDFLARE_ENV=production` before the web build and fixes
 `VITE_AUTH_TEST_MODE=false`; setting the environment only during deploy cannot
 retarget an existing Vite build. Public browser configuration is compiled into
 the assets. Both default and production packaging must pass before dispatch.
@@ -39,8 +39,17 @@ extraction consumers or scraper producers. Web deployment reconciles the checked
 `ubcdiscovery.com` custom domain; verify browser traffic against the production API
 afterward.
 Coordinate the existing extraction Worker separately after the API is ready:
-its checked-in callback now names the production API, and its existing queues,
-retry policy, cron and deployed secrets remain in place.
+its checked-in callback names `https://ubcdiscovery.com/api`, and its existing
+queues, retry policy, cron and deployed secrets remain in place.
+
+### Moving from the separate API Worker
+
+Production previously ran the API as its own Worker, `ubc-discovery-api`. After
+the first deployment of the combined web Worker, in order:
+
+1. Deploy the extraction Worker so its callbacks use `https://ubcdiscovery.com/api`.
+2. Point the scraper at `https://ubcdiscovery.com/api`.
+3. When no traffic reaches `ubc-discovery-api`, delete it.
 
 `www.ubcdiscovery.com` is configured as Cloudflare rule to redirect to `ubcdiscovery.com`
 
@@ -62,7 +71,7 @@ else needs an expiring signed URL. Bucket CORS ([r2-cors.json](../../infra/prod/
 allows `PUT` with `Content-Type` from the production web origins.
 
 Upload and download URLs carry their authorization in the query string. Keep
-`observability.redact_query_string: true` in `workers/api/wrangler.jsonc`, and
+`observability.redact_query_string: true` in `web/wrangler.jsonc`, and
 never log these URLs.
 
 `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` must be Object Read & Write

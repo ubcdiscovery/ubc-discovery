@@ -4,6 +4,9 @@ import { env as cloudflareEnv } from "cloudflare:workers";
 import { decodeJwt } from "jose";
 import { AwsV4Signer } from "aws4fetch";
 import type { ApiEnv } from "../../src/env";
+
+// The probe's own wrangler.jsonc binds a local R2 bucket.
+type ProbeEnv = ApiEnv & { R2_BUCKET: R2Bucket };
 import { withDatabase, withTransaction } from "../../src/db";
 import { createFirebase } from "../../src/services/firebase";
 import { R2Storage } from "../../src/services/storage";
@@ -11,8 +14,8 @@ import { hashSecret, verifySecret } from "../../src/http/auth";
 import { localDayBounds } from "../../src/services/candidate-publication";
 import { createApp } from "../../src/app";
 
-const storageEnv: ApiEnv = {
-  ...cloudflareEnv,
+const storageEnv: ProbeEnv = {
+  ...(cloudflareEnv as ProbeEnv),
   STORAGE_PROVIDER: "r2",
   API_PUBLIC_BASE_URL: "http://localhost",
   UPLOAD_SIGNING_SECRET: "local-runtime-capability-secret-at-least-32-bytes",
@@ -26,7 +29,7 @@ const storageEnv: ApiEnv = {
 const app = createApp(storageEnv);
 
 export default {
-  async fetch(request: Request, env: ApiEnv): Promise<Response> {
+  async fetch(request: Request, env: ProbeEnv): Promise<Response> {
     if (request.method === "GET") return Response.json({ ready: true });
     if (
       !env.DATABASE_URL ||
@@ -170,4 +173,4 @@ export default {
       firebase: identity.uid === "local-user" && customToken.uid === "local-user",
     });
   },
-} satisfies ExportedHandler<ApiEnv>;
+} satisfies ExportedHandler<ProbeEnv>;

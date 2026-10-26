@@ -18,7 +18,6 @@ jobs:
       run:
         working-directory: web
     env:
-      VITE_API_URL: ${{ vars.CLOUDFLARE_STAGING_API_URL }}
       VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
       VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
       VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
@@ -34,7 +33,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - name: Require staging browser configuration
         run: |
-          for name in VITE_API_URL VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_APP_ID; do
+          for name in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_PROJECT_ID VITE_FIREBASE_APP_ID; do
             if [[ -z "${!name}" ]]; then
               echo "Missing staging variable: $name"
               exit 1
