@@ -43,13 +43,12 @@ targets `ubc-discovery-web` and owns the `ubcdiscovery.com` custom domain. The V
 plugin generates `build/server/wrangler.json` and `.wrangler/deploy/config.json`;
 Wrangler deploys that generated build, not the uncompiled Worker source.
 
-Set the public Firebase `VITE_*` values for staging before the build, and keep
-`VITE_AUTH_TEST_MODE` disabled. The manual **Deploy web Worker staging** workflow
-uses the `cloudflare-staging` GitHub environment:
-
-- Variables: `CLOUDFLARE_ACCOUNT_ID`, `VITE_FIREBASE_API_KEY`,
-  `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`.
-- Secret: `CLOUDFLARE_API_TOKEN`, scoped to deploying this account's Workers.
+Cloudflare Workers Builds deploys staging from `main` and posts a Preview URL on
+each pull request. Its build settings (root `/web`, the Firebase `VITE_*` build
+variables, `VITE_AUTH_TEST_MODE=false`) and the API secrets live on the
+`ubc-discovery-web-staging` Worker and its Preview base config in Cloudflare. For a
+manual deploy, set the public Firebase `VITE_*` values and keep `VITE_AUTH_TEST_MODE`
+disabled.
 
 ## Production
 

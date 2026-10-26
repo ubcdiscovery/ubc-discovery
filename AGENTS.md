@@ -127,8 +127,8 @@ docs/operations/                 # Runbooks for production, migrations, storage,
 
 ## Deployment
 
-Production (the web Worker with its API) is deployed by the manual **Deploy Cloudflare production** GitHub workflow; database migrations are applied by hand before deploying code that needs them. See [Cloudflare production deployment](docs/operations/cloudflare-production.md) and [Database migrations](docs/operations/database-migrations.md#applying-to-production).
+Cloudflare Workers Builds deploys staging from `main` and a Preview for each pull request. Production (the web Worker with its API) is deployed by the manual **Deploy Cloudflare production** GitHub workflow; database migrations are applied by hand before deploying code that needs them. See [Cloudflare production deployment](docs/operations/cloudflare-production.md) and [Database migrations](docs/operations/database-migrations.md#applying-to-production).
 
 ## Credentials
 
-Local secrets live in `web/.dev.vars`, `workers/extraction/.dev.vars`, and `web/.env` (none committed). Production secrets are Wrangler secrets and GitHub environment secrets.
+Local secrets live in `web/.dev.vars`, `workers/extraction/.dev.vars`, `web/.env`, and `web/.dev.deploy.vars` (staging Worker secrets; none committed). Production secrets are Wrangler secrets and GitHub environment secrets.
