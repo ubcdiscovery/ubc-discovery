@@ -11,11 +11,11 @@ cp .env.example .env
 pnpm dev
 ```
 
-The frontend runs at `http://localhost:5173`. Fill in the public Firebase web app
-configuration in `.env`; `VITE_API_URL` selects the existing HTTP API contract.
-These `VITE_*` settings are compiled into the browser assets at build time, so
-changing a Worker binding after deployment does not change the API URL or Firebase
-configuration.
+The frontend runs at `http://localhost:5173`, with the API under `/api` from the
+same Worker. Fill in the public Firebase web app configuration in `.env` and the API
+settings in `.dev.vars` (copy `.dev.vars.example`). These `VITE_*` settings are
+compiled into the browser assets at build time, so changing a Worker binding after
+deployment does not change the Firebase configuration.
 
 ## Validation and preview
 
@@ -43,14 +43,12 @@ targets `ubc-discovery-web` and owns the `ubcdiscovery.com` custom domain. The V
 plugin generates `build/server/wrangler.json` and `.wrangler/deploy/config.json`;
 Wrangler deploys that generated build, not the uncompiled Worker source.
 
-Set the public `VITE_API_URL` and Firebase `VITE_*` values for staging before the
-build, and keep `VITE_AUTH_TEST_MODE` disabled. The manual **Deploy web Worker
-staging** workflow uses the `cloudflare-staging` GitHub environment:
-
-- Variables: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_STAGING_API_URL`,
-  `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`,
-  `VITE_FIREBASE_APP_ID`.
-- Secret: `CLOUDFLARE_API_TOKEN`, scoped to deploying this account's Workers.
+Cloudflare Workers Builds deploys staging from `main` and posts a Preview URL on
+each pull request. Its build settings (root `/web`, the Firebase `VITE_*` build
+variables, `VITE_AUTH_TEST_MODE=false`) and the API secrets live on the
+`ubc-discovery-web-staging` Worker and its Preview base config in Cloudflare. For a
+manual deploy, set the public Firebase `VITE_*` values and keep `VITE_AUTH_TEST_MODE`
+disabled.
 
 ## Production
 

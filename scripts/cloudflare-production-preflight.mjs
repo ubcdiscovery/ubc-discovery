@@ -2,7 +2,8 @@ import { writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 export const account = "5637cded1864726ba930947d2f6138af";
-export const apiOrigin = "https://ubc-discovery-api.ubcdiscovery.workers.dev";
+// The web Worker serves the API under /api.
+export const apiOrigin = "https://ubcdiscovery.com/api";
 export const webOrigin = "https://ubc-discovery-web.ubcdiscovery.workers.dev";
 export const secretNames = [
   "DATABASE_URL",
@@ -20,7 +21,6 @@ const requiredNames = [
   ...secretNames,
   "CLOUDFLARE_ACCOUNT_ID",
   "CLOUDFLARE_API_TOKEN",
-  "VITE_API_URL",
   "VITE_FIREBASE_API_KEY",
   "VITE_FIREBASE_AUTH_DOMAIN",
   "VITE_FIREBASE_PROJECT_ID",
@@ -38,8 +38,8 @@ export function validateProductionConfiguration(env) {
   if (env.CLOUDFLARE_ENV !== "production" || env.VITE_AUTH_TEST_MODE !== "false") {
     throw new Error("Production build must select production and disable auth test mode");
   }
-  if (env.VITE_API_URL !== apiOrigin)
-    throw new Error("Production browser API origin does not match configuration");
+  if (env.VITE_API_URL)
+    throw new Error("Production browser must use the same-origin API under /api");
   if (env.FIREBASE_PROJECT_ID !== env.VITE_FIREBASE_PROJECT_ID)
     throw new Error("API and browser Firebase projects must match");
   let firebase;
@@ -88,13 +88,13 @@ export function validateProductionConfiguration(env) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const secrets = validateProductionConfiguration(process.env);
-    if (!process.env.API_SECRETS_FILE)
-      throw new Error("API_SECRETS_FILE must name a private temporary file");
-    writeFileSync(process.env.API_SECRETS_FILE, JSON.stringify(secrets), {
+    if (!process.env.WORKER_SECRETS_FILE)
+      throw new Error("WORKER_SECRETS_FILE must name a private temporary file");
+    writeFileSync(process.env.WORKER_SECRETS_FILE, JSON.stringify(secrets), {
       mode: 0o600,
       flag: "wx",
     });
-    console.log("Production configuration validated; private API secrets file prepared");
+    console.log("Production configuration validated; private Worker secrets file prepared");
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

@@ -1,6 +1,6 @@
 # Queue extraction
 
-The API Worker (`workers/api`) owns Candidates, validation, publication,
+The API (`workers/api`, served by the web Worker under `/api`) owns Candidates, validation, publication,
 embeddings, and audit history. `workers/extraction` is a separate Cloudflare
 Worker that handles the AI request and Cloudflare Queue delivery. It has no
 database credentials.
@@ -68,7 +68,8 @@ are not replayed.
 Use a dedicated development/test database. Do not point tests at production;
 the test fixture applies migrations and existing rows affect queries.
 
-1. Run the API Worker locally (`pnpm dev` in `workers/api`). In its `.dev.vars`, set
+1. Run the web Worker locally (`pnpm dev` in `web`), which serves the API at
+   `http://localhost:5173/api`. In `web/.dev.vars`, set
    `EXTRACTION_QUEUE_PRODUCER_URL=http://localhost:8788/enqueue` and a local
    `EXTRACTION_QUEUE_PRODUCER_SECRET`.
 2. As an administrator, create a separate managed API credential through
@@ -81,7 +82,7 @@ the test fixture applies migrations and existing rows affect queries.
    `.dev.vars`, and fill the local extraction token and dispatch secret. Set
    the same dispatch secret on the API and Worker. Real extraction additionally
    requires an OpenAI key and incurs model charges.
-4. Set `DISCOVERY_API_URL` in `.dev.vars` to the local API Worker's URL; the
+4. Set `DISCOVERY_API_URL` in `.dev.vars` to `http://localhost:5173/api`; the
    checked-in value is the production API. Run `pnpm dev --port 8788`. Wrangler
    simulates Queue production/consumption locally.
 5. Ingest a fixture and finish image uploads, then call capture-ready. Wait up

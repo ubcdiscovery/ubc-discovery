@@ -1,11 +1,12 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
+  // One Worker serves the site and, under /api, the API.
   // Default builds remain staging. Select production at Vite build time.
   // Production owns the verified custom domain; staging stays on workers.dev.
   "name": "ubc-discovery-web-staging",
   "main": "./workers/app.ts",
   "compatibility_date": "2026-10-12",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "workers_dev": true,
   "assets": {
     "binding": "ASSETS",
@@ -13,7 +14,38 @@
   },
   "observability": {
     "enabled": true,
-    "traces": { "enabled": true },
+    "redact_query_string": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.01 },
+  },
+  "vars": {
+    "API_PUBLIC_BASE_URL": "https://ubc-discovery-web-staging.ubcdiscovery.workers.dev/api",
+    "AWS_REGION": "us-west-2",
+    "DATABASE_SSL": "true",
+    "EXTRACTION_DELIVERY_TIMEOUT_SECONDS": "90000",
+    "OTP_EXPIRY_MINUTES": "10",
+    "OTP_MAX_ATTEMPTS": "5",
+    "OTP_RATE_LIMIT_PER_15MIN": "3",
+    "R2_ACCOUNT_ID": "5637cded1864726ba930947d2f6138af",
+    "R2_BUCKET_NAME": "ubc-discovery-api-staging-media",
+    "STORAGE_PROVIDER": "r2",
+  },
+  "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-api-staging-media" }],
+  // Pull request Previews use the staging settings and storage.
+  "previews": {
+    "vars": {
+      "API_PUBLIC_BASE_URL": "https://ubc-discovery-web-staging.ubcdiscovery.workers.dev/api",
+      "AWS_REGION": "us-west-2",
+      "DATABASE_SSL": "true",
+      "EXTRACTION_DELIVERY_TIMEOUT_SECONDS": "90000",
+      "OTP_EXPIRY_MINUTES": "10",
+      "OTP_MAX_ATTEMPTS": "5",
+      "OTP_RATE_LIMIT_PER_15MIN": "3",
+      "R2_ACCOUNT_ID": "5637cded1864726ba930947d2f6138af",
+      "R2_BUCKET_NAME": "ubc-discovery-api-staging-media",
+      "STORAGE_PROVIDER": "r2",
+    },
+    "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-api-staging-media" }],
   },
   "env": {
     "production": {
@@ -28,6 +60,34 @@
         },
       ],
       "assets": { "binding": "ASSETS", "directory": "./build/client" },
+      "vars": {
+        "API_PUBLIC_BASE_URL": "https://ubcdiscovery.com/api",
+        "AWS_REGION": "us-west-2",
+        "DATABASE_SSL": "true",
+        "EXTRACTION_DELIVERY_TIMEOUT_SECONDS": "90000",
+        "EXTRACTION_QUEUE_PRODUCER_URL": "https://ubc-discovery-extraction.ubcdiscovery.workers.dev/enqueue",
+        "OTP_EXPIRY_MINUTES": "10",
+        "OTP_MAX_ATTEMPTS": "5",
+        "OTP_RATE_LIMIT_PER_15MIN": "3",
+        "R2_ACCOUNT_ID": "5637cded1864726ba930947d2f6138af",
+        "R2_BUCKET_NAME": "ubc-discovery-media",
+        "STORAGE_PROVIDER": "r2",
+      },
+      "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-media" }],
+      "secrets": {
+        "required": [
+          "DATABASE_URL",
+          "FIREBASE_PROJECT_ID",
+          "FIREBASE_CREDENTIALS_JSON",
+          "AWS_ACCESS_KEY_ID",
+          "AWS_SECRET_ACCESS_KEY",
+          "EMAIL_SENDER_EMAIL",
+          "R2_ACCESS_KEY_ID",
+          "R2_SECRET_ACCESS_KEY",
+          "UPLOAD_SIGNING_SECRET",
+          "EXTRACTION_QUEUE_PRODUCER_SECRET",
+        ],
+      },
     },
   },
 }

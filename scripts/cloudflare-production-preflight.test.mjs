@@ -32,7 +32,6 @@ const fixture = {
   CLOUDFLARE_API_TOKEN: "synthetic-cloudflare",
   CLOUDFLARE_ENV: "production",
   VITE_AUTH_TEST_MODE: "false",
-  VITE_API_URL: apiOrigin,
   VITE_FIREBASE_API_KEY: "synthetic-public",
   VITE_FIREBASE_AUTH_DOMAIN: "fixture.firebaseapp.com",
   VITE_FIREBASE_PROJECT_ID: "fixture",
@@ -116,17 +115,21 @@ test("production preflight rejects PostgreSQL connection-target query overrides"
     );
 });
 
-test("production bindings remain distinct from the default staging deployment", () => {
-  const config = readJsonc("../workers/api/wrangler.jsonc");
-  assert.equal(config.name, "ubc-discovery-api-staging");
-  const production = config.env.production;
-  assert.equal(production.name, "ubc-discovery-api");
+test("production bindings remain distinct from staging and Previews", () => {
+  const web = readJsonc("../web/wrangler.jsonc");
+  const production = web.env.production;
+  assert.equal(web.name, "ubc-discovery-web-staging");
+  assert.equal(production.name, "ubc-discovery-web");
   assert.equal(production.account_id, account);
   assert.equal(production.vars.API_PUBLIC_BASE_URL, apiOrigin);
   assert.equal(production.vars.DATABASE_SSL, "true");
   assert.equal(production.vars.R2_BUCKET_NAME, production.r2_buckets[0].bucket_name);
   assert.equal(production.r2_buckets[0].bucket_name, "ubc-discovery-media");
-  assert.notEqual(config.r2_buckets[0].bucket_name, production.r2_buckets[0].bucket_name);
+  for (const staged of [web, web.previews]) {
+    assert.notEqual(staged.r2_buckets[0].bucket_name, production.r2_buckets[0].bucket_name);
+    assert.notEqual(staged.vars.R2_BUCKET_NAME, production.vars.R2_BUCKET_NAME);
+    assert.notEqual(staged.vars.API_PUBLIC_BASE_URL, apiOrigin);
+  }
   assert.equal(
     production.vars.EXTRACTION_QUEUE_PRODUCER_URL,
     "https://ubc-discovery-extraction.ubcdiscovery.workers.dev/enqueue",

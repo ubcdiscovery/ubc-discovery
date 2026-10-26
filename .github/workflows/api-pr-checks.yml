@@ -1,10 +1,10 @@
-name: API Worker PR checks
+name: API PR checks
 
 on:
   pull_request:
     paths:
       - workers/api/**
-      - .github/workflows/api-worker-pr-checks.yml
+      - .github/workflows/api-pr-checks.yml
       - package.json
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
@@ -14,12 +14,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: api-worker-pr-checks-${{ github.event.pull_request.number }}
+  group: api-pr-checks-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   check:
-    name: API typecheck, tests, and Worker build
+    name: API typecheck, lint, and tests
     runs-on: ubuntu-24.04
     env:
       TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ubc_discovery_test
@@ -64,4 +64,3 @@ jobs:
         run: pnpm run db:migrate
       - run: pnpm run check
       - run: pnpm run test:runtime
-      - run: pnpm run build

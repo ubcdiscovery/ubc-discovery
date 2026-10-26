@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - web/**
+      - workers/api/**
       - .github/workflows/web-worker-checks.yml
       - package.json
       - pnpm-lock.yaml

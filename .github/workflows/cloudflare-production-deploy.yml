@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build both Workers, deploy API, then web
+    name: Build and deploy the web Worker with its API
     runs-on: ubuntu-24.04
     environment: cloudflare-production
     env:
@@ -30,7 +30,6 @@ jobs:
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       UPLOAD_SIGNING_SECRET: ${{ secrets.UPLOAD_SIGNING_SECRET }}
       EXTRACTION_QUEUE_PRODUCER_SECRET: ${{ secrets.EXTRACTION_QUEUE_PRODUCER_SECRET }}
-      VITE_API_URL: https://ubc-discovery-api.ubcdiscovery.workers.dev
       VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
       VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
       VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
@@ -49,15 +48,13 @@ jobs:
       - name: Require complete production configuration
         run: |
           node --test scripts/cloudflare-production-preflight.test.mjs
-          export API_SECRETS_FILE="$RUNNER_TEMP/cloudflare-api-secrets.json"
+          export WORKER_SECRETS_FILE="$RUNNER_TEMP/cloudflare-worker-secrets.json"
           node scripts/cloudflare-production-preflight.mjs
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Check and package production API
+      - name: Check API
         working-directory: workers/api
-        run: |
-          pnpm run typecheck
-          pnpm exec wrangler deploy --env production --dry-run
+        run: pnpm run typecheck
       - name: Check and compile production web configuration
         working-directory: web
         run: |
@@ -66,24 +63,21 @@ jobs:
           node -e 'const c=JSON.parse(require("node:fs").readFileSync("build/server/wrangler.json", "utf8")); if(c.name!=="ubc-discovery-web" || c.account_id!==process.env.CLOUDFLARE_ACCOUNT_ID) throw new Error("Web build did not select production")'
           pnpm exec wrangler deploy --dry-run
       # Secrets and code are uploaded together, avoiding intermediate deployments.
-      - name: Deploy production API
-        working-directory: workers/api
-        run: pnpm exec wrangler deploy --env production --secrets-file "$RUNNER_TEMP/cloudflare-api-secrets.json"
-      - name: Check production API before deploying callers
+      - name: Deploy production web and API
+        working-directory: web
+        run: pnpm exec wrangler deploy --secrets-file "$RUNNER_TEMP/cloudflare-worker-secrets.json"
+      - name: Check production API
         run: |
           curl --fail --silent --show-error --max-time 30 \
             --retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 60 \
             --output "$RUNNER_TEMP/cloudflare-api-health.json" \
-            https://ubc-discovery-api.ubcdiscovery.workers.dev/
+            https://ubc-discovery-web.ubcdiscovery.workers.dev/api/
           node -e 'const v=JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if(v.status!=="ok" || v.app!=="UBC Discovery API") process.exit(1)' "$RUNNER_TEMP/cloudflare-api-health.json"
           curl --fail --silent --show-error --max-time 30 \
             --retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 60 \
             --output "$RUNNER_TEMP/cloudflare-api-events.json" \
-            'https://ubc-discovery-api.ubcdiscovery.workers.dev/events?limit=1'
+            'https://ubc-discovery-web.ubcdiscovery.workers.dev/api/events?limit=1'
           node -e 'const v=JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if(!Array.isArray(v.events)) process.exit(1)' "$RUNNER_TEMP/cloudflare-api-events.json"
-      - name: Deploy compiled production web
-        working-directory: web
-        run: pnpm exec wrangler deploy
       - name: Check shadow web origin
         run: |
           curl --fail --silent --show-error --max-time 30 \
@@ -92,7 +86,7 @@ jobs:
         run: |
           curl --fail --silent --show-error --max-time 30 \
             --retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 60 \
-            --output /dev/null https://ubcdiscovery.com/
+            --output /dev/null https://ubcdiscovery.com/api/
       - name: Remove private deployment file
         if: always()
-        run: rm -f "$RUNNER_TEMP/cloudflare-api-secrets.json" "$RUNNER_TEMP/cloudflare-api-health.json" "$RUNNER_TEMP/cloudflare-api-events.json"
+        run: rm -f "$RUNNER_TEMP/cloudflare-worker-secrets.json" "$RUNNER_TEMP/cloudflare-api-health.json" "$RUNNER_TEMP/cloudflare-api-events.json"
