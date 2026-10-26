@@ -101,7 +101,7 @@ export default function EventDetail() {
   }
 
   return (
-    <div>
+    <div className="md:flex md:flex-1 md:flex-col">
       {ratingDraft && (
         <RatingDraftModal
           draft={ratingDraft}
@@ -196,8 +196,8 @@ export default function EventDetail() {
       </div>
 
       {/* Desktop */}
-      <div className="hidden md:flex md:h-[calc(100dvh-9.5rem)] lg:h-[calc(100dvh-3.5rem)] overflow-hidden border-b border-ink">
-        <div className="min-w-0 flex-1 border-r border-ink overflow-y-auto overscroll-auto">
+      <div className="hidden md:flex md:flex-1 border-b border-ink">
+        <div className="min-w-0 flex-1 border-r border-ink">
           <div className="p-8">
             <h1 className="font-display font-extrabold text-7xl/display text-ink tracking-tighter">
               {event.title}
@@ -248,7 +248,7 @@ export default function EventDetail() {
             )}
           </div>
         </div>
-        <aside className="w-95 shrink-0 overflow-y-auto overscroll-none">
+        <aside className="sticky top-0 w-95 shrink-0 self-start lg:top-15.5">
           {d && (
             <div className="p-6 border-b border-ink">
               <div className="font-mono text-xs text-muted tracking-wider uppercase">WHEN</div>
