@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { LogoMark } from "~/components/LogoMark";
 import { MobileUtilityMenu } from "~/components/MobileUtilityMenu";
 import { NavIconButton } from "~/components/NavIconButton";
 
@@ -11,11 +12,9 @@ export function MobileHeader({ onOpenSearch }: { onOpenSearch: () => void }) {
           className="flex min-h-11 min-w-0 items-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           aria-label="UBC Discovery home"
         >
-          <span className="px-1.5 py-0.5 bg-ink text-bg font-mono text-xs font-bold tracking-wider">
-            UBC
-          </span>
+          <LogoMark className="size-7 shrink-0" />
           <span className="truncate font-display text-lg font-bold text-ink tracking-tight">
-            DISCOVERY
+            UBC DISCOVERY
           </span>
         </Link>
         <div className="flex shrink-0 items-center">

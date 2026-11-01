@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { LogoMark } from "~/components/LogoMark";
 import { SignInForm } from "~/components/auth/SignInForm";
 
 export function meta() {
@@ -9,13 +10,11 @@ export default function SignIn() {
   return (
     <div className="min-h-screen bg-bg font-body text-ink">
       <header className="border-b-2 border-ink md:hidden">
-        <div className="flex items-baseline gap-2 px-4.5 py-2">
-          <Link to="/" className="flex items-baseline gap-2">
-            <span className="bg-ink px-1.5 py-0.5 font-mono text-xs font-bold tracking-wider text-bg">
-              UBC
-            </span>
+        <div className="flex items-center gap-2 px-4.5 py-2">
+          <Link to="/" className="flex items-center gap-2">
+            <LogoMark className="size-7" />
             <span className="font-display text-lg font-bold tracking-tight text-ink">
-              DISCOVERY
+              UBC DISCOVERY
             </span>
           </Link>
         </div>
@@ -24,10 +23,10 @@ export default function SignIn() {
       <div className="md:grid md:min-h-screen md:grid-cols-12">
         <aside className="relative col-span-5 hidden flex-col overflow-hidden bg-ink p-8 text-bg md:flex">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="flex size-7.5 items-center justify-center bg-bg font-display text-sm font-extrabold tracking-tight text-ink">
-              UBC
-            </div>
-            <span className="font-display text-xl font-extrabold tracking-tight">DISCOVERY</span>
+            <LogoMark className="size-7.5" />
+            <span className="font-display text-xl font-extrabold tracking-tight">
+              UBC DISCOVERY
+            </span>
           </Link>
 
           <h2 className="mt-10 font-display text-6xl font-extrabold leading-none tracking-tighter text-bg">

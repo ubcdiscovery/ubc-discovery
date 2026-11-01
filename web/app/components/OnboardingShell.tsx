@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { LogoMark } from "~/components/LogoMark";
 
 export function OnboardingTop({
   step,
@@ -108,10 +109,8 @@ export function OnboardingDesktopShell({
     <div className="hidden min-h-screen bg-bg font-body text-ink md:grid md:grid-cols-12">
       <aside className="relative col-span-5 flex flex-col overflow-hidden bg-ink p-8 text-bg">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="size-7.5 bg-bg text-ink flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
-            UBC
-          </div>
-          <span className="font-display font-extrabold text-xl tracking-tight">DISCOVERY</span>
+          <LogoMark className="size-7.5" />
+          <span className="font-display font-extrabold text-xl tracking-tight">UBC DISCOVERY</span>
         </Link>
 
         <div className="mt-10 font-mono text-xs text-bg opacity-60 tracking-wide uppercase">
