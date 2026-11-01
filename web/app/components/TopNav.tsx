@@ -1,5 +1,6 @@
 import { Link, NavLink } from "react-router";
 import { AccountMenu } from "~/components/AccountMenu";
+import { LogoMark } from "~/components/LogoMark";
 import { NavIconButton } from "~/components/NavIconButton";
 import { ORGANIZER_NAVIGATION, PRIMARY_NAVIGATION } from "~/lib/app-navigation";
 import { useTheme } from "~/lib/theme";
@@ -20,10 +21,8 @@ export function TopNav({
     >
       <div className="flex items-center gap-6">
         <Link to="/" className="flex items-center gap-2.5 pb-1">
-          <div className="size-7.5 bg-ink text-bg flex items-center justify-center font-display font-extrabold text-sm tracking-tight">
-            UBC
-          </div>
-          <span className="font-display font-extrabold text-lg tracking-tight">DISCOVERY</span>
+          <LogoMark className="size-7.5" />
+          <span className="font-display font-extrabold text-lg tracking-tight">UBC DISCOVERY</span>
         </Link>
         <nav className="flex gap-5">
           {PRIMARY_NAVIGATION.map((item) => (

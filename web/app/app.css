@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* Implements the design system in the hq repo: hq/design-system/README.md. Change it there first. */
 @theme {
   --font-display: "Bricolage Grotesque", -apple-system, system-ui, sans-serif;
   --font-body: "Inter", -apple-system, system-ui, sans-serif;

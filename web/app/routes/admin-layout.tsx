@@ -1,4 +1,5 @@
 import { Link, Navigate, NavLink, Outlet, useLocation } from "react-router";
+import { LogoMark } from "~/components/LogoMark";
 import { useAuth } from "~/lib/auth";
 import { useTheme } from "~/lib/theme";
 
@@ -46,11 +47,9 @@ export default function AdminLayout() {
         <div className="mx-auto flex max-w-360 items-center justify-between gap-4 px-4.5 py-3 md:px-8">
           <div className="flex min-w-0 items-center gap-3 md:gap-6">
             <Link to="/admin/events" className="flex shrink-0 items-center gap-2 no-underline">
-              <span className="flex size-8 items-center justify-center bg-ink font-display text-sm font-extrabold text-bg">
-                UBC
-              </span>
+              <LogoMark className="size-8" />
               <span className="hidden font-display text-lg font-extrabold tracking-tight sm:inline">
-                DISCOVERY <span className="text-accent">ADMIN</span>
+                UBC DISCOVERY <span className="text-accent">ADMIN</span>
               </span>
             </Link>
             <nav aria-label="Admin navigation">
