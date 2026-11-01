@@ -5,7 +5,6 @@ These instructions apply to all files under `web/` and supplement the repository
 ## Admin Dashboard Direction
 
 - The admin dashboard should be easy to use, easy to read, and easy to maintain. Prefer simplicity and minimal implementation code over visual polish.
-- The admin UI does not need to match the public Discovery design language exactly; use a plain, conventional dashboard style when that reduces complexity.
 - When introducing a new component, try to base it on the closest shadcn/ui component and adapt it to this app's semantic tokens and conventions. Prefer source-owned shared primitives under `app/components/ui/` over hand-rolled route markup, while keeping admin route composition, auth gating, API adapters, query behavior, and Event Listing domain logic explicit in the web app.
 - Avoid introducing a full CRUD/admin framework until repeated admin resources and workflows justify its complexity.
 - Event Listing editing must support replacing the event image through the protected presigned-upload flow. Keep image upload independent from metadata Save and show clear upload, success, and failure states.
@@ -14,15 +13,10 @@ These instructions apply to all files under `web/` and supplement the repository
 
 - Rely on browser Back and Forward navigation for history-aware movement wherever possible. Do not add custom back buttons or back links when the browser can provide that navigation; keep links for intentional destination navigation or required workflow actions.
 
-## Theme colors
+## Design system
 
-- Treat the semantic color tokens in `app/app.css` as the frontend color source of truth.
-- In components, use their Tailwind utilities: `bg-bg`, `bg-surface`, `text-ink`, `text-ink-soft`, `text-muted`, `border-rule`, `border-rule-soft`, `text-accent`, `bg-accent`, `bg-accent-soft`, and `bg-hi`.
-- Choose tokens by meaning, not by their current light-theme value. For example, use `border-ink` for a high-contrast outline; do not use `border-white` merely because `ink` is near-white in dark mode.
-- Do not hardcode presentation colors in component classes or inline styles. This includes Tailwind palette colors such as `text-white` or `bg-black`, arbitrary values such as `text-[#fff]`, and literal CSS values such as `color: "#fff"`.
-- If the existing vocabulary cannot express a required role, add a semantic `--color-*` token to `app/app.css`. Define it for the default theme, the explicit dark theme, and the system dark-mode fallback before using its Tailwind utility.
-- Keep deliberately theme-independent colors exceptional. Use them only for externally defined brand colors or data-driven content, and add a short comment explaining why a semantic theme token is inappropriate.
-- Check new or changed color interactions in both light and dark themes, including hover, active, focus, disabled, and selected states.
+- The design system (colors, type, components, voice, and the rules for using color tokens in code) lives in the hq repository at [`hq/design-system/README.md`](../../hq/design-system/README.md) ([GitHub](https://github.com/ubcdiscovery/hq/blob/main/design-system/README.md)). Read it before changing anything visual.
+- `app/app.css` implements it. Design changes land in hq first.
 
 <!--VITE PLUS START-->
 
