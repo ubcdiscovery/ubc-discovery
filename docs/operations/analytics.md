@@ -6,9 +6,7 @@ The web app reports to the Google Analytics 4 property linked to the
 sign-in.
 
 `AnalyticsTracker` sends one `page_view` per client-side pathname change and sets
-the GA `user_id` to the member's id (`users.id`) while signed in. Before the
-Better Auth cutover it was the Firebase UID, so returning members appear once as new
-GA users. Engagement time
+the GA `user_id` to the member's id (`users.id`) while signed in. Engagement time
 (time on page) is collected automatically by GA while the tab is in the
 foreground and is attributed to the most recent `page_view`.
 
