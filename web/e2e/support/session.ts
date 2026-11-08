@@ -13,8 +13,6 @@ export type BetterAuthMockOptions = {
 
 export type MockUser = { uid: string; email: string };
 
-// The mocked Better Auth session for each page. It lives in the test process, like the
-// server-side session it stands in for, so it survives reloads and redirects.
 const mockSessions = new WeakMap<Page, MockUser | null>();
 
 export function setMockSession(page: Page, user: MockUser | null) {
@@ -33,7 +31,6 @@ async function fulfillAuthError(route: Route, error: AuthError) {
   });
 }
 
-/** Better Auth's endpoints, as the web auth client calls them. */
 export function createBetterAuthMock(page: Page, options: BetterAuthMockOptions) {
   return async (route: Route, url: URL) => {
     const method = route.request().method();
@@ -69,7 +66,6 @@ export function createBetterAuthMock(page: Page, options: BetterAuthMockOptions)
     }
     if (url.pathname === "/auth/sign-in/social" && method === "POST") {
       const body = route.request().postDataJSON();
-      // Stand-in for the round trip to Google: straight back to the callback URL.
       if (options.googleError) {
         await json({ url: body.errorCallbackURL, redirect: true });
         return true;

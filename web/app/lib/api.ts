@@ -76,7 +76,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Member and admin routes. The browser sends the Better Auth session cookie. */
 export async function authenticatedApiFetch<T>(path: string, options: RequestInit = {}) {
   return apiFetch<T>(path, { credentials: "include", ...options });
 }

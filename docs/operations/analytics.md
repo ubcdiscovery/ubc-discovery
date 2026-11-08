@@ -17,8 +17,8 @@ foreground and is attributed to the most recent `page_view`.
 | `VITE_FIREBASE_MEASUREMENT_ID=G-KMBQ9XTMXF` | `cloudflare-production` GitHub environment variable only, and local `web/.env` |
 | `VITE_ANALYTICS_DEBUG=true`                 | Local `web/.env` only, when testing                                            |
 
-Analytics stays off when the measurement ID is missing (Playwright clears it), and
-on the dev server unless
+Analytics stays off when the measurement ID is missing, when
+`VITE_ANALYTICS_DISABLED=true` (Playwright), and on the dev server unless
 `VITE_ANALYTICS_DEBUG=true`. Debug mode marks events as developer traffic so they
 appear in GA DebugView.
 

@@ -15,6 +15,7 @@ function isAnalyticsEnabled() {
   return (
     typeof window !== "undefined" &&
     Boolean(import.meta.env.VITE_FIREBASE_MEASUREMENT_ID) &&
+    import.meta.env.VITE_ANALYTICS_DISABLED !== "true" &&
     isFirebaseConfigured() &&
     (!import.meta.env.DEV || ANALYTICS_DEBUG)
   );

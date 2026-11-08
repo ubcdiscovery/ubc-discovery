@@ -12,9 +12,6 @@ import {
 import { createdAt, instant, updatedAt, uuidId } from "./common";
 import { users } from "./members";
 
-// Tables owned by Better Auth (src/auth.ts maps its models onto these names).
-// Members live in `users`; Better Auth reads and writes its core user fields there.
-
 export const sessions = pgTable(
   "sessions",
   {
@@ -38,7 +35,6 @@ export const sessions = pgTable(
   ],
 );
 
-/** One row per sign-in method linked to a member (Google, …). */
 export const accounts = pgTable(
   "accounts",
   {
@@ -67,7 +63,6 @@ export const accounts = pgTable(
   ],
 );
 
-/** Short-lived values such as sign-in codes and OAuth state. */
 export const verifications = pgTable(
   "verifications",
   {
@@ -81,7 +76,6 @@ export const verifications = pgTable(
   (table) => [index("ix_verifications_identifier").on(table.identifier)],
 );
 
-/** Request counters shared by every Worker isolate. */
 export const rateLimits = pgTable(
   "rate_limits",
   {

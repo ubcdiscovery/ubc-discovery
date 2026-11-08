@@ -1,6 +1,5 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
 
-// Firebase is used only for Google Analytics. Sign-in is Better Auth (see auth-client.ts).
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,

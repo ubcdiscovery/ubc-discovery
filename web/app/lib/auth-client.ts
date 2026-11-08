@@ -2,9 +2,11 @@ import { createAuthClient } from "better-auth/client";
 import { emailOTPClient } from "better-auth/client/plugins";
 import { API_BASE, ApiError } from "~/lib/api";
 
+/** Query parameter Better Auth returns on the sign-in page when Google sign-in fails. */
+export const SIGN_IN_ERROR_PARAM = "error";
+
 function createClient() {
   return createAuthClient({
-    // Better Auth is served by the API under /auth.
     baseURL: new URL(`${API_BASE}/auth`, window.location.origin).toString(),
     plugins: [emailOTPClient()],
   });
@@ -12,8 +14,7 @@ function createClient() {
 
 let client: ReturnType<typeof createClient> | undefined;
 
-/** Browser-only: sessions live in cookies on this site. */
-export function authClient() {
+export function browserAuthClient() {
   client ??= createClient();
   return client;
 }
@@ -23,7 +24,6 @@ type BetterAuthResult<T> = {
   error: { status: number; code?: string; message?: string } | null;
 };
 
-/** Better Auth answers `{ data, error }`; the app reports failures as ApiError. */
 export async function unwrap<T>(result: Promise<BetterAuthResult<T>>): Promise<T> {
   const { data, error } = await result;
   if (error) {

@@ -28,7 +28,6 @@ describe("Python API migration contract", () => {
     );
     expect(response.status).toBe(200);
     const actual = operations((await response.json()) as Specification);
-    // Email-code sign-in moved to Better Auth (/auth/email-otp/…, /auth/sign-in/email-otp).
     const retired = ["POST /auth/otp/send", "POST /auth/otp/verify"];
     expect(
       operations(baseline).filter(

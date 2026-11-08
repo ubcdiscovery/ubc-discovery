@@ -4,7 +4,6 @@ DIRECT_DATABASE_URL=postgresql://ubc_discovery:ubc_discovery@localhost:5432/ubc_
 DATABASE_SSL=false
 # Any random value of 32+ bytes, e.g. `openssl rand -base64 32`.
 BETTER_AUTH_SECRET=
-# Google sign-in: OAuth web client in Google Cloud project `ubcdiscovery`.
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 AWS_ACCESS_KEY_ID=

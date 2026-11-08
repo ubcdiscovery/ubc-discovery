@@ -85,6 +85,7 @@ async function createAndSendOtp(
     } catch (error) {
       if (!serializationFailure(error)) throw error;
       if (retry >= 4) throw new ApiError(503, "Authentication temporarily busy. Try again.");
+      await new Promise((resolve) => setTimeout(resolve, (retry + 1) * 20 * (1 + Math.random())));
     }
   }
   // Delivery is outside the transaction. Failed delivery retains the attempt and
@@ -139,7 +140,6 @@ async function consumeOtp(
   if (failure) throw failure;
 }
 
-/** Better Auth's endpoints (sign-in, sessions, Google callback) under /auth. */
 export function createBetterAuthRoutes(
   env: ApiEnv,
   servicesFactory: ServicesFactory = () => createServices(env),
@@ -154,8 +154,7 @@ export function createBetterAuthRoutes(
   );
 }
 
-/** UBC email confirmation for signed-in members. Static routes win over /auth/*. */
-export function createAuthRoutes(
+export function createUbcVerificationRoutes(
   env: ApiEnv,
   servicesFactory: ServicesFactory = () => createServices(env),
 ) {

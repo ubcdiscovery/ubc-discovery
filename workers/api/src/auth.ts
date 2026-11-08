@@ -3,7 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { emailOTP } from "better-auth/plugins";
 import { sql } from "drizzle-orm";
-import type { Db } from "./db";
+import type { Db, DbTransaction } from "./db";
 import { schema } from "./db";
 import { rateLimits } from "./db/schema";
 import { type ApiEnv, integerSetting } from "./env";
@@ -14,21 +14,21 @@ export interface AuthDependencies {
 }
 
 const SEND_OTP_PATH = "/email-otp/send-verification-otp";
-const OTP_WINDOW_MS = 15 * 60_000;
+const SIGN_IN_OTP_PATH = "/sign-in/email-otp";
+const OTP_WINDOW_SECONDS = 15 * 60;
 const DAY_SECONDS = 24 * 60 * 60;
+const CAMPUS_NETWORK_SENDS_PER_IP = 30;
+const CAMPUS_NETWORK_SIGN_INS_PER_IP = 60;
 
-/**
- * Public URL of the API (`…/api`). The web Worker strips `/api` before the API sees
- * a request, so Better Auth is configured with the public path and requests are
- * rewritten back onto it in `authRequest`.
- */
+/** What the API answers when it sends a sign-in code. */
+export type SignInCodeSent = { success: true; expires_in_seconds: number };
+
 export function apiPublicBase(env: ApiEnv): URL {
   if (!env.API_PUBLIC_BASE_URL) throw new Error("API_PUBLIC_BASE_URL is not configured");
   return new URL(env.API_PUBLIC_BASE_URL.replace(/\/+$/, ""));
 }
 
 /**
- * Rewrite a request for the `/auth` mount onto its public URL (`/api/auth/...`).
  * Elysia's compiled router strips the mount prefix and its dev-mode router does not,
  * so both `/auth/sign-out` and `/sign-out` arrive here.
  */
@@ -39,15 +39,10 @@ export function authRequest(env: ApiEnv, request: Request): Request {
   return new Request(url, request);
 }
 
-/**
- * Counts sign-in codes sent to one address in a fixed 15-minute window. Better Auth
- * limits by IP; campus networks share addresses, so the per-address limit is the one
- * that stops a mailbox from being flooded.
- */
-async function withinEmailQuota(db: Db, email: string, now: Date, max: number) {
+async function withinEmailQuota(db: Db | DbTransaction, email: string, now: Date, max: number) {
   const key = `email-otp:${email.trim().toLowerCase()}`;
   const nowMs = now.getTime();
-  const windowStart = nowMs - OTP_WINDOW_MS;
+  const windowStart = nowMs - OTP_WINDOW_SECONDS * 1000;
   const [row] = await db
     .insert(rateLimits)
     .values({ key, count: 1, lastRequest: nowMs })
@@ -62,14 +57,13 @@ async function withinEmailQuota(db: Db, email: string, now: Date, max: number) {
   return row!.count <= max;
 }
 
-export function authOptions(env: ApiEnv, db: Db, deps: AuthDependencies) {
+export function authOptions(env: ApiEnv, db: Db | DbTransaction, deps: AuthDependencies) {
   if (!env.BETTER_AUTH_SECRET) throw new Error("BETTER_AUTH_SECRET is not configured");
   const base = apiPublicBase(env);
   const expiryMinutes = integerSetting(env.OTP_EXPIRY_MINUTES, 10);
   const emailLimit = integerSetting(env.OTP_RATE_LIMIT_PER_15MIN, 3);
   // Better Auth swallows errors thrown while sending a code, so the code is handed
   // over here and delivered in the after hook, where a failure can reach the member.
-  // Safe because each request builds its own instance (see createAuth).
   let pendingCode: { email: string; otp: string } | undefined;
 
   return {
@@ -96,15 +90,12 @@ export function authOptions(env: ApiEnv, db: Db, deps: AuthDependencies) {
       modelName: "sessions",
       expiresIn: 60 * DAY_SECONDS,
       updateAge: DAY_SECONDS,
-      // Members are re-read from `users` on every API request; the cache only saves
-      // the session lookup. Revoked sessions stop working within this window.
       cookieCache: { enabled: true, maxAge: 5 * 60, strategy: "compact" },
     },
     account: {
       modelName: "accounts",
       encryptOAuthTokens: true,
-      // Google confirms the address, so it links to an existing email-code member.
-      accountLinking: { enabled: true, trustedProviders: ["google"] },
+      accountLinking: { enabled: true },
     },
     verification: { modelName: "verifications" },
     rateLimit: {
@@ -114,9 +105,8 @@ export function authOptions(env: ApiEnv, db: Db, deps: AuthDependencies) {
       window: 60,
       max: 100,
       customRules: {
-        // Per IP. Generous because campus networks put many members behind one address.
-        [SEND_OTP_PATH]: { window: 15 * 60, max: 30 },
-        "/sign-in/email-otp": { window: 15 * 60, max: 60 },
+        [SEND_OTP_PATH]: { window: OTP_WINDOW_SECONDS, max: CAMPUS_NETWORK_SENDS_PER_IP },
+        [SIGN_IN_OTP_PATH]: { window: OTP_WINDOW_SECONDS, max: CAMPUS_NETWORK_SIGN_INS_PER_IP },
       },
     },
     advanced: {
@@ -124,7 +114,6 @@ export function authOptions(env: ApiEnv, db: Db, deps: AuthDependencies) {
       database: { generateId: "uuid" },
       ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
     },
-    // Profile changes go through /users/me so they share its validation.
     disabledPaths: ["/update-user", "/delete-user", "/change-email"],
     socialProviders: {
       google: {
@@ -158,8 +147,10 @@ export function authOptions(env: ApiEnv, db: Db, deps: AuthDependencies) {
             message: "Failed to send verification email.",
           });
         }
-        // The sign-in screen counts down from the server's expiry.
-        return ctx.json({ success: true, expires_in_seconds: expiryMinutes * 60 });
+        return ctx.json({
+          success: true,
+          expires_in_seconds: expiryMinutes * 60,
+        } satisfies SignInCodeSent);
       }),
     },
     plugins: [
@@ -175,8 +166,7 @@ export function authOptions(env: ApiEnv, db: Db, deps: AuthDependencies) {
   } satisfies BetterAuthOptions;
 }
 
-/** Create within a request: the database client cannot outlive it. */
-export function createAuth(env: ApiEnv, db: Db, deps: AuthDependencies) {
+export function createAuth(env: ApiEnv, db: Db | DbTransaction, deps: AuthDependencies) {
   return betterAuth(authOptions(env, db, deps));
 }
 

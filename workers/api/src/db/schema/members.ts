@@ -16,7 +16,6 @@ export const users = pgTable(
   "users",
   {
     id: uuidId(),
-    // Retired with the Better Auth cutover; dropped by a later migration.
     firebaseUid: varchar("firebase_uid", { length: 255 }),
     email: varchar("email", { length: 255 }).notNull(),
     emailVerified: boolean("email_verified").notNull().default(false),

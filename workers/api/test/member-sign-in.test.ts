@@ -35,7 +35,6 @@ function signIn(address: string, otp: string) {
   });
 }
 
-/** The Cookie header a browser would send back after this response. */
 function cookiesFrom(response: Response) {
   return response.headers
     .getSetCookie()
@@ -47,7 +46,7 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
   it("signs a new person in without onboarding them, then onboarding completes the same row", async () => {
     const address = email("new");
     const mocks = serviceMocks();
-    const api = app(mocks.factory);
+    const api = app(mocks);
 
     const sent = await api.handle(sendCode(address));
     expect(sent.status).toBe(200);
@@ -64,7 +63,6 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
     const session = cookiesFrom(signedIn);
     expect(session).toContain("ubcd.session_token=");
 
-    // Signed in but not onboarded: member routes keep their existing 404 contract.
     expect((await api.handle(request("/users/me", { session }))).status).toBe(404);
     const onboarded = await api.handle(
       request("/users/onboarding", {
@@ -86,7 +84,6 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
     expect(sent.status).toBe(200);
     const signedIn = await api.handle(signIn(address, mocks.sendEmail.mock.calls[0]![1]));
     expect(signedIn.status).toBe(200);
-    // Static routes under /auth stay with the API rather than Better Auth's mount.
     expect(
       (
         await api.handle(
@@ -99,7 +96,7 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
   it("signs an existing member into their existing row", async () => {
     const existing = await member();
     const mocks = serviceMocks();
-    const api = app(mocks.factory);
+    const api = app(mocks);
     await api.handle(sendCode(existing.row.email.toUpperCase()));
     const code = mocks.sendEmail.mock.calls[0]![1];
     const signedIn = await api.handle(signIn(existing.row.email, code));
@@ -115,7 +112,7 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
   it("never lets sign-in set capability fields", async () => {
     const address = email("forged");
     const mocks = serviceMocks();
-    const api = app(mocks.factory);
+    const api = app(mocks);
     await api.handle(sendCode(address));
     const code = mocks.sendEmail.mock.calls[0]![1];
     const forged = await api.handle(
@@ -137,7 +134,7 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
     const configuration = { ...env, OTP_RATE_LIMIT_PER_15MIN: "1" };
     const mocks = serviceMocks(configuration);
     mocks.sendEmail.mockRejectedValue(new Error("private provider failure"));
-    const api = app(mocks.factory, configuration);
+    const api = app(mocks);
     const failed = await api.handle(sendCode(address));
     expect(failed.status).toBe(500);
     expect(await failed.json()).toMatchObject({ code: "OTP_DELIVERY_FAILED" });
@@ -150,7 +147,7 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
   it("counts concurrent sends to one address against the same limit", async () => {
     const address = email("concurrent");
     const mocks = serviceMocks();
-    const api = app(mocks.factory);
+    const api = app(mocks);
     const responses = await Promise.all(
       Array.from({ length: 4 }, () => api.handle(sendCode(address))),
     );
@@ -162,7 +159,7 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
     const address = email("attempts");
     const configuration = { ...env, OTP_MAX_ATTEMPTS: "2" };
     const mocks = serviceMocks(configuration);
-    const api = app(mocks.factory, configuration);
+    const api = app(mocks);
     await api.handle(sendCode(address));
     const code = mocks.sendEmail.mock.calls[0]![1];
     const wrong = code === "000000" ? "111111" : "000000";
@@ -179,7 +176,7 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
   it("accepts a code once", async () => {
     const address = email("once");
     const mocks = serviceMocks();
-    const api = app(mocks.factory);
+    const api = app(mocks);
     await api.handle(sendCode(address));
     const code = mocks.sendEmail.mock.calls[0]![1];
     expect((await api.handle(signIn(address, code))).status).toBe(200);
@@ -190,15 +187,15 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
     const malformed = `not-an-email-${crypto.randomUUID()}`;
     fixtureEmails.add(malformed);
     const mocks = serviceMocks();
-    const response = await app(mocks.factory).handle(sendCode(malformed));
+    const response = await app(mocks).handle(sendCode(malformed));
     expect(response.status).toBe(400);
     expect(mocks.sendEmail).not.toHaveBeenCalled();
   });
 
   it("ends the session on sign-out", async () => {
     const existing = await member();
-    const api = app(serviceMocks().factory);
-    const session = existing.identity.session;
+    const api = app(serviceMocks());
+    const session = existing.session;
     const signedOut = await api.handle(
       request("/auth/sign-out", { method: "POST", session, headers: origin, jsonHeader: true }),
     );
@@ -209,7 +206,7 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
 
 describe.skipIf(!testUrl)("Better Auth Google sign-in", () => {
   it("redirects to Google with the registered callback URL", async () => {
-    const response = await app(serviceMocks().factory).handle(
+    const response = await app(serviceMocks()).handle(
       request("/auth/sign-in/social", {
         method: "POST",
         headers: origin,
@@ -233,7 +230,7 @@ describe.skipIf(!testUrl)("Better Auth Google sign-in", () => {
 describe.skipIf(!testUrl)("member session boundary", () => {
   it("requires a session and rejects cross-site requests that carry one", async () => {
     const existing = await member();
-    const api = app(serviceMocks().factory);
+    const api = app(serviceMocks());
     expect((await api.handle(request("/users/me"))).status).toBe(401);
     expect(
       (await api.handle(request("/users/me", { headers: { authorization: "Api-Key fixture" } })))
@@ -243,7 +240,7 @@ describe.skipIf(!testUrl)("member session boundary", () => {
       (
         await api.handle(
           request("/users/me", {
-            session: existing.identity.session,
+            session: existing.session,
             headers: { "sec-fetch-site": "cross-site" },
           }),
         )
@@ -253,7 +250,7 @@ describe.skipIf(!testUrl)("member session boundary", () => {
       (
         await api.handle(
           request("/users/me", {
-            session: existing.identity.session,
+            session: existing.session,
             headers: { "sec-fetch-site": "same-origin" },
           }),
         )

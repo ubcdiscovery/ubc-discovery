@@ -10,7 +10,7 @@ import {
   fixtureEmails,
   fixtureUserIds,
   email,
-  identity,
+  signedUpUser,
   serviceMocks,
   app,
   request,
@@ -23,7 +23,7 @@ afterEach(cleanupMemberFixtures);
 
 describe.skipIf(!testUrl)("member authentication, onboarding and profile contracts", () => {
   it("requires a verified session and a completed profile", async () => {
-    const api = app(serviceMocks().factory);
+    const api = app(serviceMocks());
     expect((await api.handle(request("/users/me"))).status).toBe(401);
     expect(
       (
@@ -32,19 +32,19 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
         )
       ).status,
     ).toBe(401);
-    const unverified = await identity(email(), false);
+    const unverified = await signedUpUser(email(), false);
     expect((await api.handle(request("/users/me", { session: unverified.session }))).status).toBe(
       403,
     );
-    const newIdentity = await identity();
+    const newIdentity = await signedUpUser();
     expect((await api.handle(request("/users/me", { session: newIdentity.session }))).status).toBe(
       404,
     );
   });
 
   it("onboards non-UBC members, normalizes profile text, and forbids forged capability fields", async () => {
-    const who = await identity();
-    const api = app(serviceMocks().factory);
+    const who = await signedUpUser();
+    const api = app(serviceMocks());
     const forged = await api.handle(
       request("/users/onboarding", {
         method: "POST",
@@ -95,8 +95,8 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
   it("accepts UBC sign-in without making UBC email a membership requirement", async () => {
     const address = `${crypto.randomUUID()}@student.ubc.ca`;
     fixtureEmails.add(address);
-    const who = await identity(address);
-    const response = await app(serviceMocks().factory).handle(
+    const who = await signedUpUser(address);
+    const response = await app(serviceMocks()).handle(
       request("/users/onboarding", {
         method: "POST",
         session: who.session,
@@ -109,8 +109,8 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
   });
 
   it("creates exactly one profile when onboarding requests race", async () => {
-    const who = await identity();
-    const api = app(serviceMocks().factory);
+    const who = await signedUpUser();
+    const api = app(serviceMocks());
     const responses = await Promise.all(
       Array.from({ length: 2 }, () =>
         api.handle(
@@ -135,10 +135,10 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
     { preferred_name: "Member", faculty: "Science" },
     { preferred_name: "x".repeat(256) },
   ])("rejects invalid onboarding fields %j", async (body) => {
-    const who = await identity();
+    const who = await signedUpUser();
     expect(
       (
-        await app(serviceMocks().factory).handle(
+        await app(serviceMocks()).handle(
           request("/users/onboarding", { method: "POST", session: who.session, body }),
         )
       ).status,
@@ -153,11 +153,11 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
       profilePictureKey: "profile-pictures/fixture",
       isAdmin: true,
     });
-    const api = app(serviceMocks().factory);
+    const api = app(serviceMocks());
     const updated = await api.handle(
       request("/users/me", {
         method: "PUT",
-        session: existing.identity.session,
+        session: existing.session,
         body: { major: null, academic_level: null, faculty_id: null, preferred_name: " Updated " },
       }),
     );
@@ -175,7 +175,7 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
         await api.handle(
           request("/users/me", {
             method: "PUT",
-            session: existing.identity.session,
+            session: existing.session,
             body: { is_admin: false },
           }),
         )
@@ -184,24 +184,22 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
     expect(
       (
         await api.handle(
-          request("/users/me", { method: "PUT", session: existing.identity.session, body: {} }),
+          request("/users/me", { method: "PUT", session: existing.session, body: {} }),
         )
       ).status,
     ).toBe(200);
-    expect(
-      (await api.handle(request("/users/me", { session: existing.identity.session }))).status,
-    ).toBe(200);
-    const stats = await api.handle(
-      request("/users/me/stats", { session: existing.identity.session }),
+    expect((await api.handle(request("/users/me", { session: existing.session }))).status).toBe(
+      200,
     );
+    const stats = await api.handle(request("/users/me/stats", { session: existing.session }));
     expect(await stats.json<MemberTestJson>()).toEqual({ member_since: fixedNow.toISOString() });
   });
 
   it("preserves the bounded profile-upload response and stores its generated key", async () => {
     const existing = await member({ profilePictureKey: "profile-pictures/old" });
     const mocks = serviceMocks();
-    const response = await app(mocks.factory).handle(
-      request("/users/me/presigned-upload", { session: existing.identity.session }),
+    const response = await app(mocks).handle(
+      request("/users/me/presigned-upload", { session: existing.session }),
     );
     expect(response.status).toBe(200);
     const value = await response.json<MemberTestJson>();
@@ -224,17 +222,17 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
     const address = `${crypto.randomUUID()}@alumni.ubc.ca`;
     fixtureEmails.add(address);
     await otp(address);
-    const api = app(serviceMocks().factory);
+    const api = app(serviceMocks());
     const response = await api.handle(
       request("/auth/ubc-verify/confirm", {
         method: "POST",
-        session: existing.identity.session,
+        session: existing.session,
         body: { email: address, code: "123456" },
       }),
     );
     expect(response.status).toBe(200);
     expect(await response.json<MemberTestJson>()).toMatchObject({
-      email: existing.identity.email,
+      email: existing.row.email,
       ubc_verified: true,
     });
     expect(
@@ -242,7 +240,7 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
         await api.handle(
           request("/auth/ubc-verify/send", {
             method: "POST",
-            session: existing.identity.session,
+            session: existing.session,
             body: { email: address },
           }),
         )
@@ -253,10 +251,10 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
   it("rejects UBC lookalike domains without sending mail", async () => {
     const existing = await member();
     const mocks = serviceMocks();
-    const response = await app(mocks.factory).handle(
+    const response = await app(mocks).handle(
       request("/auth/ubc-verify/send", {
         method: "POST",
-        session: existing.identity.session,
+        session: existing.session,
         body: { email: "member@ubc.ca.example.com" },
       }),
     );

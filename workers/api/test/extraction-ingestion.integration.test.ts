@@ -25,7 +25,6 @@ describe.skipIf(!testUrl)("queue extraction and ingestion PostgreSQL parity", ()
     expect((await fixture.request("/extraction/recovery", "GET", undefined, "ingest")).status).toBe(
       403,
     );
-    // A member session carries no API credential.
     expect((await fixture.request("/extraction/recovery", "GET", undefined, "member")).status).toBe(
       401,
     );

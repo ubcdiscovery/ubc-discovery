@@ -83,13 +83,13 @@ describe.skipIf(!testUrl)("complete API R2 contract against PostgreSQL", () => {
       httpMetadata: { contentType },
     });
   }
-  /** `auth` is "admin" (a signed-in session) or an `Api-Key …` authorization value. */
-  function request(path: string, method = "GET", body?: unknown, auth = "admin") {
+  /** Signed in as the administrator unless an API key is given. */
+  function request(path: string, method = "GET", body?: unknown, apiKey?: string) {
     return app.handle(
       new Request(`https://api.example.test${path}`, {
         method,
         headers: {
-          ...(auth === "admin" ? { cookie: fixture.sessions.admin } : { authorization: auth }),
+          ...(apiKey ? { authorization: `Api-Key ${apiKey}` } : { cookie: fixture.sessions.admin }),
           ...(body === undefined ? {} : { "content-type": "application/json" }),
           ...(path === "/ingestion/event-candidates" ? { "x-image-file-sizes": "[3]" } : {}),
         },
@@ -138,7 +138,7 @@ describe.skipIf(!testUrl)("complete API R2 contract against PostgreSQL", () => {
         source_account: "test",
         image_content_types: ["image/png"],
       },
-      `Api-Key ubc_live_${ingester.id}.fixture-secret`,
+      `ubc_live_${ingester.id}.fixture-secret`,
     );
     expect(result.status).toBe(201);
     const ingestion = (await result.json()) as IngestResponse;
@@ -161,7 +161,7 @@ describe.skipIf(!testUrl)("complete API R2 contract against PostgreSQL", () => {
       "/extraction/evidence",
       "POST",
       { candidates: [{ candidate_id: ingestion.candidate.id, generation: 1 }] },
-      `Api-Key ubc_live_${extractor.id}.fixture-secret`,
+      `ubc_live_${extractor.id}.fixture-secret`,
     );
     expect(evidence.status).toBe(200);
     const body = (await evidence.json()) as { items: Array<{ images: Array<{ url: string }> }> };

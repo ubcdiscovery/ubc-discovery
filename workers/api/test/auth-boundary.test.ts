@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { Auth } from "../src/auth";
 import type { Db } from "../src/db";
-import { hashSecret, parseApiToken, requireSessionUser, verifySecret } from "../src/http/auth";
+import { hashSecret, parseApiToken, requireSignedIn, verifySecret } from "../src/http/auth";
 
 describe("existing authentication boundaries", () => {
   it("matches existing SHA256 credential digests", async () => {
@@ -28,21 +28,21 @@ describe("existing authentication boundaries", () => {
       auth: () => ({ api: { getSession: async () => session } }) as unknown as Auth,
     });
     await expect(
-      requireSessionUser(
+      requireSignedIn(
         db,
         new Request("http://localhost/", { headers: { authorization: "Api-Key abc" } }),
         auth(null),
       ),
     ).rejects.toMatchObject({ status: 401 });
     await expect(
-      requireSessionUser(
+      requireSignedIn(
         db,
         new Request("http://localhost/", { headers: { "sec-fetch-site": "cross-site" } }),
         auth({ user: { id: "fixture" } }),
       ),
     ).rejects.toMatchObject({ status: 403 });
     await expect(
-      requireSessionUser(
+      requireSignedIn(
         db,
         new Request("http://localhost/", { headers: { "sec-fetch-site": "same-site" } }),
         auth({ user: { id: "fixture" } }),

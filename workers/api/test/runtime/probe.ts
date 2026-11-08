@@ -37,7 +37,6 @@ export default {
     ) {
       return new Response("Disposable localhost database required", { status: 403 });
     }
-    // Better Auth end to end in workerd: code delivery, sign-in, session lookup.
     const authEnv: ApiEnv = {
       ...env,
       API_PUBLIC_BASE_URL: "http://localhost/api",

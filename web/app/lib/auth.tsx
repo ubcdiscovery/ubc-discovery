@@ -11,7 +11,8 @@ import {
 import { api, ApiError, type UserResponse } from "~/lib/api";
 import { resizeImage } from "~/lib/image";
 import { uploadImage } from "~/lib/image-upload";
-import { authClient, unwrap } from "~/lib/auth-client";
+import type { SignInCodeSent } from "ubc-discovery-api";
+import { browserAuthClient, SIGN_IN_ERROR_PARAM, unwrap } from "~/lib/auth-client";
 import { createProfileHydrationCoordinator } from "~/lib/profile-hydration";
 
 type OnboardingPayload = {
@@ -32,19 +33,17 @@ type UpdateProfilePayload = {
   bio?: string | null;
 };
 
-/** `uid` is the member's id (`users.id`). */
 export type AuthState =
   | { status: "loading" }
   | { status: "anonymous" }
-  | { status: "onboarding"; uid: string }
-  | { status: "member"; uid: string; profile: UserResponse };
+  | { status: "onboarding"; userId: string }
+  | { status: "member"; userId: string; profile: UserResponse };
 
 type AuthContextValue = {
   state: AuthState;
-  sendSignInCode: (email: string) => Promise<{ expires_in_seconds: number }>;
+  sendSignInCode: (email: string) => Promise<SignInCodeSent>;
   signInWithCode: (email: string, code: string) => Promise<UserResponse | null>;
-  /** Leaves the page for Google; the session exists when the browser comes back. */
-  signInWithGoogle: () => Promise<void>;
+  redirectToGoogleSignIn: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<UserResponse | null>;
   completeOnboarding: (data: OnboardingPayload) => Promise<UserResponse>;
@@ -63,8 +62,8 @@ async function loadProfile() {
   }
 }
 
-function authenticatedState(uid: string, profile: UserResponse | null): AuthState {
-  return profile ? { status: "member", uid, profile } : { status: "onboarding", uid };
+function authenticatedState(userId: string, profile: UserResponse | null): AuthState {
+  return profile ? { status: "member", userId, profile } : { status: "onboarding", userId };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -74,11 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (state.status !== "onboarding" && state.status !== "member") return null;
-    const uid = state.uid;
+    const userId = state.userId;
     const requestId = authRequestRef.current;
     const nextProfile = await loadProfile();
     if (authRequestRef.current === requestId) {
-      setState(authenticatedState(uid, nextProfile));
+      setState(authenticatedState(userId, nextProfile));
     }
     return nextProfile;
   }, [state]);
@@ -110,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    authClient()
+    browserAuthClient()
       .getSession()
       .then(({ data }) => {
         if (!cancelled) void hydrateIdentity(data?.user.id ?? null);
@@ -126,29 +125,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const sendSignInCode = useCallback(async (email: string) => {
     const response = await unwrap(
-      authClient().emailOtp.sendVerificationOtp({ email, type: "sign-in" }),
+      browserAuthClient().emailOtp.sendVerificationOtp({ email, type: "sign-in" }),
     );
-    // The API adds the code's lifetime to Better Auth's response.
-    return response as typeof response & { expires_in_seconds: number };
+    return response as SignInCodeSent;
   }, []);
 
   const signInWithCode = useCallback(
     async (email: string, code: string) => {
       const requestId = authRequestRef.current;
-      const { user } = await unwrap(authClient().signIn.emailOtp({ email, otp: code }));
+      const { user } = await unwrap(browserAuthClient().signIn.emailOtp({ email, otp: code }));
       void hydrateIdentity(user.id);
       return profileHydrationRef.current.wait(user.id, requestId);
     },
     [hydrateIdentity],
   );
 
-  const signInWithGoogle = useCallback(async () => {
+  const redirectToGoogleSignIn = useCallback(async () => {
     const here = window.location.href;
     const failed = new URL(window.location.href);
-    failed.searchParams.set("error", "google");
+    failed.searchParams.set(SIGN_IN_ERROR_PARAM, "google");
     // Better Auth navigates to Google itself once it has the authorization URL.
     await unwrap(
-      authClient().signIn.social({
+      browserAuthClient().signIn.social({
         provider: "google",
         callbackURL: here,
         errorCallbackURL: failed.toString(),
@@ -159,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     const requestId = authRequestRef.current + 1;
     authRequestRef.current = requestId;
-    await unwrap(authClient().signOut());
+    await unwrap(browserAuthClient().signOut());
     if (authRequestRef.current === requestId) {
       setState({ status: "anonymous" });
     }
@@ -170,9 +168,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (state.status !== "onboarding" && state.status !== "member") {
         throw new Error("Sign in before completing onboarding.");
       }
-      const uid = state.uid;
+      const userId = state.userId;
       const nextProfile = await api.users.onboarding(data);
-      setState({ status: "member", uid, profile: nextProfile });
+      setState({ status: "member", userId, profile: nextProfile });
       return nextProfile;
     },
     [state],
@@ -217,7 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       state,
       sendSignInCode,
       signInWithCode,
-      signInWithGoogle,
+      redirectToGoogleSignIn,
       signOut,
       refreshProfile,
       completeOnboarding,
@@ -229,7 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshProfile,
       sendSignInCode,
       signInWithCode,
-      signInWithGoogle,
+      redirectToGoogleSignIn,
       signOut,
       state,
       updateProfile,

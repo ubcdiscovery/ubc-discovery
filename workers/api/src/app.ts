@@ -98,3 +98,5 @@ export function createApp(
     .use(createStorageRoutes(env))
     .compile();
 }
+
+export type { SignInCodeSent } from "./auth";

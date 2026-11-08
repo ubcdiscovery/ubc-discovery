@@ -4,7 +4,7 @@ import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { withDatabase } from "../db";
 import { users } from "../db/schema";
 import { integerSetting, type ApiEnv } from "../env";
-import { requireMember, requireSessionUser } from "../http/auth";
+import { requireMember, requireSignedIn } from "../http/auth";
 import { ApiError } from "../http/errors";
 import { presentUser } from "../presenters/users";
 import { presentUpload } from "../presenters/storage";
@@ -16,7 +16,7 @@ import {
 } from "../schemas/member";
 import { uploadFileSize } from "../schemas/upload-size";
 import { createServices, type ServicesFactory } from "../services";
-import { createAuthRoutes, createBetterAuthRoutes } from "./auth";
+import { createUbcVerificationRoutes, createBetterAuthRoutes } from "./auth";
 import { createSavedEventRoutes } from "./saved-events";
 import { createRatingRoutes } from "./ratings";
 
@@ -41,8 +41,7 @@ export function createUserRoutes(
       async ({ request, body }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) => {
-          const account = await requireSessionUser(db, request, services);
-          // Sign-in creates the row; onboarding completes it exactly once.
+          const account = await requireSignedIn(db, request, services);
           const [user] = await db
             .update(users)
             .set({
@@ -132,7 +131,7 @@ export function createMemberRoutes(
   servicesFactory: ServicesFactory = () => createServices(env),
 ) {
   return new Elysia({ name: "member-api", adapter: CloudflareAdapter, normalize: false })
-    .use(createAuthRoutes(env, servicesFactory))
+    .use(createUbcVerificationRoutes(env, servicesFactory))
     .use(createBetterAuthRoutes(env, servicesFactory))
     .use(createUserRoutes(env, servicesFactory))
     .use(createSavedEventRoutes(env, servicesFactory))

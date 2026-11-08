@@ -91,9 +91,7 @@ export async function mockApi(
     onApiKeyCreate?: (body: Record<string, unknown>) => void;
     onApiKeyRevoke?: (id: string) => void;
     otpUid?: string;
-    /** Who "Continue with Google" signs in. */
     googleUser?: MockUser;
-    /** Google sends the visitor back with ?error=… instead of a session. */
     googleError?: boolean;
     profilesByUid?: Record<string, MockProfile | null>;
   } = {},

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { useAuth } from "~/lib/auth";
+import { SIGN_IN_ERROR_PARAM } from "~/lib/auth-client";
 import { authErrorMessage, GOOGLE_SIGN_IN_FAILED } from "~/lib/auth-errors";
 
 const RESEND_COOLDOWN_MS = 30_000;
@@ -12,15 +13,14 @@ type OtpSendResponse = {
 };
 
 export function useSignInFlow() {
-  const { sendSignInCode, signInWithCode, signInWithGoogle } = useAuth();
-  // Better Auth returns here with ?error=… when Google sign-in fails.
+  const { sendSignInCode, signInWithCode, redirectToGoogleSignIn } = useAuth();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<SignInStep>("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(() =>
-    searchParams.has("error") ? GOOGLE_SIGN_IN_FAILED : "",
+    searchParams.has(SIGN_IN_ERROR_PARAM) ? GOOGLE_SIGN_IN_FAILED : "",
   );
   const [expiresAt, setExpiresAt] = useState(0);
   const [resendAvailableAt, setResendAvailableAt] = useState(0);
@@ -106,13 +106,11 @@ export function useSignInFlow() {
     setLoading(true);
     setError("");
     try {
-      // Google signs in an existing member with the same address; Better Auth links them.
-      await signInWithGoogle();
+      await redirectToGoogleSignIn();
     } catch (cause) {
       setError(authErrorMessage(cause) ?? "");
       setLoading(false);
     }
-    // On success the browser is leaving for Google, so the button stays disabled.
   }
 
   return {

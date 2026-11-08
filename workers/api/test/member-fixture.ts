@@ -1,4 +1,4 @@
-import { eq, inArray, notLike } from "drizzle-orm";
+import { eq, inArray, like } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { vi } from "vite-plus/test";
@@ -33,12 +33,14 @@ export const env = {
   OTP_MAX_ATTEMPTS: "5",
   OTP_RATE_LIMIT_PER_15MIN: "3",
 } as ApiEnv;
+const octet = () => Math.floor(Math.random() * 254) + 1;
+/** Each test file is its own client, so Better Auth's per-IP counters never collide. */
+const clientIp = `10.${octet()}.${octet()}.${octet()}`;
 export const fixedNow = new Date("2026-10-12T00:00:00Z");
 export const fixtureEmails = new Set<string>();
 export const fixtureUserIds = new Set<string>();
 export const fixtureEventIds = new Set<string>();
 
-/** A signed-in person: their `users` row and the Cookie header of a real session. */
 export interface Identity {
   id: string;
   email: string;
@@ -51,8 +53,7 @@ export function email(prefix = "fixture") {
   return value;
 }
 
-/** Signed in through Better Auth, but not yet onboarded (what sign-in creates). */
-export async function identity(
+export async function signedUpUser(
   address = email(),
   verified = true,
   extra: Partial<typeof users.$inferInsert> = {},
@@ -73,7 +74,6 @@ export async function identity(
   return { id: row!.id, email: row!.email, session: await sessionCookie(env, row!.id) };
 }
 
-/** Pass the same configuration as `app` when a test overrides settings. */
 export function serviceMocks(configuration = env) {
   const sendEmail = vi.fn(async (_email: string, _code: string) => {});
   const storage: ObjectStorage = {
@@ -98,10 +98,10 @@ export function serviceMocks(configuration = env) {
       embedEvent: async () => null,
     };
   };
-  return { factory, sendEmail, storage };
+  return { factory, sendEmail, storage, configuration };
 }
 
-export function app(factory: ServicesFactory, configuration = env) {
+export function app({ factory, configuration }: ReturnType<typeof serviceMocks>) {
   return new Elysia({ adapter: CloudflareAdapter, normalize: false })
     .onError(({ code, error }) => {
       if (code === "VALIDATION" || code === "PARSE")
@@ -117,7 +117,6 @@ export function request(
   options: {
     method?: string;
     body?: unknown;
-    /** Cookie header of a signed-in session. */
     session?: string;
     headers?: Record<string, string>;
     jsonHeader?: boolean;
@@ -129,6 +128,7 @@ export function request(
       ...(options.body === undefined && !options.jsonHeader
         ? {}
         : { "content-type": "application/json" }),
+      "cf-connecting-ip": clientIp,
       ...(options.session ? { cookie: options.session } : {}),
       ...options.headers,
     },
@@ -136,9 +136,8 @@ export function request(
   });
 }
 
-/** An onboarded member with a signed-in session. */
 export async function member(extra: Partial<typeof users.$inferInsert> = {}) {
-  const who = await identity(email(), true, {
+  const who = await signedUpUser(email(), true, {
     preferredName: "Fixture Member",
     createdAt: fixedNow,
     onboardingCompleted: true,
@@ -147,7 +146,7 @@ export async function member(extra: Partial<typeof users.$inferInsert> = {}) {
   const [row] = await withDatabase(env, (db) =>
     db.select().from(users).where(eq(users.id, who.id)),
   );
-  return { row: row!, identity: who };
+  return { row: row!, session: who.session };
 }
 
 export async function otp(address: string, extra: Partial<typeof otpCodes.$inferInsert> = {}) {
@@ -188,9 +187,7 @@ export async function event(extra: Partial<typeof events.$inferInsert> = {}) {
 export async function cleanupMemberFixtures() {
   if (!testUrl) return;
   await withDatabase(env, async (db) => {
-    // Better Auth's per-IP counters would otherwise carry over between runs. Address
-    // counters stay: other test files run concurrently and rely on theirs.
-    await db.delete(rateLimits).where(notLike(rateLimits.key, "email-otp:%"));
+    await db.delete(rateLimits).where(like(rateLimits.key, `${clientIp}|%`));
     if (fixtureEmails.size)
       await db.delete(otpCodes).where(
         inArray(
@@ -212,7 +209,6 @@ export async function cleanupMemberFixtures() {
           addresses.map((value) => `sign-in-otp-${value}`),
         ),
       );
-      // Members created by sign-in during a test.
       for (const row of await db
         .select({ id: users.id })
         .from(users)

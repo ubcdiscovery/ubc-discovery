@@ -104,7 +104,7 @@ function PillGrid({
 export default function OnboardingAcademic() {
   const navigate = useNavigate();
   const { state } = useAuth();
-  const uid = state.status === "onboarding" ? state.uid : null;
+  const uid = state.status === "onboarding" ? state.userId : null;
   const [facultyId, setFacultyId] = useState("");
   const [major, setMajor] = useState("");
   const [academicLevel, setAcademicLevel] = useState("");

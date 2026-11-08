@@ -34,8 +34,6 @@ describe("UBC trust-badge domain boundary", () => {
   });
 });
 
-// Sign-in codes belong to Better Auth (member-sign-in.test.ts). These codes confirm
-// a member's optional UBC address and are still stored in otp_codes.
 describe.skipIf(!testUrl)("UBC confirmation codes against PostgreSQL", () => {
   const send = (session: string, address: string) =>
     request("/auth/ubc-verify/send", { method: "POST", session, body: { email: address } });
@@ -49,11 +47,11 @@ describe.skipIf(!testUrl)("UBC confirmation codes against PostgreSQL", () => {
   it("rejects malformed email addresses before delivery", async () => {
     const existing = await member();
     const mocks = serviceMocks();
-    const api = app(mocks.factory);
-    expect((await api.handle(send(existing.identity.session, "not-an-email"))).status).toBe(422);
-    expect(
-      (await api.handle(confirm(existing.identity.session, "not-an-email", "123456"))).status,
-    ).toBe(422);
+    const api = app(mocks);
+    expect((await api.handle(send(existing.session, "not-an-email"))).status).toBe(422);
+    expect((await api.handle(confirm(existing.session, "not-an-email", "123456"))).status).toBe(
+      422,
+    );
     expect(mocks.sendEmail).not.toHaveBeenCalled();
   });
 
@@ -73,9 +71,7 @@ describe.skipIf(!testUrl)("UBC confirmation codes against PostgreSQL", () => {
         expect(persisted!.code).toBe(code);
       });
     });
-    const response = await app(mocks.factory).handle(
-      send(existing.identity.session, ` ${address.toUpperCase()} `),
-    );
+    const response = await app(mocks).handle(send(existing.session, ` ${address.toUpperCase()} `));
     expect(response.status).toBe(200);
     expect(await response.json<MemberTestJson>()).toEqual({
       message: "Verification code sent to your UBC email.",
@@ -95,13 +91,13 @@ describe.skipIf(!testUrl)("UBC confirmation codes against PostgreSQL", () => {
     const configuration = { ...env, OTP_RATE_LIMIT_PER_15MIN: "1" };
     const mocks = serviceMocks(configuration);
     mocks.sendEmail.mockRejectedValue(new Error("private provider failure"));
-    const api = app(mocks.factory, configuration);
-    const failed = await api.handle(send(existing.identity.session, address));
+    const api = app(mocks);
+    const failed = await api.handle(send(existing.session, address));
     expect(failed.status).toBe(500);
     expect(await failed.json<MemberTestJson>()).toEqual({
       detail: { code: "OTP_DELIVERY_FAILED", message: "Failed to send verification email." },
     });
-    const limited = await api.handle(send(existing.identity.session, address));
+    const limited = await api.handle(send(existing.session, address));
     expect(limited.status).toBe(429);
     expect((await limited.json<MemberTestJson>()).detail.code).toBe("OTP_RATE_LIMITED");
     expect(mocks.sendEmail).toHaveBeenCalledTimes(1);
@@ -111,9 +107,9 @@ describe.skipIf(!testUrl)("UBC confirmation codes against PostgreSQL", () => {
     const existing = await member();
     const address = ubcEmail();
     const mocks = serviceMocks();
-    const api = app(mocks.factory);
+    const api = app(mocks);
     const responses = await Promise.all(
-      Array.from({ length: 4 }, () => api.handle(send(existing.identity.session, address))),
+      Array.from({ length: 4 }, () => api.handle(send(existing.session, address))),
     );
     expect(responses.map((response) => response.status).sort()).toEqual([200, 200, 200, 429]);
     expect(mocks.sendEmail).toHaveBeenCalledTimes(3);
@@ -129,13 +125,13 @@ describe.skipIf(!testUrl)("UBC confirmation codes against PostgreSQL", () => {
     const address = ubcEmail();
     const code = await otp(address);
     const configuration = { ...env, OTP_MAX_ATTEMPTS: "2" };
-    const api = app(serviceMocks(configuration).factory, configuration);
+    const api = app(serviceMocks(configuration));
     for (let attempt = 0; attempt < 2; attempt++) {
-      const response = await api.handle(confirm(existing.identity.session, address, "999999"));
+      const response = await api.handle(confirm(existing.session, address, "999999"));
       expect(response.status).toBe(400);
       expect((await response.json<MemberTestJson>()).detail.code).toBe("OTP_INVALID");
     }
-    const terminal = await api.handle(confirm(existing.identity.session, address, "123456"));
+    const terminal = await api.handle(confirm(existing.session, address, "123456"));
     expect((await terminal.json<MemberTestJson>()).detail.code).toBe("OTP_TOO_MANY_ATTEMPTS");
     await withDatabase(env, async (db) =>
       expect((await db.select().from(otpCodes).where(eq(otpCodes.id, code.id)))[0]).toMatchObject({
@@ -149,11 +145,9 @@ describe.skipIf(!testUrl)("UBC confirmation codes against PostgreSQL", () => {
     const existing = await member();
     const address = ubcEmail();
     const code = await otp(address);
-    const api = app(serviceMocks().factory);
+    const api = app(serviceMocks());
     const results = await Promise.all(
-      Array.from({ length: 4 }, () =>
-        api.handle(confirm(existing.identity.session, address, "999999")),
-      ),
+      Array.from({ length: 4 }, () => api.handle(confirm(existing.session, address, "999999"))),
     );
     expect(results.map((value) => value.status)).toEqual([400, 400, 400, 400]);
     await withDatabase(env, async (db) =>
@@ -167,11 +161,9 @@ describe.skipIf(!testUrl)("UBC confirmation codes against PostgreSQL", () => {
     const existing = await member();
     const address = ubcEmail();
     await otp(address);
-    const api = app(serviceMocks().factory);
+    const api = app(serviceMocks());
     const results = await Promise.all(
-      Array.from({ length: 2 }, () =>
-        api.handle(confirm(existing.identity.session, address, "123456")),
-      ),
+      Array.from({ length: 2 }, () => api.handle(confirm(existing.session, address, "123456"))),
     );
     expect(results.map((value) => value.status).sort()).toEqual([200, 400]);
     const rejected = results.find((value) => value.status === 400)!;
@@ -182,9 +174,7 @@ describe.skipIf(!testUrl)("UBC confirmation codes against PostgreSQL", () => {
     const existing = await member();
     const address = ubcEmail();
     await otp(address, { expiresAt: fixedNow });
-    const response = await app(serviceMocks().factory).handle(
-      confirm(existing.identity.session, address, "123456"),
-    );
+    const response = await app(serviceMocks()).handle(confirm(existing.session, address, "123456"));
     expect(response.status).toBe(400);
     expect((await response.json<MemberTestJson>()).detail.code).toBe("OTP_EXPIRED");
   });

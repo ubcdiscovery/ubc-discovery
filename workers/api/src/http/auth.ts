@@ -25,8 +25,7 @@ function rejectCrossSite(request: Request) {
     throw new ApiError(403, "Cross-site request rejected");
 }
 
-/** The signed-in member's row, whether or not onboarding is complete. */
-export async function requireSessionUser(
+export async function requireSignedIn(
   db: Db | DbTransaction,
   request: Request,
   services: Pick<RequestServices, "auth">,
@@ -46,7 +45,7 @@ export async function requireMember(
   request: Request,
   services: Pick<RequestServices, "auth">,
 ) {
-  const member = await requireSessionUser(db, request, services);
+  const member = await requireSignedIn(db, request, services);
   if (!member.onboardingCompleted)
     throw new ApiError(404, "User profile not found. Complete onboarding first.");
   return member;
@@ -57,7 +56,7 @@ export async function requireAdmin(
   request: Request,
   services: Pick<RequestServices, "auth">,
 ): Promise<AuditActor> {
-  const member = await requireSessionUser(db, request, services);
+  const member = await requireSignedIn(db, request, services);
   if (!member.isAdmin) throw new ApiError(403, "Admin access required");
   return { actorType: "member", actorId: member.id };
 }

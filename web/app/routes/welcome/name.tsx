@@ -15,7 +15,7 @@ export function meta() {
 export default function OnboardingName() {
   const navigate = useNavigate();
   const { state } = useAuth();
-  const uid = state.status === "onboarding" ? state.uid : null;
+  const uid = state.status === "onboarding" ? state.userId : null;
   const [name, setName] = useState("");
 
   useEffect(() => {

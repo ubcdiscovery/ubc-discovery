@@ -52,10 +52,7 @@ CREATE UNIQUE INDEX "ix_rate_limits_key" ON "rate_limits" USING btree ("key");--
 CREATE UNIQUE INDEX "ix_sessions_token" ON "sessions" USING btree ("token");--> statement-breakpoint
 CREATE INDEX "ix_sessions_user_id" ON "sessions" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "ix_verifications_identifier" ON "verifications" USING btree ("identifier");--> statement-breakpoint
--- Hand-written data changes for the Better Auth cutover.
--- Every existing member signed in with a verified address (email code or Google).
 UPDATE "users" SET "email_verified" = true;--> statement-breakpoint
--- Before Better Auth a users row was only created by finishing onboarding.
 UPDATE "users" SET "onboarding_completed" = true;--> statement-breakpoint
 -- Better Auth finds members by lowercased email. A case-only duplicate fails here
 -- (ix_users_email) instead of splitting one person into two accounts.
