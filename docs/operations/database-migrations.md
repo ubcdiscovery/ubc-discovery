@@ -24,5 +24,4 @@ the migrated `public` tables into temporary schemas.
 
 ## Applying to production
 
-The **Deploy Cloudflare production** workflow applies pending migrations with
-`pnpm run db:migrate`. 
+The **Deploy Cloudflare production** workflow applies pending migrations.

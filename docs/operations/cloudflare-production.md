@@ -6,32 +6,16 @@ The default web configuration remains staging. Production uses Worker
 `/api`, the API. It owns the custom domain `ubcdiscovery.com`; staging remains on
 its own Workers address.
 
-The manual **Deploy Cloudflare production** workflow uses the GitHub environment
-`cloudflare-production`. Configure these values before dispatching it:
+The manual **Deploy Cloudflare production** workflow reads its settings from the GitHub
+environment `cloudflare-production`; configure every variable and secret its `env` block names.
 
-- Variables: `CLOUDFLARE_ACCOUNT_ID`, `GOOGLE_CLIENT_ID`,
-  `EMAIL_SENDER_EMAIL`, `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`,
-  `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`. Optional:
-  `VITE_FIREBASE_MEASUREMENT_ID` enables [Google Analytics](analytics.md).
-- Secrets: `CLOUDFLARE_API_TOKEN`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_SECRET`,
-  `BACKEND_AWS_ACCESS_KEY_ID`, `BACKEND_AWS_SECRET_ACCESS_KEY`,
-  `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `UPLOAD_SIGNING_SECRET`,
-  `EXTRACTION_QUEUE_PRODUCER_SECRET`.
-
-Use the existing production Neon database's direct endpoint. The dispatch secret must
-match the existing extraction Worker's `EXTRACTION_DISPATCH_SECRET`. API secrets
-are supplied with the web Worker's code in one Wrangler deployment through a
-private temporary file. Missing secrets, staged/pooled database endpoints, a Better Auth
-secret under 32 bytes and a malformed Google client ID fail preflight. `VITE_FIREBASE_*`
+Use the existing production Neon database's direct endpoint. `EXTRACTION_QUEUE_PRODUCER_SECRET` must
+match the existing extraction Worker's `EXTRACTION_DISPATCH_SECRET`. `VITE_FIREBASE_*`
 configure Google Analytics only; sign-in is Better Auth (`workers/api/src/auth.ts`).
 Changing `BETTER_AUTH_SECRET` signs every member out.
 
-The workflow checks the API, builds and checks the web Worker, applies pending
-[schema migrations](database-migrations.md#applying-to-production), deploys it, then
-checks the API's health and database-backed event route on the shadow origin and
-the custom domain. It selects `CLOUDFLARE_ENV=production` before the web build;
-setting the environment only during deploy cannot
-retarget an existing Vite build. Public browser configuration is compiled into
+`CLOUDFLARE_ENV=production` must be set before the web build; setting it only
+during deploy cannot retarget an existing Vite build. Public browser configuration is compiled into
 the assets. Both default and production packaging must pass before dispatch.
 
 `www.ubcdiscovery.com` is configured as Cloudflare rule to redirect to `ubcdiscovery.com`
