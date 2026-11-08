@@ -127,7 +127,7 @@ docs/operations/                 # Runbooks for production, migrations, storage,
 
 ## Deployment
 
-Cloudflare Workers Builds deploys staging from `main` and a Preview for each pull request. Production (the web Worker with its API) is deployed by the manual **Deploy Cloudflare production** GitHub workflow; database migrations are applied by hand before deploying code that needs them. See [Cloudflare production deployment](docs/operations/cloudflare-production.md) and [Database migrations](docs/operations/database-migrations.md#applying-to-production).
+Cloudflare Workers Builds deploys staging from `main` and a Preview for each pull request. Production is deployed by the manual **Deploy Cloudflare production** GitHub workflow. See [Cloudflare production deployment](docs/operations/cloudflare-production.md) and [Database migrations](docs/operations/database-migrations.md#applying-to-production).
 
 ## Credentials
 

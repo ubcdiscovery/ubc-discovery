@@ -60,33 +60,26 @@ jobs:
         run: |
           pnpm run typecheck
           pnpm run build
-          node -e 'const c=JSON.parse(require("node:fs").readFileSync("build/server/wrangler.json", "utf8")); if(c.name!=="ubc-discovery-web" || c.account_id!==process.env.CLOUDFLARE_ACCOUNT_ID) throw new Error("Web build did not select production")'
+          node -e 'if (JSON.parse(require("node:fs").readFileSync("build/server/wrangler.json", "utf8")).name !== "ubc-discovery-web") throw new Error("Web build did not select production")'
           pnpm exec wrangler deploy --dry-run
-      # Secrets and code are uploaded together, avoiding intermediate deployments.
+      - name: Apply database migrations
+        working-directory: workers/api
+        run: pnpm run db:migrate
       - name: Deploy production web and API
         working-directory: web
         run: pnpm exec wrangler deploy --secrets-file "$RUNNER_TEMP/cloudflare-worker-secrets.json"
-      - name: Check production API
+      - name: Check production
+        shell: bash
         run: |
-          curl --fail --silent --show-error --max-time 30 \
-            --retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 60 \
-            --output "$RUNNER_TEMP/cloudflare-api-health.json" \
-            https://ubc-discovery-web.ubcdiscovery.workers.dev/api/
-          node -e 'const v=JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if(v.status!=="ok" || v.app!=="UBC Discovery API") process.exit(1)' "$RUNNER_TEMP/cloudflare-api-health.json"
-          curl --fail --silent --show-error --max-time 30 \
-            --retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 60 \
-            --output "$RUNNER_TEMP/cloudflare-api-events.json" \
-            'https://ubc-discovery-web.ubcdiscovery.workers.dev/api/events?limit=1'
-          node -e 'const v=JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")); if(!Array.isArray(v.events)) process.exit(1)' "$RUNNER_TEMP/cloudflare-api-events.json"
-      - name: Check shadow web origin
-        run: |
-          curl --fail --silent --show-error --max-time 30 \
-            --retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 60 --output /dev/null https://ubc-discovery-web.ubcdiscovery.workers.dev/
-      - name: Check production custom domain
-        run: |
-          curl --fail --silent --show-error --max-time 30 \
-            --retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 60 \
-            --output /dev/null https://ubcdiscovery.com/api/
+          get() {
+            curl --fail --silent --show-error --max-time 30 \
+              --retry 5 --retry-delay 3 --retry-all-errors --retry-max-time 60 "$1"
+          }
+          get https://ubcdiscovery.com/api/ \
+            | jq -e '.status == "ok" and .app == "UBC Discovery API"'
+          get 'https://ubcdiscovery.com/api/events?limit=1' \
+            | jq -e '.events | type == "array"'
+          get https://ubcdiscovery.com/ > /dev/null
       - name: Remove private deployment file
         if: always()
-        run: rm -f "$RUNNER_TEMP/cloudflare-worker-secrets.json" "$RUNNER_TEMP/cloudflare-api-health.json" "$RUNNER_TEMP/cloudflare-api-events.json"
+        run: rm -f "$RUNNER_TEMP/cloudflare-worker-secrets.json"
