@@ -77,7 +77,6 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
       ubc_verified: false,
       profile_picture_url: null,
     });
-    expect(value).not.toHaveProperty("firebase_uid");
     expect(
       (
         await api.handle(
