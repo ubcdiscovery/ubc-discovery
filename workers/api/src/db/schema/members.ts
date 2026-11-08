@@ -1,22 +1,11 @@
 import { sql } from "drizzle-orm";
-import {
-  boolean,
-  check,
-  index,
-  integer,
-  jsonb,
-  pgTable,
-  text,
-  uniqueIndex,
-  varchar,
-} from "drizzle-orm/pg-core";
+import { boolean, check, jsonb, pgTable, text, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 import { instant, uuidId, createdAt, updatedAt } from "./common";
 
 export const users = pgTable(
   "users",
   {
     id: uuidId(),
-    firebaseUid: varchar("firebase_uid", { length: 255 }),
     email: varchar("email", { length: 255 }).notNull(),
     emailVerified: boolean("email_verified").notNull().default(false),
     image: text("image"),
@@ -41,7 +30,6 @@ export const users = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
-    uniqueIndex("ix_users_firebase_uid").on(table.firebaseUid),
     uniqueIndex("ix_users_email").on(table.email),
     check(
       "ck_users_faculty_id",
@@ -56,25 +44,6 @@ export const users = pgTable(
       sql`${table.major} IS NULL OR (${table.major} = btrim(${table.major}) AND ${table.major} <> '')`,
     ),
   ],
-);
-
-/** Read only by the Firebase-era build. Drop it with `users.firebase_uid` after the cutover. */
-export const otpCodes = pgTable(
-  "otp_codes",
-  {
-    id: uuidId(),
-    email: varchar("email", { length: 255 }).notNull(),
-    code: varchar("code", { length: 6 }).notNull(),
-    attempts: integer("attempts")
-      .notNull()
-      .$defaultFn(() => 0),
-    used: boolean("used")
-      .notNull()
-      .$defaultFn(() => false),
-    expiresAt: instant("expires_at").notNull(),
-    createdAt: createdAt(),
-  },
-  (table) => [index("ix_otp_codes_email").on(table.email)],
 );
 
 export type User = typeof users.$inferSelect;
