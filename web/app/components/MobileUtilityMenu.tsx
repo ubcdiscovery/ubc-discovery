@@ -52,6 +52,14 @@ export function MobileUtilityMenu() {
           >
             For organizers
           </Link>
+          <Link
+            to="/privacy"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex min-h-11 items-center border-b border-rule-soft px-3 font-mono text-xs font-bold tracking-wide text-ink uppercase hover:bg-accent-soft"
+          >
+            Privacy
+          </Link>
           <button
             type="button"
             role="menuitem"

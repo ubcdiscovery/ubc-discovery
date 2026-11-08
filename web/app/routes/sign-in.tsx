@@ -72,6 +72,14 @@ export default function SignIn() {
 
             <SignInForm />
 
+            <p className="mt-6 text-xs/relaxed text-muted">
+              Read how we handle your data in our{" "}
+              <Link to="/privacy" className="text-accent underline underline-offset-2">
+                privacy policy
+              </Link>
+              .
+            </p>
+
             <div className="mt-7 border border-dashed border-ink p-3 text-xs/relaxed text-muted md:hidden">
               An independent student project for the UBC community. Not affiliated with UBC.
             </div>
