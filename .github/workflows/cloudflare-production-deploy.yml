@@ -62,6 +62,11 @@ jobs:
           pnpm run build
           node -e 'const c=JSON.parse(require("node:fs").readFileSync("build/server/wrangler.json", "utf8")); if(c.name!=="ubc-discovery-web" || c.account_id!==process.env.CLOUDFLARE_ACCOUNT_ID) throw new Error("Web build did not select production")'
           pnpm exec wrangler deploy --dry-run
+      # Runs only after every check passes, and stops the deploy if it fails. Migrations must
+      # be expand/contract so the currently deployed code keeps working against the new schema.
+      - name: Apply database migrations
+        working-directory: workers/api
+        run: pnpm run db:migrate
       # Secrets and code are uploaded together, avoiding intermediate deployments.
       - name: Deploy production web and API
         working-directory: web

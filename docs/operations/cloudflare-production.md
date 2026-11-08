@@ -27,7 +27,8 @@ secret under 32 bytes and a malformed Google client ID fail preflight. `VITE_FIR
 configure Google Analytics only; sign-in is Better Auth (`workers/api/src/auth.ts`).
 Changing `BETTER_AUTH_SECRET` signs every member out.
 
-The workflow checks the API, builds and checks the web Worker, deploys it, then
+The workflow checks the API, builds and checks the web Worker, applies pending
+[schema migrations](database-migrations.md#applying-to-production), deploys it, then
 checks the API's health and database-backed event route on the shadow origin and
 the custom domain. It selects `CLOUDFLARE_ENV=production` before the web build;
 setting the environment only during deploy cannot
@@ -37,8 +38,7 @@ the assets. Both default and production packaging must pass before dispatch.
 Bucket CORS and Google sign-in must already be ready. The OAuth client lives in
 Google Cloud project `ubcdiscovery` (Google Auth Platform → Clients) and must list the
 redirect URI `https://ubcdiscovery.com/api/auth/callback/google`. Its consent screen
-must be published (Audience → In production), or only listed test users can sign in. The workflow does not copy data, apply
-[schema migrations](database-migrations.md#applying-to-production), or retarget
+must be published (Audience → In production), or only listed test users can sign in. The workflow does not copy data or retarget
 extraction consumers or scraper producers. Web deployment reconciles the checked-in
 `ubcdiscovery.com` custom domain; verify browser traffic against the production API
 afterward.

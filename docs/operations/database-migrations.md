@@ -39,15 +39,22 @@ Drizzle Kit has no down migrations; undo a change with a new forward migration.
 
 ## Applying to production
 
-Production migrations are manual. Apply a migration before deploying code that depends on it, using the
-direct (non-pooled) Neon endpoint:
+The **Deploy Cloudflare production** workflow applies pending migrations with
+`pnpm run db:migrate`, using the `DATABASE_URL` environment secret (the direct,
+non-pooled Neon endpoint). It runs after the API and web checks and the Wrangler
+dry run, and before the Worker upload; a failed migration stops the deploy.
+Until the upload finishes, the previous code runs against the new schema, so a
+migration must not break the deployed code (expand/contract above).
+
+Take a Neon restore point before dispatching a deploy whose migrations rewrite
+or drop data.
+
+To apply migrations without deploying, run them by hand against the same endpoint:
 
 ```bash
 cd workers/api
 DATABASE_URL='<direct production database URL>' pnpm run db:migrate
 ```
-
-Take a Neon restore point first for migrations that rewrite or drop data.
 
 ## RDS cutover backup
 
