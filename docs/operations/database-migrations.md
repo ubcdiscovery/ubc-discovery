@@ -1,12 +1,7 @@
 # Database migrations
 
 Drizzle Kit is the authoritative schema change tool. The schema lives in
-`workers/api/src/db/schema.ts` and the migrations in `workers/api/drizzle/`. The
-API never creates or alters tables at runtime.
-
-`0000_baseline` reproduces the schema of the former Alembic head
-(`0012_queue_extraction`), including the `vector` and `pg_trgm` extensions. The
-Alembic history was removed with the Python backend; it remains in Git history.
+`workers/api/src/db/schema.ts` and the migrations in `workers/api/drizzle/`.
 
 ## Local PostgreSQL
 
@@ -27,46 +22,7 @@ the migrated `public` tables into temporary schemas.
 2. Run `pnpm run db:generate --name <short_change_name>` and review the SQL.
 3. Commit the SQL file and the updated `drizzle/meta/` files together.
 
-The API PR checks fail when `schema.ts` changes without a committed
-migration, then apply every migration to a fresh database before running tests.
-
-Keep explicit constraint and index names in `schema.ts`. They match the existing
-database, and generated `DROP`/`ALTER` statements reference them by name.
-
-Prefer expand/contract changes: add nullable columns or new tables first, deploy
-code that handles both shapes, and drop old structures in a later migration.
-Drizzle Kit has no down migrations; undo a change with a new forward migration.
-
 ## Applying to production
 
 The **Deploy Cloudflare production** workflow applies pending migrations with
-`pnpm run db:migrate`, using the `DATABASE_URL` environment secret (the direct,
-non-pooled Neon endpoint). It runs after the API and web checks and the Wrangler
-dry run, and before the Worker upload; a failed migration stops the deploy.
-Until the upload finishes, the previous code runs against the new schema, so a
-migration must not break the deployed code (expand/contract above).
-
-Take a Neon restore point before dispatching a deploy whose migrations rewrite
-or drop data.
-
-To apply migrations without deploying, run them by hand against the same endpoint:
-
-```bash
-cd workers/api
-DATABASE_URL='<direct production database URL>' pnpm run db:migrate
-```
-
-## RDS cutover backup
-
-The RDS-to-Neon cutover retained a private custom-format PostgreSQL dump,
-original deployment configuration, and table count/checksum manifests under
-`~/projects/neon-migration-20261011T085552Z/` on the migration
-operator's machine. These artifacts contain sensitive data and must stay out of
-Git. The old RDS instance and its automated backups were retired after cutover;
-no final AWS snapshot was requested. The local dump is the retained backup.
-
-For recovery, restore the local custom-format dump into an empty PostgreSQL
-database with `pg_restore --no-owner --no-acl --exit-on-error`, verify it, and
-update the local, GitHub, and deployed database connection settings. The original
-RDS endpoint no longer exists. After Neon has accepted writes, use a fresh Neon
-backup or reconcile those writes first; the cutover dump alone would lose them.
+`pnpm run db:migrate`. 
