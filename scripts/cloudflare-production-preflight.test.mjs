@@ -15,12 +15,9 @@ function readJsonc(path) {
 
 const fixture = {
   DATABASE_URL: "postgresql+asyncpg://fixture:private@ep-fixture.us-west-2.aws.neon.tech/neondb",
-  FIREBASE_PROJECT_ID: "fixture",
-  FIREBASE_CREDENTIALS_JSON: JSON.stringify({
-    project_id: "fixture",
-    client_email: "fixture@example.test",
-    private_key: "-----BEGIN PRIVATE KEY-----synthetic",
-  }),
+  BETTER_AUTH_SECRET: "synthetic-better-auth-secret-longer-than-32-bytes",
+  GOOGLE_CLIENT_ID: "fixture.apps.googleusercontent.com",
+  GOOGLE_CLIENT_SECRET: "synthetic-google-secret",
   AWS_ACCESS_KEY_ID: "synthetic-aws",
   AWS_SECRET_ACCESS_KEY: "synthetic-aws-secret",
   EMAIL_SENDER_EMAIL: "fixture@example.test",
@@ -31,7 +28,6 @@ const fixture = {
   CLOUDFLARE_ACCOUNT_ID: account,
   CLOUDFLARE_API_TOKEN: "synthetic-cloudflare",
   CLOUDFLARE_ENV: "production",
-  VITE_AUTH_TEST_MODE: "false",
   VITE_FIREBASE_API_KEY: "synthetic-public",
   VITE_FIREBASE_AUTH_DOMAIN: "fixture.firebaseapp.com",
   VITE_FIREBASE_PROJECT_ID: "fixture",
@@ -42,6 +38,8 @@ test("production preflight isolates API secrets from browser and deploy authenti
   const secrets = validateProductionConfiguration(fixture);
   assert.equal(secrets.R2_ACCESS_KEY_ID, "synthetic-r2");
   assert.equal(secrets.AWS_ACCESS_KEY_ID, "synthetic-aws");
+  assert.equal(secrets.BETTER_AUTH_SECRET, fixture.BETTER_AUTH_SECRET);
+  assert.equal(secrets.GOOGLE_CLIENT_SECRET, "synthetic-google-secret");
   assert.equal(secrets.CLOUDFLARE_API_TOKEN, undefined);
   assert.equal(secrets.VITE_FIREBASE_API_KEY, undefined);
 });
@@ -54,9 +52,9 @@ test("production preflight rejects missing credentials and unsafe build settings
     { CLOUDFLARE_ACCOUNT_ID: "wrong-account" },
     { VITE_API_URL: "http://localhost:8000" },
     { CLOUDFLARE_ENV: "" },
-    { VITE_AUTH_TEST_MODE: "true" },
-    { VITE_FIREBASE_PROJECT_ID: "different" },
-    { FIREBASE_CREDENTIALS_JSON: "private-malformed-json" },
+    { BETTER_AUTH_SECRET: "private-malformed-json" },
+    { GOOGLE_CLIENT_ID: "private-malformed-json" },
+    { GOOGLE_CLIENT_SECRET: "" },
     { UPLOAD_SIGNING_SECRET: "weak-private-key" },
   ]) {
     assert.throws(
@@ -137,6 +135,7 @@ test("production bindings remain distinct from staging and Previews", () => {
   assert.equal(production.vars.EXTRACTION_DELIVERY_TIMEOUT_SECONDS, "90000");
   assert.ok(production.secrets.required.includes("DATABASE_URL"));
   assert.ok(production.secrets.required.includes("EXTRACTION_QUEUE_PRODUCER_SECRET"));
+  assert.ok(production.secrets.required.includes("BETTER_AUTH_SECRET"));
   assert.equal(production.hyperdrive, undefined);
 });
 

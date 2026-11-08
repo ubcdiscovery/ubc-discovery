@@ -83,12 +83,13 @@ describe.skipIf(!testUrl)("complete API R2 contract against PostgreSQL", () => {
       httpMetadata: { contentType },
     });
   }
-  function request(path: string, method = "GET", body?: unknown, authorization = "Bearer admin") {
+  /** `auth` is "admin" (a signed-in session) or an `Api-Key …` authorization value. */
+  function request(path: string, method = "GET", body?: unknown, auth = "admin") {
     return app.handle(
       new Request(`https://api.example.test${path}`, {
         method,
         headers: {
-          authorization,
+          ...(auth === "admin" ? { cookie: fixture.sessions.admin } : { authorization: auth }),
           ...(body === undefined ? {} : { "content-type": "application/json" }),
           ...(path === "/ingestion/event-candidates" ? { "x-image-file-sizes": "[3]" } : {}),
         },

@@ -19,7 +19,8 @@ export default defineConfig({
       ...process.env,
       HOST: "127.0.0.1",
       PORT: "4173",
-      VITE_AUTH_TEST_MODE: "true",
+      // Keep Firebase Analytics off whatever web/.env contains.
+      VITE_FIREBASE_MEASUREMENT_ID: "",
       VITE_API_URL: "http://api.test",
     },
   },

@@ -10,11 +10,11 @@ shadow origin is `https://ubc-discovery-web.ubcdiscovery.workers.dev`.
 The manual **Deploy Cloudflare production** workflow uses the GitHub environment
 `cloudflare-production`. Configure these values before dispatching it:
 
-- Variables: `CLOUDFLARE_ACCOUNT_ID`, `FIREBASE_PROJECT_ID`,
+- Variables: `CLOUDFLARE_ACCOUNT_ID`, `GOOGLE_CLIENT_ID`,
   `EMAIL_SENDER_EMAIL`, `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`,
   `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`. Optional:
   `VITE_FIREBASE_MEASUREMENT_ID` enables [Google Analytics](analytics.md).
-- Secrets: `CLOUDFLARE_API_TOKEN`, `DATABASE_URL`, `FIREBASE_CREDENTIALS_JSON`,
+- Secrets: `CLOUDFLARE_API_TOKEN`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_SECRET`,
   `BACKEND_AWS_ACCESS_KEY_ID`, `BACKEND_AWS_SECRET_ACCESS_KEY`,
   `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `UPLOAD_SIGNING_SECRET`,
   `EXTRACTION_QUEUE_PRODUCER_SECRET`.
@@ -22,18 +22,22 @@ The manual **Deploy Cloudflare production** workflow uses the GitHub environment
 Use the existing production Neon database's direct endpoint. The dispatch secret must
 match the existing extraction Worker's `EXTRACTION_DISPATCH_SECRET`. API secrets
 are supplied with the web Worker's code in one Wrangler deployment through a
-private temporary file. Missing secrets, staged/pooled database endpoints, mismatched Firebase
-projects and auth test mode fail preflight.
+private temporary file. Missing secrets, staged/pooled database endpoints, a Better Auth
+secret under 32 bytes and a malformed Google client ID fail preflight. `VITE_FIREBASE_*`
+configure Google Analytics only; sign-in is Better Auth (`workers/api/src/auth.ts`).
+Changing `BETTER_AUTH_SECRET` signs every member out.
 
 The workflow checks the API, builds and checks the web Worker, deploys it, then
 checks the API's health and database-backed event route on the shadow origin and
-the custom domain. It selects `CLOUDFLARE_ENV=production` before the web build and fixes
-`VITE_AUTH_TEST_MODE=false`; setting the environment only during deploy cannot
+the custom domain. It selects `CLOUDFLARE_ENV=production` before the web build;
+setting the environment only during deploy cannot
 retarget an existing Vite build. Public browser configuration is compiled into
 the assets. Both default and production packaging must pass before dispatch.
 
-Bucket CORS, Firebase authorized domains and the production API's custom-token
-credentials must already be ready. The workflow does not copy data, apply
+Bucket CORS and Google sign-in must already be ready. The OAuth client lives in
+Google Cloud project `ubcdiscovery` (Google Auth Platform → Clients) and must list the
+redirect URI `https://ubcdiscovery.com/api/auth/callback/google`. Its consent screen
+must be published (Audience → In production), or only listed test users can sign in. The workflow does not copy data, apply
 [schema migrations](database-migrations.md#applying-to-production), or retarget
 extraction consumers or scraper producers. Web deployment reconciles the checked-in
 `ubcdiscovery.com` custom domain; verify browser traffic against the production API

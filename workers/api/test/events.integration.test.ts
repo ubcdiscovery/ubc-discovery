@@ -50,7 +50,6 @@ describe.skipIf(!testUrl)("public event API against PostgreSQL", () => {
       const [member] = await db
         .insert(users)
         .values({
-          firebaseUid: schemaName,
           email: `${schemaName}@example.test`,
           preferredName: "Fixture",
         })

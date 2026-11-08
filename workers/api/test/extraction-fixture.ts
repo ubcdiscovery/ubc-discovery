@@ -12,6 +12,7 @@ import { createIngestionRoutes } from "../src/routes/ingestion";
 import { createExtractionRoutes } from "../src/routes/extraction";
 import type { RequestServices } from "../src/services";
 import type { ObjectStorage } from "../src/services/storage";
+import { authTestEnv, realAuth, sessionCookie } from "./auth-fixture";
 export const testUrl = process.env.TEST_DATABASE_URL;
 if (testUrl && !["localhost", "127.0.0.1", "[::1]"].includes(new URL(testUrl).hostname))
   throw new Error("Disposable localhost database required");
@@ -20,6 +21,7 @@ export function extractionFixture() {
   const url = new URL(testUrl ?? "postgres://localhost/unused");
   url.searchParams.set("options", `-c search_path=${schemaName},public`);
   const env = {
+    ...authTestEnv,
     DATABASE_URL: url.toString(),
     DIRECT_DATABASE_URL: url.toString(),
     EXTRACTION_DELIVERY_TIMEOUT_SECONDS: "90000",
@@ -37,21 +39,15 @@ export function extractionFixture() {
       file_key: options.fileKey,
     })),
   };
-  const services: RequestServices = {
-    firebase: {
-      verifyIdToken: vi.fn(async (token: string) => ({
-        uid: token,
-        email: `${token}@example.test`,
-        email_verified: true,
-        name: "",
-      })),
-      createCustomToken: vi.fn(async () => "unused"),
-      getOrCreateUser: vi.fn(async () => "unused"),
-    },
-    storage,
+  const deps = {
     sendOtpEmail: vi.fn(async () => {}),
-    embedEvent: vi.fn(async () => [1, ...Array<number>(1023).fill(0)]),
     now: () => new Date("2030-01-01T12:00:00Z"),
+  };
+  const services: RequestServices = {
+    ...deps,
+    auth: realAuth(env, deps),
+    storage,
+    embedEvent: vi.fn(async () => [1, ...Array<number>(1023).fill(0)]),
   };
   const app = new Elysia({ adapter: CloudflareAdapter, normalize: false })
     .onError(({ code, error }) => {
@@ -64,12 +60,16 @@ export function extractionFixture() {
     .use(createExtractionRoutes(env, () => services))
     .compile();
   let ingestToken = "";
+  let adminId = "";
+  let memberId = "";
+  const sessions = { admin: "", member: "" };
   let extractToken = "";
   const setup = async () => {
     await withDatabase({ DATABASE_URL: testUrl } as ApiEnv, async (db) => {
       await db.execute(sql`CREATE SCHEMA ${sql.identifier(schemaName)}`);
       for (const table of [
         "users",
+        "sessions",
         "events",
         "api_credentials",
         "api_credential_audit_logs",
@@ -87,15 +87,24 @@ export function extractionFixture() {
       const [admin] = await db
         .insert(users)
         .values({
-          firebaseUid: "admin",
           email: "admin@example.test",
+          emailVerified: true,
           preferredName: "Admin",
+          onboardingCompleted: true,
           isAdmin: true,
         })
         .returning();
-      await db
+      const [member] = await db
         .insert(users)
-        .values({ firebaseUid: "member", email: "member@example.test", preferredName: "Member" });
+        .values({
+          email: "member@example.test",
+          emailVerified: true,
+          preferredName: "Member",
+          onboardingCompleted: true,
+        })
+        .returning();
+      adminId = admin!.id;
+      memberId = member!.id;
       const [ingest] = await db
         .insert(apiCredentials)
         .values({
@@ -117,6 +126,8 @@ export function extractionFixture() {
       ingestToken = `ubc_live_${ingest!.id}.fixture-secret`;
       extractToken = `ubc_live_${extract!.id}.fixture-secret`;
     });
+    sessions.admin = await sessionCookie(env, adminId);
+    sessions.member = await sessionCookie(env, memberId);
   };
   const teardown = () =>
     withDatabase({ DATABASE_URL: testUrl } as ApiEnv, (db) =>
@@ -136,12 +147,9 @@ export function extractionFixture() {
           ...(body === undefined && !jsonHeader ? {} : { "Content-Type": "application/json" }),
           ...(auth === "none"
             ? {}
-            : {
-                Authorization:
-                  auth === "admin" || auth === "member"
-                    ? `Bearer ${auth}`
-                    : `Api-Key ${auth === "ingest" ? ingestToken : extractToken}`,
-              }),
+            : auth === "admin" || auth === "member"
+              ? { Cookie: sessions[auth] }
+              : { Authorization: `Api-Key ${auth === "ingest" ? ingestToken : extractToken}` }),
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       }),
@@ -172,7 +180,7 @@ export function extractionFixture() {
           await db.select().from(eventListingCandidates).where(eq(eventListingCandidates.id, id))
         )[0]!,
     );
-  return { env, services, storage, request, setup, teardown, seedCandidate, candidate };
+  return { env, services, storage, sessions, request, setup, teardown, seedCandidate, candidate };
 }
 
 export async function json(response: Response): Promise<Record<string, unknown>> {

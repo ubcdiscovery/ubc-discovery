@@ -11,13 +11,7 @@ import {
 import { api, ApiError, type UserResponse } from "~/lib/api";
 import { resizeImage } from "~/lib/image";
 import { uploadImage } from "~/lib/image-upload";
-import {
-  getFirebaseConfigError,
-  signInWithCustomToken as firebaseSignInWithCustomToken,
-  signInWithGoogle as firebaseSignInWithGoogle,
-  signOut as firebaseSignOut,
-  watchFirebaseAuth,
-} from "~/lib/firebase";
+import { authClient, unwrap } from "~/lib/auth-client";
 import { createProfileHydrationCoordinator } from "~/lib/profile-hydration";
 
 type OnboardingPayload = {
@@ -38,6 +32,7 @@ type UpdateProfilePayload = {
   bio?: string | null;
 };
 
+/** `uid` is the member's id (`users.id`). */
 export type AuthState =
   | { status: "loading" }
   | { status: "anonymous" }
@@ -46,10 +41,10 @@ export type AuthState =
 
 type AuthContextValue = {
   state: AuthState;
-  firebaseReady: boolean;
-  firebaseConfigError: string | null;
-  signInWithOtpToken: (customToken: string) => Promise<UserResponse | null>;
-  signInWithGoogle: () => Promise<UserResponse | null>;
+  sendSignInCode: (email: string) => Promise<{ expires_in_seconds: number }>;
+  signInWithCode: (email: string, code: string) => Promise<UserResponse | null>;
+  /** Leaves the page for Google; the session exists when the browser comes back. */
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<UserResponse | null>;
   completeOnboarding: (data: OnboardingPayload) => Promise<UserResponse>;
@@ -76,8 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: "loading" });
   const authRequestRef = useRef(0);
   const profileHydrationRef = useRef(createProfileHydrationCoordinator());
-  const firebaseConfigError = getFirebaseConfigError();
-  const firebaseReady = !firebaseConfigError;
 
   const refreshProfile = useCallback(async () => {
     if (state.status !== "onboarding" && state.status !== "member") return null;
@@ -90,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return nextProfile;
   }, [state]);
 
-  const hydrateFirebaseIdentity = useCallback(async (uid: string | null) => {
+  const hydrateIdentity = useCallback(async (uid: string | null) => {
     const requestId = authRequestRef.current + 1;
     authRequestRef.current = requestId;
     profileHydrationRef.current.identityChanged(uid, requestId);
@@ -116,47 +109,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!firebaseReady) {
-      setState({ status: "anonymous" });
-      return;
-    }
+    let cancelled = false;
+    authClient()
+      .getSession()
+      .then(({ data }) => {
+        if (!cancelled) void hydrateIdentity(data?.user.id ?? null);
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to load the session.", error);
+        if (!cancelled) void hydrateIdentity(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrateIdentity]);
 
-    const unsubscribe = watchFirebaseAuth((firebaseUser) => {
-      void hydrateFirebaseIdentity(firebaseUser?.uid ?? null);
-    });
+  const sendSignInCode = useCallback(async (email: string) => {
+    const response = await unwrap(
+      authClient().emailOtp.sendVerificationOtp({ email, type: "sign-in" }),
+    );
+    // The API adds the code's lifetime to Better Auth's response.
+    return response as typeof response & { expires_in_seconds: number };
+  }, []);
 
-    return unsubscribe;
-  }, [firebaseReady, hydrateFirebaseIdentity]);
-
-  const waitForProfileHydration = useCallback(
-    (uid: string, requestId: number) => {
-      if (profileHydrationRef.current.needsRetry(uid, requestId)) {
-        void hydrateFirebaseIdentity(uid);
-      }
-      return profileHydrationRef.current.wait(uid, requestId);
-    },
-    [hydrateFirebaseIdentity],
-  );
-
-  const signInWithOtpToken = useCallback(
-    async (customToken: string) => {
+  const signInWithCode = useCallback(
+    async (email: string, code: string) => {
       const requestId = authRequestRef.current;
-      const user = await firebaseSignInWithCustomToken(customToken);
-      return waitForProfileHydration(user.uid, requestId);
+      const { user } = await unwrap(authClient().signIn.emailOtp({ email, otp: code }));
+      void hydrateIdentity(user.id);
+      return profileHydrationRef.current.wait(user.id, requestId);
     },
-    [waitForProfileHydration],
+    [hydrateIdentity],
   );
 
   const signInWithGoogle = useCallback(async () => {
-    const requestId = authRequestRef.current;
-    const user = await firebaseSignInWithGoogle();
-    return waitForProfileHydration(user.uid, requestId);
-  }, [waitForProfileHydration]);
+    const here = window.location.href;
+    const failed = new URL(window.location.href);
+    failed.searchParams.set("error", "google");
+    // Better Auth navigates to Google itself once it has the authorization URL.
+    await unwrap(
+      authClient().signIn.social({
+        provider: "google",
+        callbackURL: here,
+        errorCallbackURL: failed.toString(),
+      }),
+    );
+  }, []);
 
   const signOut = useCallback(async () => {
     const requestId = authRequestRef.current + 1;
     authRequestRef.current = requestId;
-    await firebaseSignOut();
+    await unwrap(authClient().signOut());
     if (authRequestRef.current === requestId) {
       setState({ status: "anonymous" });
     }
@@ -212,9 +215,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       state,
-      firebaseReady,
-      firebaseConfigError,
-      signInWithOtpToken,
+      sendSignInCode,
+      signInWithCode,
       signInWithGoogle,
       signOut,
       refreshProfile,
@@ -224,11 +226,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }),
     [
       completeOnboarding,
-      firebaseConfigError,
-      firebaseReady,
       refreshProfile,
+      sendSignInCode,
+      signInWithCode,
       signInWithGoogle,
-      signInWithOtpToken,
       signOut,
       state,
       updateProfile,

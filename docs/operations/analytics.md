@@ -2,11 +2,13 @@
 
 The web app reports to the Google Analytics 4 property linked to the
 `ubc-newcomers` Firebase project (property `538109245`, web measurement ID
-`G-KMBQ9XTMXF`). It uses the Firebase Analytics SDK on the same Firebase web app
-that handles sign-in.
+`G-KMBQ9XTMXF`). It uses the Firebase Analytics SDK; Firebase no longer handles
+sign-in.
 
 `AnalyticsTracker` sends one `page_view` per client-side pathname change and sets
-the GA `user_id` to the member's Firebase UID while signed in. Engagement time
+the GA `user_id` to the member's id (`users.id`) while signed in. Before the
+Better Auth cutover it was the Firebase UID, so returning members appear once as new
+GA users. Engagement time
 (time on page) is collected automatically by GA while the tab is in the
 foreground and is attributed to the most recent `page_view`.
 
@@ -17,8 +19,8 @@ foreground and is attributed to the most recent `page_view`.
 | `VITE_FIREBASE_MEASUREMENT_ID=G-KMBQ9XTMXF` | `cloudflare-production` GitHub environment variable only, and local `web/.env` |
 | `VITE_ANALYTICS_DEBUG=true`                 | Local `web/.env` only, when testing                                            |
 
-Analytics stays off when the measurement ID is missing, when
-`VITE_AUTH_TEST_MODE=true` (Playwright), and on the dev server unless
+Analytics stays off when the measurement ID is missing (Playwright clears it), and
+on the dev server unless
 `VITE_ANALYTICS_DEBUG=true`. Debug mode marks events as developer traffic so they
 appear in GA DebugView.
 
@@ -72,7 +74,7 @@ Engagement → Pages and screens (average engagement time per page).
 
 ## Privacy (BC PIPA)
 
-Linking analytics to Firebase UIDs makes the analytics data personal
+Linking analytics to member ids makes the analytics data personal
 information under BC's Personal Information Protection Act. Google Analytics
 terms also require a privacy notice that discloses GA use. Never send emails,
 names, or other direct identifiers to GA.

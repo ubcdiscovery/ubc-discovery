@@ -1,4 +1,7 @@
 import type { Page } from "@playwright/test";
+import { createBetterAuthMock, mockSession, setMockSession, type MockUser } from "./session";
+
+export { setMockSession, type MockUser };
 import { createAdminApiMock, type AdminMockEvent } from "./admin";
 import { createApiKeysMock, type AdminMockApiCredential } from "./api-keys";
 import { createCandidatesMock, type AdminMockCandidate } from "./candidates";
@@ -88,6 +91,10 @@ export async function mockApi(
     onApiKeyCreate?: (body: Record<string, unknown>) => void;
     onApiKeyRevoke?: (id: string) => void;
     otpUid?: string;
+    /** Who "Continue with Google" signs in. */
+    googleUser?: MockUser;
+    /** Google sends the visitor back with ?error=… instead of a session. */
+    googleError?: boolean;
     profilesByUid?: Record<string, MockProfile | null>;
   } = {},
 ) {
@@ -114,11 +121,12 @@ export async function mockApi(
     onCreate: options.onApiKeyCreate,
     onRevoke: options.onApiKeyRevoke,
   });
+  const handleAuth = createBetterAuthMock(page, options);
   await page.route("http://api.test/**", async (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname.startsWith("/auth/") && (await handleAuth(route, url))) return;
     if (url.pathname === "/users/me" && route.request().method() === "GET") {
-      const authorization = route.request().headers().authorization ?? "";
-      const uid = authorization.match(/^Bearer mock-token:([^:]+):/)?.[1] ?? null;
+      const uid = mockSession(page)?.uid ?? null;
       await options.onProfileRequest?.(uid);
       const requestedProfile =
         uid &&
@@ -214,65 +222,6 @@ export async function mockApi(
       }
       return;
     }
-    if (url.pathname === "/auth/otp/send") {
-      if (options.sendError) {
-        await route.fulfill({
-          status: options.sendError.status,
-          contentType: "application/json",
-          body: JSON.stringify({
-            detail: options.sendError.code
-              ? {
-                  code: options.sendError.code,
-                  message: options.sendError.detail,
-                }
-              : options.sendError.detail,
-          }),
-        });
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          message: "sent",
-          expires_in_seconds: options.otpExpirySeconds ?? 600,
-        }),
-      });
-      return;
-    }
-    if (url.pathname === "/auth/otp/verify") {
-      if (options.verifyError) {
-        await route.fulfill({
-          status: options.verifyError.status,
-          contentType: "application/json",
-          body: JSON.stringify({
-            detail: options.verifyError.code
-              ? {
-                  code: options.verifyError.code,
-                  message: options.verifyError.detail,
-                }
-              : options.verifyError.detail,
-          }),
-        });
-        return;
-      }
-      const body = route.request().postDataJSON();
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          firebase_custom_token: `mock-token:otp-user:${body.email}`,
-          ...(options.otpUid
-            ? {
-                firebase_custom_token: `mock-token:${options.otpUid}:${body.email}`,
-              }
-            : {}),
-          is_new_user: !profile,
-          ubc_verified: false,
-        }),
-      });
-      return;
-    }
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -282,11 +231,7 @@ export async function mockApi(
 }
 export async function setAuthenticatedUser(
   page: Page,
-  user = { uid: "existing-uid", email: "member@example.com" },
+  user: MockUser = { uid: "existing-uid", email: "member@example.com" },
 ) {
-  await page.addInitScript((value) => {
-    if (!window.sessionStorage.getItem("ubc-discovery-test-firebase-user")) {
-      window.sessionStorage.setItem("ubc-discovery-test-firebase-user", JSON.stringify(value));
-    }
-  }, user);
+  setMockSession(page, user);
 }

@@ -22,7 +22,7 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
     const existing = await member();
     const target = await event();
     const api = app(serviceMocks().factory);
-    const headers = { uid: existing.identity.uid, jsonHeader: true };
+    const headers = { session: existing.identity.session, jsonHeader: true };
     const saved = await api.handle(
       request(`/saved-events/${target.id}`, { ...headers, method: "PUT" }),
     );
@@ -56,18 +56,18 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
     const target = await event();
     const api = app(serviceMocks().factory);
     const created = await api.handle(
-      request(`/saved-events/${target.id}`, { method: "PUT", uid: existing.identity.uid }),
+      request(`/saved-events/${target.id}`, { method: "PUT", session: existing.identity.session }),
     );
     expect(created.status).toBe(201);
     expect(created.headers.get("location")).toBe(`/saved-events/${target.id}`);
     const first = await created.json<MemberTestJson>();
     const again = await api.handle(
-      request(`/saved-events/${target.id}`, { method: "PUT", uid: existing.identity.uid }),
+      request(`/saved-events/${target.id}`, { method: "PUT", session: existing.identity.session }),
     );
     expect(again.status).toBe(200);
     expect(await again.json<MemberTestJson>()).toEqual(first);
     const list = await api.handle(
-      request("/saved-events?limit=20&skip=0", { uid: existing.identity.uid }),
+      request("/saved-events?limit=20&skip=0", { session: existing.identity.session }),
     );
     const value = await list.json<MemberTestJson>();
     expect(value.total).toBe(1);
@@ -79,7 +79,10 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
     });
     for (let attempt = 0; attempt < 2; attempt++) {
       const removed = await api.handle(
-        request(`/saved-events/${target.id}`, { method: "DELETE", uid: existing.identity.uid }),
+        request(`/saved-events/${target.id}`, {
+          method: "DELETE",
+          session: existing.identity.session,
+        }),
       );
       expect(removed.status).toBe(204);
       expect(await removed.text()).toBe("");
@@ -97,14 +100,16 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
         .values({ userId: existing.row.id, eventId: target.id, stars: 5 });
     });
     const api = app(serviceMocks().factory);
-    const saved = await api.handle(request("/saved-events", { uid: existing.identity.uid }));
+    const saved = await api.handle(
+      request("/saved-events", { session: existing.identity.session }),
+    );
     expect(await saved.json<MemberTestJson>()).toEqual({ saved_events: [], total: 0 });
-    const ratings = await api.handle(request("/ratings", { uid: existing.identity.uid }));
+    const ratings = await api.handle(request("/ratings", { session: existing.identity.session }));
     expect(await ratings.json<MemberTestJson>()).toEqual({ ratings: [], total: 0 });
     expect(
       (
         await api.handle(
-          request(`/saved-events/${target.id}`, { method: "PUT", uid: other.identity.uid }),
+          request(`/saved-events/${target.id}`, { method: "PUT", session: other.identity.session }),
         )
       ).status,
     ).toBe(404);
@@ -118,7 +123,7 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
     const future = await api.handle(
       request(`/ratings/mine/${target.id}`, {
         method: "POST",
-        uid: existing.identity.uid,
+        session: existing.identity.session,
         body: { stars: 5 },
       }),
     );
@@ -140,7 +145,7 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
     const created = await api.handle(
       request(`/ratings/mine/${target.id}`, {
         method: "POST",
-        uid: existing.identity.uid,
+        session: existing.identity.session,
         body: { stars: 5, strong_vibes: ["social"], note: "Nice event" },
       }),
     );
@@ -157,7 +162,7 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
     const updated = await api.handle(
       request(`/ratings/mine/${target.id}`, {
         method: "POST",
-        uid: existing.identity.uid,
+        session: existing.identity.session,
         body: { stars: 3 },
       }),
     );
@@ -169,22 +174,25 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
       created_at: first.created_at,
     });
     const mine = await api.handle(
-      request(`/ratings/mine/${target.id}`, { uid: existing.identity.uid }),
+      request(`/ratings/mine/${target.id}`, { session: existing.identity.session }),
     );
     expect((await mine.json<MemberTestJson>()).stars).toBe(3);
     const publicReviews = await api.handle(request(`/ratings/${target.id}`));
     expect(publicReviews.status).toBe(200);
     expect(await publicReviews.json<MemberTestJson>()).toHaveLength(1);
-    const privateList = await api.handle(request("/ratings", { uid: existing.identity.uid }));
+    const privateList = await api.handle(
+      request("/ratings", { session: existing.identity.session }),
+    );
     expect((await privateList.json<MemberTestJson>()).total).toBe(1);
     const other = await member();
     expect(
-      (await api.handle(request(`/ratings/mine/${target.id}`, { uid: other.identity.uid }))).status,
+      (await api.handle(request(`/ratings/mine/${target.id}`, { session: other.identity.session })))
+        .status,
     ).toBe(404);
     expect(
       (
         await (
-          await api.handle(request("/ratings", { uid: other.identity.uid }))
+          await api.handle(request("/ratings", { session: other.identity.session }))
         ).json<MemberTestJson>()
       ).total,
     ).toBe(0);
@@ -198,7 +206,10 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
     const saves = await Promise.all(
       Array.from({ length: 2 }, () =>
         api.handle(
-          request(`/saved-events/${target.id}`, { method: "PUT", uid: existing.identity.uid }),
+          request(`/saved-events/${target.id}`, {
+            method: "PUT",
+            session: existing.identity.session,
+          }),
         ),
       ),
     );
@@ -208,7 +219,7 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
         api.handle(
           request(`/ratings/mine/${target.id}`, {
             method: "POST",
-            uid: existing.identity.uid,
+            session: existing.identity.session,
             body: { stars },
           }),
         ),
@@ -223,13 +234,17 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
         await db.select().from(eventRatings).where(eq(eventRatings.eventId, target.id)),
       ).toHaveLength(1);
     });
-    const otherSaved = await api.handle(request("/saved-events", { uid: other.identity.uid }));
+    const otherSaved = await api.handle(
+      request("/saved-events", { session: other.identity.session }),
+    );
     expect(await otherSaved.json()).toEqual({ saved_events: [], total: 0 });
     const unsave = await api.handle(
-      request(`/saved-events/${target.id}`, { method: "DELETE", uid: other.identity.uid }),
+      request(`/saved-events/${target.id}`, { method: "DELETE", session: other.identity.session }),
     );
     expect(unsave.status).toBe(204);
-    const ownSaved = await api.handle(request("/saved-events", { uid: existing.identity.uid }));
+    const ownSaved = await api.handle(
+      request("/saved-events", { session: existing.identity.session }),
+    );
     expect((await ownSaved.json<MemberTestJson>()).total).toBe(1);
   });
 
@@ -243,7 +258,7 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
           await api.handle(
             request(`/ratings/mine/${target.id}`, {
               method: "POST",
-              uid: existing.identity.uid,
+              session: existing.identity.session,
               body: { stars },
             }),
           )
@@ -251,13 +266,16 @@ describe.skipIf(!testUrl)("saved events and ratings visibility contracts", () =>
       ).toBe(422);
     }
     expect(
-      (await api.handle(request("/saved-events?skip=-1", { uid: existing.identity.uid }))).status,
+      (await api.handle(request("/saved-events?skip=-1", { session: existing.identity.session })))
+        .status,
     ).toBe(422);
     expect(
-      (await api.handle(request("/ratings?limit=101", { uid: existing.identity.uid }))).status,
+      (await api.handle(request("/ratings?limit=101", { session: existing.identity.session })))
+        .status,
     ).toBe(422);
     expect(
-      (await api.handle(request("/saved-events?limit=0", { uid: existing.identity.uid }))).status,
+      (await api.handle(request("/saved-events?limit=0", { session: existing.identity.session })))
+        .status,
     ).toBe(200);
   });
 });

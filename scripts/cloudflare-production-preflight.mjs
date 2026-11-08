@@ -7,8 +7,9 @@ export const apiOrigin = "https://ubcdiscovery.com/api";
 export const webOrigin = "https://ubc-discovery-web.ubcdiscovery.workers.dev";
 export const secretNames = [
   "DATABASE_URL",
-  "FIREBASE_PROJECT_ID",
-  "FIREBASE_CREDENTIALS_JSON",
+  "BETTER_AUTH_SECRET",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
   "AWS_ACCESS_KEY_ID",
   "AWS_SECRET_ACCESS_KEY",
   "EMAIL_SENDER_EMAIL",
@@ -35,28 +36,14 @@ export function validateProductionConfiguration(env) {
   }
   if (env.CLOUDFLARE_ACCOUNT_ID !== account)
     throw new Error("Production Cloudflare account does not match configuration");
-  if (env.CLOUDFLARE_ENV !== "production" || env.VITE_AUTH_TEST_MODE !== "false") {
-    throw new Error("Production build must select production and disable auth test mode");
-  }
+  if (env.CLOUDFLARE_ENV !== "production")
+    throw new Error("Production build must select the production environment");
   if (env.VITE_API_URL)
     throw new Error("Production browser must use the same-origin API under /api");
-  if (env.FIREBASE_PROJECT_ID !== env.VITE_FIREBASE_PROJECT_ID)
-    throw new Error("API and browser Firebase projects must match");
-  let firebase;
-  try {
-    firebase = JSON.parse(env.FIREBASE_CREDENTIALS_JSON);
-  } catch {
-    throw new Error("Invalid Firebase credentials configuration");
-  }
-  if (
-    !firebase ||
-    firebase.project_id !== env.FIREBASE_PROJECT_ID ||
-    typeof firebase.client_email !== "string" ||
-    typeof firebase.private_key !== "string" ||
-    !firebase.private_key.includes("-----BEGIN PRIVATE KEY-----")
-  ) {
-    throw new Error("Firebase service credentials do not match production project");
-  }
+  if (Buffer.byteLength(env.BETTER_AUTH_SECRET) < 32)
+    throw new Error("Better Auth secret requires at least 32 bytes");
+  if (!env.GOOGLE_CLIENT_ID.endsWith(".apps.googleusercontent.com"))
+    throw new Error("Google sign-in client ID is not a Google OAuth client ID");
   if (Buffer.byteLength(env.UPLOAD_SIGNING_SECRET) < 32)
     throw new Error("Storage signing secret requires at least 32 bytes");
   let database;

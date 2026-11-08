@@ -4,6 +4,7 @@ import { Elysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { type Db, withDatabase, withTransaction } from "../db";
 import { otpCodes, users } from "../db/schema";
+import { authRequest } from "../auth";
 import { type ApiEnv, integerSetting } from "../env";
 import { requireMember } from "../http/auth";
 import { ApiError } from "../http/errors";
@@ -138,6 +139,22 @@ async function consumeOtp(
   if (failure) throw failure;
 }
 
+/** Better Auth's endpoints (sign-in, sessions, Google callback) under /auth. */
+export function createBetterAuthRoutes(
+  env: ApiEnv,
+  servicesFactory: ServicesFactory = () => createServices(env),
+) {
+  // A mount hands Better Auth the raw request; Elysia would otherwise read the body.
+  return new Elysia({ name: "better-auth", adapter: CloudflareAdapter, normalize: false }).mount(
+    "/auth",
+    (request: Request) => {
+      const services = servicesFactory();
+      return withDatabase(env, (db) => services.auth(db).handler(authRequest(env, request)));
+    },
+  );
+}
+
+/** UBC email confirmation for signed-in members. Static routes win over /auth/*. */
 export function createAuthRoutes(
   env: ApiEnv,
   servicesFactory: ServicesFactory = () => createServices(env),
@@ -145,47 +162,11 @@ export function createAuthRoutes(
   return new Elysia({ name: "member-auth", adapter: CloudflareAdapter, normalize: false })
     .onTransform(({ body }) => normalizeMemberInput(body))
     .post(
-      "/auth/otp/send",
-      async ({ body }) => {
-        const services = servicesFactory();
-        const seconds = await withDatabase(env, (db) =>
-          createAndSendOtp(env, db, services, body.email),
-        );
-        return {
-          message: "If this email is valid, you'll receive a verification code.",
-          expires_in_seconds: seconds,
-        };
-      },
-      { body: otpSendSchema, detail: { tags: ["Auth"] } },
-    )
-    .post(
-      "/auth/otp/verify",
-      async ({ body }) => {
-        const services = servicesFactory();
-        return withDatabase(env, async (db) => {
-          await consumeOtp(env, db, services, body.email, body.code);
-          const uid = await services.firebase.getOrCreateUser(body.email);
-          const token = await services.firebase.createCustomToken(uid);
-          const [member] = await db
-            .select({ id: users.id })
-            .from(users)
-            .where(eq(users.firebaseUid, uid))
-            .limit(1);
-          return {
-            firebase_custom_token: token,
-            is_new_user: !member,
-            ubc_verified: isUbcEmail(body.email),
-          };
-        });
-      },
-      { body: otpVerifySchema, detail: { tags: ["Auth"] } },
-    )
-    .post(
       "/auth/ubc-verify/send",
       async ({ body, request }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) => {
-          const member = await requireMember(db, request, services.firebase);
+          const member = await requireMember(db, request, services);
           if (!isUbcEmail(body.email))
             throw new ApiError(400, "Must be a UBC email address (*.ubc.ca).");
           if (member.ubcVerified) throw new ApiError(400, "Already verified.");
@@ -203,7 +184,7 @@ export function createAuthRoutes(
       async ({ body, request }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) => {
-          const member = await requireMember(db, request, services.firebase);
+          const member = await requireMember(db, request, services);
           if (!isUbcEmail(body.email))
             throw new ApiError(400, "Must be a UBC email address (*.ubc.ca).");
           await consumeOtp(env, db, services, body.email, body.code);

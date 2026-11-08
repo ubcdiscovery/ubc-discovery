@@ -10,7 +10,7 @@
     "start": "vp preview --host 127.0.0.1 --port 4173",
     "types": "wrangler types worker-configuration.d.ts --env-interface CloudflareEnvironment",
     "typecheck": "pnpm run types && react-router typegen && tsc",
-    "deploy:staging": "VITE_AUTH_TEST_MODE=false pnpm run build && wrangler deploy",
+    "deploy:staging": "pnpm run build && wrangler deploy",
     "deploy:dry-run": "pnpm run build && wrangler deploy --dry-run",
     "test:e2e": "playwright test",
     "test:e2e:live": "playwright test --config playwright.live.config.ts",
@@ -19,6 +19,7 @@
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@tanstack/react-query": "^5.100.14",
+    "better-auth": "1.7.14",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "firebase": "^12.13.0",

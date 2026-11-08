@@ -25,7 +25,7 @@ export function SignInForm() {
           <button
             type="button"
             onClick={flow.continueWithGoogle}
-            disabled={flow.loading || !flow.firebaseReady}
+            disabled={flow.loading}
             className="flex cursor-pointer items-center justify-center gap-2.5 border border-ink bg-bg py-3.5 font-mono text-xs font-bold uppercase tracking-wider text-ink disabled:opacity-50 md:tracking-wide"
           >
             <FcGoogle aria-hidden="true" size={14} />
@@ -174,11 +174,6 @@ export function SignInForm() {
       {flow.error && (
         <p role="alert" className="font-mono text-xs text-danger">
           {flow.error}
-        </p>
-      )}
-      {flow.firebaseConfigError && !flow.error && (
-        <p role="alert" className="font-mono text-xs text-danger">
-          {flow.firebaseConfigError}
         </p>
       )}
     </div>

@@ -8,7 +8,7 @@ import {
   testUrl,
   env,
   fixedNow,
-  email,
+  fixtureEmails,
   serviceMocks,
   app,
   request,
@@ -19,6 +19,12 @@ import {
 
 afterEach(cleanupMemberFixtures);
 
+function ubcEmail() {
+  const value = `${crypto.randomUUID()}@student.ubc.ca`;
+  fixtureEmails.add(value);
+  return value;
+}
+
 describe("UBC trust-badge domain boundary", () => {
   it("accepts only ubc.ca and its real subdomains", () => {
     for (const address of ["member@ubc.ca", "member@STUDENT.UBC.CA", "member@a.b.ubc.ca"])
@@ -28,27 +34,32 @@ describe("UBC trust-badge domain boundary", () => {
   });
 });
 
-describe.skipIf(!testUrl)("OTP persistence and concurrency against PostgreSQL", () => {
-  it("rejects malformed email addresses before delivery or Firebase calls", async () => {
+// Sign-in codes belong to Better Auth (member-sign-in.test.ts). These codes confirm
+// a member's optional UBC address and are still stored in otp_codes.
+describe.skipIf(!testUrl)("UBC confirmation codes against PostgreSQL", () => {
+  const send = (session: string, address: string) =>
+    request("/auth/ubc-verify/send", { method: "POST", session, body: { email: address } });
+  const confirm = (session: string, address: string, code: string) =>
+    request("/auth/ubc-verify/confirm", {
+      method: "POST",
+      session,
+      body: { email: address, code },
+    });
+
+  it("rejects malformed email addresses before delivery", async () => {
+    const existing = await member();
     const mocks = serviceMocks();
     const api = app(mocks.factory);
-    const sent = await api.handle(
-      request("/auth/otp/send", { method: "POST", body: { email: "not-an-email" } }),
-    );
-    const verified = await api.handle(
-      request("/auth/otp/verify", {
-        method: "POST",
-        body: { email: "not-an-email", code: "123456" },
-      }),
-    );
-    expect(sent.status).toBe(422);
-    expect(verified.status).toBe(422);
+    expect((await api.handle(send(existing.identity.session, "not-an-email"))).status).toBe(422);
+    expect(
+      (await api.handle(confirm(existing.identity.session, "not-an-email", "123456"))).status,
+    ).toBe(422);
     expect(mocks.sendEmail).not.toHaveBeenCalled();
-    expect(mocks.getOrCreateUser).not.toHaveBeenCalled();
   });
 
   it("normalizes input, generates bounded secure codes, invalidates old codes and sends only after commit", async () => {
-    const address = email();
+    const existing = await member();
+    const address = ubcEmail();
     const previous = await otp(address);
     const mocks = serviceMocks();
     mocks.sendEmail.mockImplementation(async (recipient, code) => {
@@ -63,11 +74,11 @@ describe.skipIf(!testUrl)("OTP persistence and concurrency against PostgreSQL", 
       });
     });
     const response = await app(mocks.factory).handle(
-      request("/auth/otp/send", { method: "POST", body: { email: ` ${address.toUpperCase()} ` } }),
+      send(existing.identity.session, ` ${address.toUpperCase()} `),
     );
     expect(response.status).toBe(200);
     expect(await response.json<MemberTestJson>()).toEqual({
-      message: "If this email is valid, you'll receive a verification code.",
+      message: "Verification code sent to your UBC email.",
       expires_in_seconds: 600,
     });
     expect(mocks.sendEmail).toHaveBeenCalledTimes(1);
@@ -79,33 +90,30 @@ describe.skipIf(!testUrl)("OTP persistence and concurrency against PostgreSQL", 
   });
 
   it("persists the failed delivery and enforces the rate limit", async () => {
-    const address = email();
-    const mocks = serviceMocks();
+    const existing = await member();
+    const address = ubcEmail();
+    const configuration = { ...env, OTP_RATE_LIMIT_PER_15MIN: "1" };
+    const mocks = serviceMocks(configuration);
     mocks.sendEmail.mockRejectedValue(new Error("private provider failure"));
-    const api = app(mocks.factory, { ...env, OTP_RATE_LIMIT_PER_15MIN: "1" });
-    const failed = await api.handle(
-      request("/auth/otp/send", { method: "POST", body: { email: address } }),
-    );
+    const api = app(mocks.factory, configuration);
+    const failed = await api.handle(send(existing.identity.session, address));
     expect(failed.status).toBe(500);
     expect(await failed.json<MemberTestJson>()).toEqual({
       detail: { code: "OTP_DELIVERY_FAILED", message: "Failed to send verification email." },
     });
-    const limited = await api.handle(
-      request("/auth/otp/send", { method: "POST", body: { email: address } }),
-    );
+    const limited = await api.handle(send(existing.identity.session, address));
     expect(limited.status).toBe(429);
     expect((await limited.json<MemberTestJson>()).detail.code).toBe("OTP_RATE_LIMITED");
     expect(mocks.sendEmail).toHaveBeenCalledTimes(1);
   });
 
   it("serializes concurrent first-email sends so no rate-limit bypass or extra active codes remain", async () => {
-    const address = email();
+    const existing = await member();
+    const address = ubcEmail();
     const mocks = serviceMocks();
     const api = app(mocks.factory);
     const responses = await Promise.all(
-      Array.from({ length: 4 }, () =>
-        api.handle(request("/auth/otp/send", { method: "POST", body: { email: address } })),
-      ),
+      Array.from({ length: 4 }, () => api.handle(send(existing.identity.session, address))),
     );
     expect(responses.map((response) => response.status).sort()).toEqual([200, 200, 200, 429]);
     expect(mocks.sendEmail).toHaveBeenCalledTimes(3);
@@ -117,20 +125,17 @@ describe.skipIf(!testUrl)("OTP persistence and concurrency against PostgreSQL", 
   });
 
   it("commits wrong attempts and terminal used state before returning errors", async () => {
-    const address = email();
+    const existing = await member();
+    const address = ubcEmail();
     const code = await otp(address);
-    const mocks = serviceMocks();
-    const api = app(mocks.factory, { ...env, OTP_MAX_ATTEMPTS: "2" });
+    const configuration = { ...env, OTP_MAX_ATTEMPTS: "2" };
+    const api = app(serviceMocks(configuration).factory, configuration);
     for (let attempt = 0; attempt < 2; attempt++) {
-      const response = await api.handle(
-        request("/auth/otp/verify", { method: "POST", body: { email: address, code: "wrong" } }),
-      );
+      const response = await api.handle(confirm(existing.identity.session, address, "999999"));
       expect(response.status).toBe(400);
       expect((await response.json<MemberTestJson>()).detail.code).toBe("OTP_INVALID");
     }
-    const terminal = await api.handle(
-      request("/auth/otp/verify", { method: "POST", body: { email: address, code: "123456" } }),
-    );
+    const terminal = await api.handle(confirm(existing.identity.session, address, "123456"));
     expect((await terminal.json<MemberTestJson>()).detail.code).toBe("OTP_TOO_MANY_ATTEMPTS");
     await withDatabase(env, async (db) =>
       expect((await db.select().from(otpCodes).where(eq(otpCodes.id, code.id)))[0]).toMatchObject({
@@ -138,18 +143,16 @@ describe.skipIf(!testUrl)("OTP persistence and concurrency against PostgreSQL", 
         used: true,
       }),
     );
-    expect(mocks.getOrCreateUser).not.toHaveBeenCalled();
   });
 
   it("does not lose concurrent incorrect attempts", async () => {
-    const address = email();
+    const existing = await member();
+    const address = ubcEmail();
     const code = await otp(address);
     const api = app(serviceMocks().factory);
     const results = await Promise.all(
       Array.from({ length: 4 }, () =>
-        api.handle(
-          request("/auth/otp/verify", { method: "POST", body: { email: address, code: "wrong" } }),
-        ),
+        api.handle(confirm(existing.identity.session, address, "999999")),
       ),
     );
     expect(results.map((value) => value.status)).toEqual([400, 400, 400, 400]);
@@ -161,64 +164,28 @@ describe.skipIf(!testUrl)("OTP persistence and concurrency against PostgreSQL", 
   });
 
   it("permits exactly one concurrent consumption of a valid code", async () => {
-    const address = email();
+    const existing = await member();
+    const address = ubcEmail();
     await otp(address);
-    const mocks = serviceMocks();
-    const api = app(mocks.factory);
+    const api = app(serviceMocks().factory);
     const results = await Promise.all(
       Array.from({ length: 2 }, () =>
-        api.handle(
-          request("/auth/otp/verify", { method: "POST", body: { email: address, code: "123456" } }),
-        ),
+        api.handle(confirm(existing.identity.session, address, "123456")),
       ),
     );
     expect(results.map((value) => value.status).sort()).toEqual([200, 400]);
-    expect(mocks.getOrCreateUser).toHaveBeenCalledTimes(1);
     const rejected = results.find((value) => value.status === 400)!;
     expect((await rejected.json<MemberTestJson>()).detail.code).toBe("OTP_EXPIRED");
   });
 
-  it("does not restore a consumed code when Firebase fails", async () => {
-    const address = email();
-    const code = await otp(address);
-    const mocks = serviceMocks();
-    mocks.getOrCreateUser.mockRejectedValue(new Error("offline provider failure"));
-    const response = await app(mocks.factory).handle(
-      request("/auth/otp/verify", { method: "POST", body: { email: address, code: "123456" } }),
-    );
-    expect(response.status).toBe(500);
-    await withDatabase(env, async (db) =>
-      expect((await db.select().from(otpCodes).where(eq(otpCodes.id, code.id)))[0]!.used).toBe(
-        true,
-      ),
-    );
-  });
-
-  it("recognizes an existing member by Firebase UID", async () => {
+  it("rejects an expired code", async () => {
     const existing = await member();
-    await otp(existing.identity.email);
-    const response = await app(serviceMocks().factory).handle(
-      request("/auth/otp/verify", {
-        method: "POST",
-        body: { email: existing.identity.email, code: "123456" },
-      }),
-    );
-    expect(response.status).toBe(200);
-    expect(await response.json<MemberTestJson>()).toMatchObject({
-      is_new_user: false,
-      ubc_verified: false,
-    });
-  });
-
-  it("rejects an expired or used code without calling Firebase", async () => {
-    const address = email();
+    const address = ubcEmail();
     await otp(address, { expiresAt: fixedNow });
-    const mocks = serviceMocks();
-    const response = await app(mocks.factory).handle(
-      request("/auth/otp/verify", { method: "POST", body: { email: address, code: "123456" } }),
+    const response = await app(serviceMocks().factory).handle(
+      confirm(existing.identity.session, address, "123456"),
     );
     expect(response.status).toBe(400);
     expect((await response.json<MemberTestJson>()).detail.code).toBe("OTP_EXPIRED");
-    expect(mocks.getOrCreateUser).not.toHaveBeenCalled();
   });
 });

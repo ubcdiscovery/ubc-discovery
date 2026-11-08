@@ -24,7 +24,7 @@ This is a single-context repository using the root domain glossary and root ADR 
 - **Database**: Neon PostgreSQL 18 with pgvector; migrations via Drizzle Kit
 - **Storage**: private Cloudflare R2 bucket
 - **AWS (us-west-2)**: Bedrock Titan Embeddings for recommendations, SES for OTP email
-- **Auth**: Firebase — Google sign-in, or email OTP exchanged for a Firebase custom token
+- **Auth**: [Better Auth](https://better-auth.com) in the API (`workers/api/src/auth.ts`) — Google sign-in or an emailed sign-in code; sessions are cookies stored in Postgres. Firebase remains only for Google Analytics
 
 The API enqueues Candidates for the extraction Worker, which calls back into the API with results.
 
@@ -52,12 +52,12 @@ The database starts empty. To use admin pages, sign in once, then set `is_admin 
 
 ```bash
 cd web
-cp .env.example .env # fill in the Firebase web config
+cp .env.example .env # Firebase web config, used only for analytics
 cp .dev.vars.example .dev.vars # API settings and secrets
 pnpm dev # http://localhost:5173, API at http://localhost:5173/api
 ```
 
-Browsing events needs only the database. Sign-in needs the Firebase values (plus AWS SES for email OTP), and image uploads need staging R2 credentials and `UPLOAD_SIGNING_SECRET`. AWS Bedrock is optional: without it, new events get no embedding and are left out of similarity ranking.
+Browsing events needs only the database. Sign-in needs `BETTER_AUTH_SECRET` (any random 32+ bytes) in `.dev.vars`; Google sign-in also needs `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, and emailed codes need AWS SES. Image uploads need staging R2 credentials and `UPLOAD_SIGNING_SECRET`. AWS Bedrock is optional: without it, new events get no embedding and are left out of similarity ranking.
 
 ### Extraction Worker
 
@@ -99,7 +99,7 @@ web/
 │   ├── routes/                  # Discover, event detail, organizers, profile, saved, auth/onboarding, admin
 │   ├── components/              # Web UI components
 │   └── lib/                     # API client, constants, date utilities
-├── workers/app.ts               # Cloudflare Worker entry: /api, Firebase auth proxy, SSR
+├── workers/app.ts               # Cloudflare Worker entry: /api, SSR
 ├── wrangler.jsonc               # Staging default, Previews + production (ubcdiscovery.com) Worker config
 └── vite.config.ts
 
@@ -111,7 +111,7 @@ docs/operations/                 # Runbooks for production, migrations, storage,
 ### API
 
 - Auth: event discovery is public; saved events, ratings, profiles, and personalized recommendations are member-only
-- API requests authenticate with Firebase ID tokens; ingestion integrations use managed API credentials
+- Members authenticate with the Better Auth session cookie (`requireMember`/`requireAdmin` in `src/http/auth.ts`); ingestion integrations use managed API credentials. Better Auth owns `/api/auth/*` and maps its user onto `users`: sign-in creates the row, `POST /users/onboarding` completes it
 - UBC email is not required for membership; `*.ubc.ca` is only used to confirm the optional `ubc_verified` entry for future functionality
 - Profile pictures and event images: exact-size presigned R2 PUT uploads, served through the API's `/media/public/` route; key stored in DB (`profile_picture_key`, `event_picture_key`)
 - Location text is the human-facing source of truth for where an event happens
@@ -123,7 +123,7 @@ docs/operations/                 # Runbooks for production, migrations, storage,
 - React Router 8 routes live in `web/app/routes/`; shared web UI lives in `web/app/components/`. See `web/AGENTS.md` for UI conventions.
 - Use PascalCase for shared component filenames and exported component identifiers in `web/app/components/` (for example, `EventCard.tsx` exports `EventCard`). Keep route module filenames in `web/app/routes/` lowercase/kebab-case.
 - API helpers live in `web/app/lib/api.ts`. The browser calls the same-origin `/api`.
-- Google Analytics (Firebase Analytics) lives in `web/app/lib/analytics.ts`; `AnalyticsTracker` sends page views and the member's Firebase UID. Never send emails, names, or other direct identifiers to analytics. See `docs/operations/analytics.md`.
+- Google Analytics (Firebase Analytics) lives in `web/app/lib/analytics.ts`; `AnalyticsTracker` sends page views and the member's id (`users.id`). Never send emails, names, or other direct identifiers to analytics. See `docs/operations/analytics.md`.
 
 ## Deployment
 

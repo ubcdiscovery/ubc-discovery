@@ -43,7 +43,7 @@ export function createRatingRoutes(
       async ({ request, query }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) => {
-          const member = await requireMember(db, request, services.firebase);
+          const member = await requireMember(db, request, services);
           const where = and(eq(eventRatings.userId, member.id), eq(events.isArchived, false));
           const [total] = await db
             .select({ count: count() })
@@ -71,7 +71,7 @@ export function createRatingRoutes(
       async ({ request, body, params }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) => {
-          const member = await requireMember(db, request, services.firebase);
+          const member = await requireMember(db, request, services);
           await verifyEvent(db, params.event_id, services.now());
           const values = {
             stars: body.stars,
@@ -96,7 +96,7 @@ export function createRatingRoutes(
       async ({ request, params }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) => {
-          const member = await requireMember(db, request, services.firebase);
+          const member = await requireMember(db, request, services);
           await verifyEvent(db, params.event_id, services.now());
           const [rating] = await db
             .select()

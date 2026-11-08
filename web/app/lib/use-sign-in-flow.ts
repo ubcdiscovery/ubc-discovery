@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { api } from "~/lib/api";
+import { useSearchParams } from "react-router";
 import { useAuth } from "~/lib/auth";
-import { authErrorMessage } from "~/lib/auth-errors";
-import { pendingGoogleLinkEmail } from "~/lib/firebase";
+import { authErrorMessage, GOOGLE_SIGN_IN_FAILED } from "~/lib/auth-errors";
 
 const RESEND_COOLDOWN_MS = 30_000;
 
@@ -13,12 +12,16 @@ type OtpSendResponse = {
 };
 
 export function useSignInFlow() {
-  const { signInWithOtpToken, signInWithGoogle, firebaseReady, firebaseConfigError } = useAuth();
+  const { sendSignInCode, signInWithCode, signInWithGoogle } = useAuth();
+  // Better Auth returns here with ?error=… when Google sign-in fails.
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<SignInStep>("email");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() =>
+    searchParams.has("error") ? GOOGLE_SIGN_IN_FAILED : "",
+  );
   const [expiresAt, setExpiresAt] = useState(0);
   const [resendAvailableAt, setResendAvailableAt] = useState(0);
   const [now, setNow] = useState(() => Date.now());
@@ -34,12 +37,6 @@ export function useSignInFlow() {
     return () => window.clearInterval(timer);
   }, [step]);
 
-  function requireFirebaseReady() {
-    if (!firebaseConfigError) return true;
-    setError(firebaseConfigError);
-    return false;
-  }
-
   function enterCodeStep(nextEmail: string, response: OtpSendResponse, isReplacement: boolean) {
     const sentAt = Date.now();
     setEmail(nextEmail);
@@ -53,12 +50,12 @@ export function useSignInFlow() {
 
   async function sendOtp() {
     const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail || !requireFirebaseReady()) return;
+    if (!normalizedEmail) return;
 
     setLoading(true);
     setError("");
     try {
-      const response = await api.auth.sendOtp(normalizedEmail);
+      const response = await sendSignInCode(normalizedEmail);
       enterCodeStep(normalizedEmail, response, false);
     } catch (cause) {
       setError(authErrorMessage(cause) ?? "");
@@ -73,7 +70,7 @@ export function useSignInFlow() {
     setLoading(true);
     setError("");
     try {
-      const response = await api.auth.sendOtp(email);
+      const response = await sendSignInCode(email);
       enterCodeStep(email, response, true);
     } catch (cause) {
       setError(authErrorMessage(cause) ?? "");
@@ -87,13 +84,10 @@ export function useSignInFlow() {
       setError("Enter the six-digit code from your email.");
       return;
     }
-    if (!requireFirebaseReady()) return;
-
     setLoading(true);
     setError("");
     try {
-      const response = await api.auth.verifyOtp(email, code);
-      await signInWithOtpToken(response.firebase_custom_token);
+      await signInWithCode(email, code);
     } catch (cause) {
       setError(authErrorMessage(cause) ?? "");
     } finally {
@@ -109,29 +103,16 @@ export function useSignInFlow() {
   }
 
   async function continueWithGoogle() {
-    if (!requireFirebaseReady()) return;
-
     setLoading(true);
     setError("");
     try {
+      // Google signs in an existing member with the same address; Better Auth links them.
       await signInWithGoogle();
     } catch (cause) {
-      const linkEmail = pendingGoogleLinkEmail(cause);
-      if (!linkEmail) {
-        setError(authErrorMessage(cause) ?? "");
-        return;
-      }
-
-      try {
-        const response = await api.auth.sendOtp(linkEmail);
-        enterCodeStep(linkEmail, response, false);
-        setError("Verify this email to connect Google to your existing account.");
-      } catch (sendCause) {
-        setError(authErrorMessage(sendCause) ?? "");
-      }
-    } finally {
+      setError(authErrorMessage(cause) ?? "");
       setLoading(false);
     }
+    // On success the browser is leaving for Google, so the button stays disabled.
   }
 
   return {
@@ -141,8 +122,6 @@ export function useSignInFlow() {
     continueWithGoogle,
     email,
     error,
-    firebaseConfigError,
-    firebaseReady,
     loading,
     replacementNotice,
     resendOtp,

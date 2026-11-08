@@ -66,7 +66,7 @@ export function createRecommendationRoutes(
       async ({ request, query }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) => {
-          const user = await requireMember(db, request, services.firebase);
+          const user = await requireMember(db, request, services);
           const saves = await db
             .select()
             .from(savedEvents)

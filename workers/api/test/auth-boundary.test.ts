@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
-import { hashSecret, parseApiToken, requireIdentity, verifySecret } from "../src/http/auth";
-import type { FirebaseService } from "../src/services/firebase";
+import type { Auth } from "../src/auth";
+import type { Db } from "../src/db";
+import { hashSecret, parseApiToken, requireSessionUser, verifySecret } from "../src/http/auth";
 
 describe("existing authentication boundaries", () => {
   it("matches existing SHA256 credential digests", async () => {
@@ -21,30 +22,30 @@ describe("existing authentication boundaries", () => {
     ])
       expect(parseApiToken(token)).toBeNull();
   });
-  it("never allows an API key or unverified identity to act as a member", async () => {
-    const firebase: FirebaseService = {
-      verifyIdToken: async () => ({
-        uid: "fixture",
-        email: "fixture@example.test",
-        name: "Fixture",
-        email_verified: false,
-      }),
-      getOrCreateUser: async () => "fixture",
-      createCustomToken: async () => "fixture",
-    };
-    await expect(requireIdentity(new Request("http://localhost/"), firebase)).rejects.toMatchObject(
-      { status: 401 },
-    );
+  it("never treats a request without a session, or a cross-site one, as a member", async () => {
+    const db = {} as Db;
+    const auth = (session: unknown) => ({
+      auth: () => ({ api: { getSession: async () => session } }) as unknown as Auth,
+    });
     await expect(
-      requireIdentity(
+      requireSessionUser(
+        db,
         new Request("http://localhost/", { headers: { authorization: "Api-Key abc" } }),
-        firebase,
+        auth(null),
+      ),
+    ).rejects.toMatchObject({ status: 401 });
+    await expect(
+      requireSessionUser(
+        db,
+        new Request("http://localhost/", { headers: { "sec-fetch-site": "cross-site" } }),
+        auth({ user: { id: "fixture" } }),
       ),
     ).rejects.toMatchObject({ status: 403 });
     await expect(
-      requireIdentity(
-        new Request("http://localhost/", { headers: { authorization: "Bearer fixture" } }),
-        firebase,
+      requireSessionUser(
+        db,
+        new Request("http://localhost/", { headers: { "sec-fetch-site": "same-site" } }),
+        auth({ user: { id: "fixture" } }),
       ),
     ).rejects.toMatchObject({ status: 403 });
   });

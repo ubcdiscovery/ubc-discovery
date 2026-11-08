@@ -81,14 +81,16 @@ describe.skipIf(!testUrl)(
       path: string,
       method = "GET",
       body?: unknown,
-      auth = "Bearer member",
+      auth: "member" | "admin" | `Api-Key ${string}` = "member",
       sizes?: string,
     ) =>
       app.handle(
         new Request(`http://localhost${path}`, {
           method,
           headers: {
-            authorization: auth,
+            ...(auth === "member" || auth === "admin"
+              ? { cookie: fixture.sessions[auth] }
+              : { authorization: auth }),
             "Content-Type": "application/json",
             ...(sizes === undefined ? {} : { "X-Image-File-Sizes": sizes }),
           },
@@ -110,7 +112,7 @@ describe.skipIf(!testUrl)(
         await db
           .update(users)
           .set({ profilePictureKey: "profile-pictures/original" })
-          .where(eq(users.firebaseUid, "member"));
+          .where(eq(users.email, "member@example.test"));
         await db.insert(events).values({
           id: "sizing01",
           title: "Size fixture",
@@ -135,7 +137,7 @@ describe.skipIf(!testUrl)(
       expect(fixture.storage.deleteObject).not.toHaveBeenCalled();
       expect(fixture.storage.generatePresignedUpload).not.toHaveBeenCalled();
       const [member] = await withDatabase(fixture.env, (db) =>
-        db.select().from(users).where(eq(users.firebaseUid, "member")),
+        db.select().from(users).where(eq(users.email, "member@example.test")),
       );
       expect(member!.profilePictureKey).toBe("profile-pictures/original");
     });
@@ -151,7 +153,7 @@ describe.skipIf(!testUrl)(
             "/admin/events/sizing01/presigned-upload?file_size_bytes=456",
             "POST",
             undefined,
-            "Bearer admin",
+            "admin",
           )
         ).status,
       ).toBe(200);
@@ -171,7 +173,7 @@ describe.skipIf(!testUrl)(
               `/admin/events/sizing01/presigned-upload${query}`,
               "POST",
               undefined,
-              "Bearer admin",
+              "admin",
             )
           ).status,
         ).toBe(422);
@@ -185,7 +187,7 @@ describe.skipIf(!testUrl)(
 
     it("preserves the previous profile when upload signing is unavailable", async () => {
       const [before] = await withDatabase(fixture.env, (db) =>
-        db.select().from(users).where(eq(users.firebaseUid, "member")),
+        db.select().from(users).where(eq(users.email, "member@example.test")),
       );
       vi.mocked(fixture.storage.generatePresignedUpload).mockRejectedValueOnce(
         new ApiError(503, "R2 upload credentials are not configured"),
@@ -193,7 +195,7 @@ describe.skipIf(!testUrl)(
       expect((await request("/users/me/presigned-upload?file_size_bytes=123")).status).toBe(503);
       expect(fixture.storage.deleteObject).not.toHaveBeenCalled();
       const [after] = await withDatabase(fixture.env, (db) =>
-        db.select().from(users).where(eq(users.firebaseUid, "member")),
+        db.select().from(users).where(eq(users.email, "member@example.test")),
       );
       expect(after!.profilePictureKey).toBe(before!.profilePictureKey);
     });

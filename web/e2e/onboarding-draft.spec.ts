@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { mockApi, setAuthenticatedUser } from "./support/auth";
+import { mockApi, setAuthenticatedUser, setMockSession } from "./support/auth";
 
-test("restores an interrupted draft only for the same Firebase UID", async ({ page }) => {
+test("restores an interrupted draft only for the same account", async ({ page }) => {
   await mockApi(page, { profile: null });
   await setAuthenticatedUser(page, {
     uid: "account-a",
@@ -16,13 +16,7 @@ test("restores an interrupted draft only for the same Firebase UID", async ({ pa
   await page.goto("/welcome/name");
   await expect(page.locator("input:visible")).toHaveValue("Account A Draft");
 
-  await page.evaluate(() => {
-    window.sessionStorage.setItem(
-      "ubc-discovery-test-firebase-user",
-      JSON.stringify({ uid: "account-b", email: "b@example.com" }),
-    );
-    window.dispatchEvent(new CustomEvent("ubc-test-auth-changed"));
-  });
+  setMockSession(page, { uid: "account-b", email: "b@example.com" });
   await page.reload();
   await expect(page.locator("input:visible")).toHaveValue("");
 });

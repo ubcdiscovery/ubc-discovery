@@ -12,7 +12,7 @@ type Waiter = {
 };
 
 function identityChangedError() {
-  return new Error("Firebase identity changed before sign-in completed.");
+  return new Error("The signed-in account changed before sign-in completed.");
 }
 
 export function createProfileHydrationCoordinator() {
