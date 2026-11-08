@@ -9,7 +9,6 @@ export interface ApiEnv {
   STORAGE_PROVIDER?: string;
   R2_ACCOUNT_ID?: string;
   R2_BUCKET_NAME?: string;
-  CORS_ALLOWED_ORIGINS?: string;
   OTP_EXPIRY_MINUTES?: string;
   OTP_MAX_ATTEMPTS?: string;
   OTP_RATE_LIMIT_PER_15MIN?: string;
@@ -17,8 +16,9 @@ export interface ApiEnv {
   DATABASE_URL?: string;
   DIRECT_DATABASE_URL?: string;
   HYPERDRIVE?: Hyperdrive;
-  FIREBASE_PROJECT_ID?: string;
-  FIREBASE_CREDENTIALS_JSON?: string;
+  BETTER_AUTH_SECRET?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
   AWS_ACCESS_KEY_ID?: string;
   AWS_SECRET_ACCESS_KEY?: string;
   AWS_SESSION_TOKEN?: string;
@@ -29,7 +29,6 @@ export interface ApiEnv {
   R2_SECRET_ACCESS_KEY?: string;
   UPLOAD_SIGNING_SECRET?: string;
   API_PUBLIC_BASE_URL?: string;
-  CORS_ALLOWED_ORIGIN_REGEX?: string;
   EXTRACTION_QUEUE_PRODUCER_URL?: string;
   EXTRACTION_QUEUE_PRODUCER_SECRET?: string;
   PROFILE_PHOTO_MAX_BYTES?: string;

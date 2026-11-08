@@ -26,7 +26,7 @@ describe.skipIf(!testUrl)("queue extraction and ingestion PostgreSQL parity", ()
       403,
     );
     expect((await fixture.request("/extraction/recovery", "GET", undefined, "member")).status).toBe(
-      403,
+      401,
     );
     expect((await fixture.request("/extraction/recovery", "GET", undefined, "none")).status).toBe(
       401,

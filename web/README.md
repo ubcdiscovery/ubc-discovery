@@ -12,10 +12,11 @@ pnpm dev
 ```
 
 The frontend runs at `http://localhost:5173`, with the API under `/api` from the
-same Worker. Fill in the public Firebase web app configuration in `.env` and the API
-settings in `.dev.vars` (copy `.dev.vars.example`). These `VITE_*` settings are
-compiled into the browser assets at build time, so changing a Worker binding after
-deployment does not change the Firebase configuration.
+same Worker. Fill in the public Firebase web app configuration (Google Analytics) in
+`.env` and the API settings, including the Better Auth and Google sign-in values, in
+`.dev.vars` (copy `.dev.vars.example`). These `VITE_*` settings are compiled into the
+browser assets at build time, so changing a Worker binding after deployment does not
+change them.
 
 ## Validation and preview
 
@@ -28,7 +29,7 @@ pnpm start
 
 `pnpm start` serves the built application locally at `http://127.0.0.1:4173`, including
 its Worker SSR entry and static assets. The existing `pnpm run test:e2e` suite builds
-and starts this same runtime with mocked API requests and explicit auth test mode.
+and starts this same runtime with mocked API requests, including Better Auth's endpoints (`e2e/support/session.ts`).
 
 ## Staging deployment
 
@@ -45,10 +46,10 @@ Wrangler deploys that generated build, not the uncompiled Worker source.
 
 Cloudflare Workers Builds deploys staging from `main` and posts a Preview URL on
 each pull request. Its build settings (root `/web`, the Firebase `VITE_*` build
-variables, `VITE_AUTH_TEST_MODE=false`) and the API secrets live on the
-`ubc-discovery-web-staging` Worker and its Preview base config in Cloudflare. For a
-manual deploy, set the public Firebase `VITE_*` values and keep `VITE_AUTH_TEST_MODE`
-disabled.
+variables) and the API secrets live on the `ubc-discovery-web-staging` Worker and
+its Preview base config in Cloudflare. Staging and Previews need their own
+`BETTER_AUTH_SECRET`. Google sign-in works only where its callback URL is registered
+on the OAuth client, which is production and localhost today.
 
 ## Production
 

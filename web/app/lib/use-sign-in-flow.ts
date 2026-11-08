@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { api } from "~/lib/api";
+import { useSearchParams } from "react-router";
 import { useAuth } from "~/lib/auth";
-import { authErrorMessage } from "~/lib/auth-errors";
-import { pendingGoogleLinkEmail } from "~/lib/firebase";
+import { SIGN_IN_ERROR_PARAM } from "~/lib/auth-client";
+import { authErrorMessage, GOOGLE_SIGN_IN_FAILED } from "~/lib/auth-errors";
 
 const RESEND_COOLDOWN_MS = 30_000;
 
@@ -13,12 +13,15 @@ type OtpSendResponse = {
 };
 
 export function useSignInFlow() {
-  const { signInWithOtpToken, signInWithGoogle, firebaseReady, firebaseConfigError } = useAuth();
+  const { sendSignInCode, signInWithCode, redirectToGoogleSignIn } = useAuth();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<SignInStep>("email");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() =>
+    searchParams.has(SIGN_IN_ERROR_PARAM) ? GOOGLE_SIGN_IN_FAILED : "",
+  );
   const [expiresAt, setExpiresAt] = useState(0);
   const [resendAvailableAt, setResendAvailableAt] = useState(0);
   const [now, setNow] = useState(() => Date.now());
@@ -34,12 +37,6 @@ export function useSignInFlow() {
     return () => window.clearInterval(timer);
   }, [step]);
 
-  function requireFirebaseReady() {
-    if (!firebaseConfigError) return true;
-    setError(firebaseConfigError);
-    return false;
-  }
-
   function enterCodeStep(nextEmail: string, response: OtpSendResponse, isReplacement: boolean) {
     const sentAt = Date.now();
     setEmail(nextEmail);
@@ -53,12 +50,12 @@ export function useSignInFlow() {
 
   async function sendOtp() {
     const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail || !requireFirebaseReady()) return;
+    if (!normalizedEmail) return;
 
     setLoading(true);
     setError("");
     try {
-      const response = await api.auth.sendOtp(normalizedEmail);
+      const response = await sendSignInCode(normalizedEmail);
       enterCodeStep(normalizedEmail, response, false);
     } catch (cause) {
       setError(authErrorMessage(cause) ?? "");
@@ -73,7 +70,7 @@ export function useSignInFlow() {
     setLoading(true);
     setError("");
     try {
-      const response = await api.auth.sendOtp(email);
+      const response = await sendSignInCode(email);
       enterCodeStep(email, response, true);
     } catch (cause) {
       setError(authErrorMessage(cause) ?? "");
@@ -87,13 +84,10 @@ export function useSignInFlow() {
       setError("Enter the six-digit code from your email.");
       return;
     }
-    if (!requireFirebaseReady()) return;
-
     setLoading(true);
     setError("");
     try {
-      const response = await api.auth.verifyOtp(email, code);
-      await signInWithOtpToken(response.firebase_custom_token);
+      await signInWithCode(email, code);
     } catch (cause) {
       setError(authErrorMessage(cause) ?? "");
     } finally {
@@ -109,27 +103,12 @@ export function useSignInFlow() {
   }
 
   async function continueWithGoogle() {
-    if (!requireFirebaseReady()) return;
-
     setLoading(true);
     setError("");
     try {
-      await signInWithGoogle();
+      await redirectToGoogleSignIn();
     } catch (cause) {
-      const linkEmail = pendingGoogleLinkEmail(cause);
-      if (!linkEmail) {
-        setError(authErrorMessage(cause) ?? "");
-        return;
-      }
-
-      try {
-        const response = await api.auth.sendOtp(linkEmail);
-        enterCodeStep(linkEmail, response, false);
-        setError("Verify this email to connect Google to your existing account.");
-      } catch (sendCause) {
-        setError(authErrorMessage(sendCause) ?? "");
-      }
-    } finally {
+      setError(authErrorMessage(cause) ?? "");
       setLoading(false);
     }
   }
@@ -141,8 +120,6 @@ export function useSignInFlow() {
     continueWithGoogle,
     email,
     error,
-    firebaseConfigError,
-    firebaseReady,
     loading,
     replacementNotice,
     resendOtp,

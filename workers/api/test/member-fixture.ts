@@ -1,15 +1,15 @@
-import { inArray } from "drizzle-orm";
+import { eq, inArray, like } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { vi } from "vite-plus/test";
 import { withDatabase } from "../src/db";
-import { events, otpCodes, users } from "../src/db/schema";
+import { events, rateLimits, users, verifications } from "../src/db/schema";
 import type { ApiEnv } from "../src/env";
-import { ApiError, errorResponse } from "../src/http/errors";
+import { errorResponse } from "../src/http/errors";
 import { createMemberRoutes } from "../src/routes/users";
-import type { FirebaseIdentity } from "../src/services/firebase";
 import type { ServicesFactory } from "../src/services";
 import type { ObjectStorage } from "../src/services/storage";
+import { authTestEnv, realAuth, sessionCookie } from "./auth-fixture";
 
 export interface MemberTestJson {
   id: string;
@@ -27,16 +27,25 @@ if (testUrl && !["localhost", "127.0.0.1", "::1", "[::1]"].includes(new URL(test
   throw new Error("Member integration tests require a disposable localhost database");
 }
 export const env = {
+  ...authTestEnv,
   DATABASE_URL: testUrl,
   OTP_EXPIRY_MINUTES: "10",
   OTP_MAX_ATTEMPTS: "5",
   OTP_RATE_LIMIT_PER_15MIN: "3",
 } as ApiEnv;
+const octet = () => Math.floor(Math.random() * 254) + 1;
+/** Each test file is its own client, so Better Auth's per-IP counters never collide. */
+const clientIp = `10.${octet()}.${octet()}.${octet()}`;
 export const fixedNow = new Date("2026-10-12T00:00:00Z");
 export const fixtureEmails = new Set<string>();
 export const fixtureUserIds = new Set<string>();
 export const fixtureEventIds = new Set<string>();
-export const identities = new Map<string, FirebaseIdentity>();
+
+export interface Identity {
+  id: string;
+  email: string;
+  session: string;
+}
 
 export function email(prefix = "fixture") {
   const value = `${prefix}-${crypto.randomUUID()}@example.com`;
@@ -44,19 +53,29 @@ export function email(prefix = "fixture") {
   return value;
 }
 
-export function identity(address = email(), verified = true) {
-  const uid = crypto.randomUUID();
-  const value = { uid, email: address, name: "Fixture", email_verified: verified };
-  identities.set(uid, value);
-  return value;
+export async function signedUpUser(
+  address = email(),
+  verified = true,
+  extra: Partial<typeof users.$inferInsert> = {},
+): Promise<Identity> {
+  fixtureEmails.add(address);
+  const [row] = await withDatabase(env, (db) =>
+    db
+      .insert(users)
+      .values({
+        email: address.toLowerCase(),
+        emailVerified: verified,
+        preferredName: "",
+        ...extra,
+      })
+      .returning(),
+  );
+  fixtureUserIds.add(row!.id);
+  return { id: row!.id, email: row!.email, session: await sessionCookie(env, row!.id) };
 }
 
-export function serviceMocks() {
+export function serviceMocks(configuration = env) {
   const sendEmail = vi.fn(async (_email: string, _code: string) => {});
-  const getOrCreateUser = vi.fn(async (address: string) => {
-    const existing = [...identities.values()].find((value) => value.email === address);
-    return existing?.uid ?? `otp-${address}`;
-  });
   const storage: ObjectStorage = {
     publicUrl: (key) => `https://media.example.com/${key}`,
     objectExists: async () => true,
@@ -70,25 +89,19 @@ export function serviceMocks() {
       file_key: options.fileKey,
     })),
   };
-  const factory: ServicesFactory = () => ({
-    firebase: {
-      verifyIdToken: async (token) => {
-        const result = identities.get(token);
-        if (!result) throw new ApiError(401, "Invalid or expired token");
-        return result;
-      },
-      getOrCreateUser,
-      createCustomToken: async (uid) => `offline-custom-token-${uid}`,
-    },
-    storage,
-    sendOtpEmail: sendEmail,
-    embedEvent: async () => null,
-    now: () => fixedNow,
-  });
-  return { factory, sendEmail, getOrCreateUser, storage };
+  const factory: ServicesFactory = () => {
+    const deps = { sendOtpEmail: sendEmail, now: () => fixedNow };
+    return {
+      ...deps,
+      auth: realAuth(configuration, deps),
+      storage,
+      embedEvent: async () => null,
+    };
+  };
+  return { factory, sendEmail, storage, configuration };
 }
 
-export function app(factory: ServicesFactory, configuration = env) {
+export function app({ factory, configuration }: ReturnType<typeof serviceMocks>) {
   return new Elysia({ adapter: CloudflareAdapter, normalize: false })
     .onError(({ code, error }) => {
       if (code === "VALIDATION" || code === "PARSE")
@@ -104,8 +117,8 @@ export function request(
   options: {
     method?: string;
     body?: unknown;
-    uid?: string;
-    authorization?: string;
+    session?: string;
+    headers?: Record<string, string>;
     jsonHeader?: boolean;
   } = {},
 ) {
@@ -115,46 +128,25 @@ export function request(
       ...(options.body === undefined && !options.jsonHeader
         ? {}
         : { "content-type": "application/json" }),
-      ...(options.uid ? { authorization: `Bearer ${options.uid}` } : {}),
-      ...(options.authorization ? { authorization: options.authorization } : {}),
+      "cf-connecting-ip": clientIp,
+      ...(options.session ? { cookie: options.session } : {}),
+      ...options.headers,
     },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
   });
 }
 
-export async function member(who = identity(), extra: Partial<typeof users.$inferInsert> = {}) {
-  return withDatabase(env, async (db) => {
-    const [row] = await db
-      .insert(users)
-      .values({
-        firebaseUid: who.uid,
-        email: who.email,
-        preferredName: "Fixture Member",
-        createdAt: fixedNow,
-        onboardingCompleted: true,
-        ...extra,
-      })
-      .returning();
-    fixtureUserIds.add(row!.id);
-    return { row: row!, identity: who };
+export async function member(extra: Partial<typeof users.$inferInsert> = {}) {
+  const who = await signedUpUser(email(), true, {
+    preferredName: "Fixture Member",
+    createdAt: fixedNow,
+    onboardingCompleted: true,
+    ...extra,
   });
-}
-
-export async function otp(address: string, extra: Partial<typeof otpCodes.$inferInsert> = {}) {
-  fixtureEmails.add(address);
-  return withDatabase(env, async (db) => {
-    const [row] = await db
-      .insert(otpCodes)
-      .values({
-        email: address.toLowerCase(),
-        code: "123456",
-        expiresAt: new Date(fixedNow.getTime() + 600_000),
-        createdAt: fixedNow,
-        ...extra,
-      })
-      .returning();
-    return row!;
-  });
+  const [row] = await withDatabase(env, (db) =>
+    db.select().from(users).where(eq(users.id, who.id)),
+  );
+  return { row: row!, session: who.session };
 }
 
 export async function event(extra: Partial<typeof events.$inferInsert> = {}) {
@@ -178,13 +170,27 @@ export async function event(extra: Partial<typeof events.$inferInsert> = {}) {
 export async function cleanupMemberFixtures() {
   if (!testUrl) return;
   await withDatabase(env, async (db) => {
-    if (fixtureEmails.size)
-      await db.delete(otpCodes).where(
+    await db.delete(rateLimits).where(like(rateLimits.key, `${clientIp}|%`));
+    if (fixtureEmails.size) {
+      const addresses = [...fixtureEmails].map((value) => value.toLowerCase());
+      await db.delete(rateLimits).where(
         inArray(
-          otpCodes.email,
-          [...fixtureEmails].map((value) => value.toLowerCase()),
+          rateLimits.key,
+          addresses.map((value) => `email-otp:${value}`),
         ),
       );
+      await db.delete(verifications).where(
+        inArray(
+          verifications.identifier,
+          addresses.map((value) => `sign-in-otp-${value}`),
+        ),
+      );
+      for (const row of await db
+        .select({ id: users.id })
+        .from(users)
+        .where(inArray(users.email, addresses)))
+        fixtureUserIds.add(row.id);
+    }
     if (fixtureUserIds.size) await db.delete(users).where(inArray(users.id, [...fixtureUserIds]));
     if (fixtureEventIds.size)
       await db.delete(events).where(inArray(events.id, [...fixtureEventIds]));
@@ -192,5 +198,4 @@ export async function cleanupMemberFixtures() {
   fixtureEmails.clear();
   fixtureUserIds.clear();
   fixtureEventIds.clear();
-  identities.clear();
 }

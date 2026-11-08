@@ -6,7 +6,7 @@ import { useAuth } from "~/lib/auth";
 export function AnalyticsTracker() {
   const { state } = useAuth();
   const { pathname } = useLocation();
-  const uid = state.status === "onboarding" || state.status === "member" ? state.uid : null;
+  const uid = state.status === "onboarding" || state.status === "member" ? state.userId : null;
 
   useEffect(() => {
     setAnalyticsUserId(uid);

@@ -18,7 +18,7 @@ export function meta() {
 export default function OnboardingInterests() {
   const navigate = useNavigate();
   const { completeOnboarding, refreshProfile, state } = useAuth();
-  const uid = state.status === "onboarding" ? state.uid : null;
+  const uid = state.status === "onboarding" ? state.userId : null;
   const [selected, setSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");

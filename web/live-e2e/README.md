@@ -1,3 +1,8 @@
+> **Out of date.** This suite still restores a Firebase session; sign-in moved to
+> Better Auth. Until it is updated, it cannot authenticate against a deployed Worker.
+> Update it when staging gets Better Auth (a pre-signed-in `ubcd.session_token`
+> cookie replaces the Firebase `User.toJSON()` session).
+
 # Deployed staging browser tests
 
 The existing `e2e/` suite isolates UI behaviors with mocked API responses and Firebase test mode. It remains unchanged. This opt-in suite reuses its SSR, event-description, profile, Saved-tab, authentication and administration assertions against the real deployed Workers and Firebase SDK. There is no local web server, request interception, test auth mode, OTP email, or Firebase user creation.

@@ -20,7 +20,7 @@ export function createSavedEventRoutes(
       async ({ request, query }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) => {
-          const member = await requireMember(db, request, services.firebase);
+          const member = await requireMember(db, request, services);
           const where = and(eq(savedEvents.userId, member.id), eq(events.isArchived, false));
           const [total] = await db
             .select({ count: count() })
@@ -51,7 +51,7 @@ export function createSavedEventRoutes(
       async ({ request, params, set }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) => {
-          const member = await requireMember(db, request, services.firebase);
+          const member = await requireMember(db, request, services);
           const [event] = await db
             .select({ id: events.id })
             .from(events)
@@ -85,7 +85,7 @@ export function createSavedEventRoutes(
       async ({ request, params }) => {
         const services = servicesFactory();
         await withDatabase(env, async (db) => {
-          const member = await requireMember(db, request, services.firebase);
+          const member = await requireMember(db, request, services);
           await db
             .delete(savedEvents)
             .where(

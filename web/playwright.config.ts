@@ -19,7 +19,7 @@ export default defineConfig({
       ...process.env,
       HOST: "127.0.0.1",
       PORT: "4173",
-      VITE_AUTH_TEST_MODE: "true",
+      VITE_ANALYTICS_DISABLED: "true",
       VITE_API_URL: "http://api.test",
     },
   },

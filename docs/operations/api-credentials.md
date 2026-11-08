@@ -2,12 +2,12 @@
 
 Managed API credentials authenticate Candidate ingestion integrations. They do
 not authenticate administrator operations or canonical Event Listing routes;
-Firebase administrator Members remain the only admin actors.
+Administrator Members (signed in with Better Auth) remain the only admin actors.
 There is no environment-variable API-key fallback.
 
 ## Provisioning
 
-Open `/admin/api-keys` as a Firebase administrator, enter a label, and generate
+Open `/admin/api-keys` as an administrator, enter a label, and generate
 the credential. The complete `ubc_live_<credential-id>.<random-secret>` token is
 shown only in the generation response and page state. Copy it immediately into
 the integration's secret store. The credential list never returns the raw token

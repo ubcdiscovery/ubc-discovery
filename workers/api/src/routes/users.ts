@@ -1,10 +1,10 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { withDatabase } from "../db";
 import { users } from "../db/schema";
 import { integerSetting, type ApiEnv } from "../env";
-import { requireIdentity, requireMember } from "../http/auth";
+import { requireMember, requireSignedIn } from "../http/auth";
 import { ApiError } from "../http/errors";
 import { presentUser } from "../presenters/users";
 import { presentUpload } from "../presenters/storage";
@@ -16,7 +16,7 @@ import {
 } from "../schemas/member";
 import { uploadFileSize } from "../schemas/upload-size";
 import { createServices, type ServicesFactory } from "../services";
-import { createAuthRoutes } from "./auth";
+import { createBetterAuthRoutes } from "./auth";
 import { createSavedEventRoutes } from "./saved-events";
 import { createRatingRoutes } from "./ratings";
 
@@ -31,7 +31,7 @@ export function createUserRoutes(
       async ({ request }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) =>
-          presentUser(await requireMember(db, request, services.firebase), services.storage),
+          presentUser(await requireMember(db, request, services), services.storage),
         );
       },
       { detail: { tags: ["Users"] } },
@@ -40,25 +40,21 @@ export function createUserRoutes(
       "/users/onboarding",
       async ({ request, body }) => {
         const services = servicesFactory();
-        const identity = await requireIdentity(request, services.firebase);
         return withDatabase(env, async (db) => {
-          // Firebase UID and email are both unique. A concurrent insert can hit
-          // either index; both conflicts must follow the existing 409 response.
+          const account = await requireSignedIn(db, request, services);
           const [user] = await db
-            .insert(users)
-            .values({
-              firebaseUid: identity.uid,
-              email: identity.email,
+            .update(users)
+            .set({
               preferredName: body.preferred_name,
               major: body.major ?? null,
               academicLevel: body.academic_level ?? null,
               facultyId: body.faculty_id ?? null,
               interests: body.interests ?? null,
               bio: body.bio ?? null,
-              ubcVerified: isUbcEmail(identity.email),
+              ubcVerified: isUbcEmail(account.email),
               onboardingCompleted: true,
             })
-            .onConflictDoNothing()
+            .where(and(eq(users.id, account.id), eq(users.onboardingCompleted, false)))
             .returning();
           if (!user) throw new ApiError(409, "User already exists");
           return presentUser(user);
@@ -71,7 +67,7 @@ export function createUserRoutes(
       async ({ request, body }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) => {
-          const member = await requireMember(db, request, services.firebase);
+          const member = await requireMember(db, request, services);
           if (body.preferred_name === null)
             throw new ApiError(422, "Preferred name cannot be null");
           const changes: Partial<typeof users.$inferInsert> = {};
@@ -97,7 +93,7 @@ export function createUserRoutes(
       async ({ request }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) => {
-          const member = await requireMember(db, request, services.firebase);
+          const member = await requireMember(db, request, services);
           const maxBytes = integerSetting(env.PROFILE_PHOTO_MAX_BYTES, 512 * 1024);
           const fileSizeBytes = uploadFileSize(request, maxBytes, env.STORAGE_PROVIDER === "r2");
           const upload = await services.storage.generatePresignedUpload({
@@ -122,7 +118,7 @@ export function createUserRoutes(
       async ({ request }) => {
         const services = servicesFactory();
         return withDatabase(env, async (db) => {
-          const member = await requireMember(db, request, services.firebase);
+          const member = await requireMember(db, request, services);
           return { member_since: member.createdAt.toISOString() };
         });
       },
@@ -135,7 +131,7 @@ export function createMemberRoutes(
   servicesFactory: ServicesFactory = () => createServices(env),
 ) {
   return new Elysia({ name: "member-api", adapter: CloudflareAdapter, normalize: false })
-    .use(createAuthRoutes(env, servicesFactory))
+    .use(createBetterAuthRoutes(env, servicesFactory))
     .use(createUserRoutes(env, servicesFactory))
     .use(createSavedEventRoutes(env, servicesFactory))
     .use(createRatingRoutes(env, servicesFactory));

@@ -10,37 +10,44 @@ import {
   fixtureEmails,
   fixtureUserIds,
   email,
-  identity,
+  signedUpUser,
   serviceMocks,
   app,
   request,
   member,
-  otp,
   cleanupMemberFixtures,
 } from "./member-fixture";
 
 afterEach(cleanupMemberFixtures);
 
 describe.skipIf(!testUrl)("member authentication, onboarding and profile contracts", () => {
-  it("requires a verified Firebase identity and a completed profile", async () => {
-    const api = app(serviceMocks().factory);
+  it("requires a verified session and a completed profile", async () => {
+    const api = app(serviceMocks());
     expect((await api.handle(request("/users/me"))).status).toBe(401);
     expect(
-      (await api.handle(request("/users/me", { authorization: "Api-Key fixture" }))).status,
-    ).toBe(403);
-    const unverified = identity(email(), false);
-    expect((await api.handle(request("/users/me", { uid: unverified.uid }))).status).toBe(403);
-    const newIdentity = identity();
-    expect((await api.handle(request("/users/me", { uid: newIdentity.uid }))).status).toBe(404);
+      (
+        await api.handle(
+          request("/users/me", { headers: { authorization: "Bearer forged-id-token" } }),
+        )
+      ).status,
+    ).toBe(401);
+    const unverified = await signedUpUser(email(), false);
+    expect((await api.handle(request("/users/me", { session: unverified.session }))).status).toBe(
+      403,
+    );
+    const newIdentity = await signedUpUser();
+    expect((await api.handle(request("/users/me", { session: newIdentity.session }))).status).toBe(
+      404,
+    );
   });
 
   it("onboards non-UBC members, normalizes profile text, and forbids forged capability fields", async () => {
-    const who = identity();
-    const api = app(serviceMocks().factory);
+    const who = await signedUpUser();
+    const api = app(serviceMocks());
     const forged = await api.handle(
       request("/users/onboarding", {
         method: "POST",
-        uid: who.uid,
+        session: who.session,
         body: { preferred_name: "New", is_admin: true },
       }),
     );
@@ -48,7 +55,7 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
     const response = await api.handle(
       request("/users/onboarding", {
         method: "POST",
-        uid: who.uid,
+        session: who.session,
         body: {
           preferred_name: " New Member ",
           major: " Physics ",
@@ -76,7 +83,7 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
         await api.handle(
           request("/users/onboarding", {
             method: "POST",
-            uid: who.uid,
+            session: who.session,
             body: { preferred_name: "Duplicate" },
           }),
         )
@@ -87,11 +94,11 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
   it("accepts UBC sign-in without making UBC email a membership requirement", async () => {
     const address = `${crypto.randomUUID()}@student.ubc.ca`;
     fixtureEmails.add(address);
-    const who = identity(address);
-    const response = await app(serviceMocks().factory).handle(
+    const who = await signedUpUser(address);
+    const response = await app(serviceMocks()).handle(
       request("/users/onboarding", {
         method: "POST",
-        uid: who.uid,
+        session: who.session,
         body: { preferred_name: "UBC Member" },
       }),
     );
@@ -100,44 +107,15 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
     expect(value.ubc_verified).toBe(true);
   });
 
-  it("returns a conflict for another Firebase identity using an existing member email without changing that member", async () => {
-    const existing = await member();
-    const conflicting = identity(existing.identity.email);
-    const response = await app(serviceMocks().factory).handle(
-      request("/users/onboarding", {
-        method: "POST",
-        uid: conflicting.uid,
-        body: { preferred_name: "Conflicting Member" },
-      }),
-    );
-    expect(response.status).toBe(409);
-    expect(await response.json()).toEqual({ detail: "User already exists" });
-    await withDatabase(env, async (db) => {
-      const matching = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, existing.identity.email));
-      expect(matching).toHaveLength(1);
-      expect(matching[0]).toMatchObject({
-        id: existing.row.id,
-        firebaseUid: existing.identity.uid,
-        preferredName: "Fixture Member",
-      });
-      expect(
-        await db.select().from(users).where(eq(users.firebaseUid, conflicting.uid)),
-      ).toHaveLength(0);
-    });
-  });
-
   it("creates exactly one profile when onboarding requests race", async () => {
-    const who = identity();
-    const api = app(serviceMocks().factory);
+    const who = await signedUpUser();
+    const api = app(serviceMocks());
     const responses = await Promise.all(
       Array.from({ length: 2 }, () =>
         api.handle(
           request("/users/onboarding", {
             method: "POST",
-            uid: who.uid,
+            session: who.session,
             body: { preferred_name: "Concurrent Member" },
           }),
         ),
@@ -156,29 +134,29 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
     { preferred_name: "Member", faculty: "Science" },
     { preferred_name: "x".repeat(256) },
   ])("rejects invalid onboarding fields %j", async (body) => {
-    const who = identity();
+    const who = await signedUpUser();
     expect(
       (
-        await app(serviceMocks().factory).handle(
-          request("/users/onboarding", { method: "POST", uid: who.uid, body }),
+        await app(serviceMocks()).handle(
+          request("/users/onboarding", { method: "POST", session: who.session, body }),
         )
       ).status,
     ).toBe(422);
   });
 
   it("updates only supplied fields, clears optional context and keeps database admin capability", async () => {
-    const existing = await member(identity(), {
+    const existing = await member({
       major: "Physics",
       academicLevel: "year_2",
       facultyId: "science",
       profilePictureKey: "profile-pictures/fixture",
       isAdmin: true,
     });
-    const api = app(serviceMocks().factory);
+    const api = app(serviceMocks());
     const updated = await api.handle(
       request("/users/me", {
         method: "PUT",
-        uid: existing.identity.uid,
+        session: existing.session,
         body: { major: null, academic_level: null, faculty_id: null, preferred_name: " Updated " },
       }),
     );
@@ -196,7 +174,7 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
         await api.handle(
           request("/users/me", {
             method: "PUT",
-            uid: existing.identity.uid,
+            session: existing.session,
             body: { is_admin: false },
           }),
         )
@@ -205,22 +183,22 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
     expect(
       (
         await api.handle(
-          request("/users/me", { method: "PUT", uid: existing.identity.uid, body: {} }),
+          request("/users/me", { method: "PUT", session: existing.session, body: {} }),
         )
       ).status,
     ).toBe(200);
-    expect((await api.handle(request("/users/me", { uid: existing.identity.uid }))).status).toBe(
+    expect((await api.handle(request("/users/me", { session: existing.session }))).status).toBe(
       200,
     );
-    const stats = await api.handle(request("/users/me/stats", { uid: existing.identity.uid }));
+    const stats = await api.handle(request("/users/me/stats", { session: existing.session }));
     expect(await stats.json<MemberTestJson>()).toEqual({ member_since: fixedNow.toISOString() });
   });
 
   it("preserves the bounded profile-upload response and stores its generated key", async () => {
-    const existing = await member(identity(), { profilePictureKey: "profile-pictures/old" });
+    const existing = await member({ profilePictureKey: "profile-pictures/old" });
     const mocks = serviceMocks();
-    const response = await app(mocks.factory).handle(
-      request("/users/me/presigned-upload", { uid: existing.identity.uid }),
+    const response = await app(mocks).handle(
+      request("/users/me/presigned-upload", { session: existing.session }),
     );
     expect(response.status).toBe(200);
     const value = await response.json<MemberTestJson>();
@@ -236,50 +214,5 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
         (await db.select().from(users).where(eq(users.id, existing.row.id)))[0]!.profilePictureKey,
       ).toBe(value.file_key),
     );
-  });
-
-  it("UBC confirmation consumes a code and sets only the optional badge", async () => {
-    const existing = await member();
-    const address = `${crypto.randomUUID()}@alumni.ubc.ca`;
-    fixtureEmails.add(address);
-    await otp(address);
-    const api = app(serviceMocks().factory);
-    const response = await api.handle(
-      request("/auth/ubc-verify/confirm", {
-        method: "POST",
-        uid: existing.identity.uid,
-        body: { email: address, code: "123456" },
-      }),
-    );
-    expect(response.status).toBe(200);
-    expect(await response.json<MemberTestJson>()).toMatchObject({
-      email: existing.identity.email,
-      ubc_verified: true,
-    });
-    expect(
-      (
-        await api.handle(
-          request("/auth/ubc-verify/send", {
-            method: "POST",
-            uid: existing.identity.uid,
-            body: { email: address },
-          }),
-        )
-      ).status,
-    ).toBe(400);
-  });
-
-  it("rejects UBC lookalike domains without sending mail", async () => {
-    const existing = await member();
-    const mocks = serviceMocks();
-    const response = await app(mocks.factory).handle(
-      request("/auth/ubc-verify/send", {
-        method: "POST",
-        uid: existing.identity.uid,
-        body: { email: "member@ubc.ca.example.com" },
-      }),
-    );
-    expect(response.status).toBe(400);
-    expect(mocks.sendEmail).not.toHaveBeenCalled();
   });
 });

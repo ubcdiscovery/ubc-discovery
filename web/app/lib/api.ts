@@ -1,4 +1,3 @@
-import { getFirebaseIdToken } from "~/lib/firebase";
 import type {
   ApiEvent,
   AdminApiEvent,
@@ -32,7 +31,7 @@ export type {
 };
 
 // The API is served by the same Worker under /api.
-const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
+export const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
 
 export class ApiError extends Error {
   constructor(
@@ -45,18 +44,11 @@ export class ApiError extends Error {
   }
 }
 
-async function apiFetch<T>(
-  path: string,
-  options: RequestInit = {},
-  token?: string | null,
-): Promise<T> {
+async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   if (!res.ok) {
     const payload: unknown = await res.json().catch(() => ({}));
@@ -85,8 +77,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export async function authenticatedApiFetch<T>(path: string, options: RequestInit = {}) {
-  const token = await getFirebaseIdToken();
-  return apiFetch<T>(path, options, token);
+  return apiFetch<T>(path, { credentials: "include", ...options });
 }
 
 export const api = {
@@ -98,22 +89,6 @@ export const api = {
     get: (id: string) => apiFetch<ApiEvent>(`/events/${id}`),
     search: (q: string, limit = 10) =>
       apiFetch<EventListResponse>(`/events/search?q=${encodeURIComponent(q)}&limit=${limit}`),
-  },
-  auth: {
-    sendOtp: (email: string) =>
-      apiFetch<{ message: string; expires_in_seconds: number }>("/auth/otp/send", {
-        method: "POST",
-        body: JSON.stringify({ email }),
-      }),
-    verifyOtp: (email: string, code: string) =>
-      apiFetch<{
-        firebase_custom_token: string;
-        is_new_user: boolean;
-        ubc_verified: boolean;
-      }>("/auth/otp/verify", {
-        method: "POST",
-        body: JSON.stringify({ email, code }),
-      }),
   },
   users: {
     me: () => authenticatedApiFetch<UserResponse>("/users/me"),

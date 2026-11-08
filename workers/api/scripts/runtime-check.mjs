@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
-import { spawn, execFileSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { importPKCS8, SignJWT } from "jose";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 if (!databaseUrl || !["localhost", "127.0.0.1", "[::1]"].includes(new URL(databaseUrl).hostname)) {
@@ -16,41 +15,6 @@ let worker;
 let exited;
 let output = "";
 try {
-  // Synthetic short-lived certificate and key; no production credentials involved.
-  execFileSync(
-    "openssl",
-    [
-      "req",
-      "-x509",
-      "-newkey",
-      "rsa:2048",
-      "-nodes",
-      "-days",
-      "1",
-      "-subj",
-      "/CN=local-runtime-test",
-      "-keyout",
-      join(temporary, "key.pem"),
-      "-out",
-      join(temporary, "cert.pem"),
-    ],
-    { stdio: "ignore" },
-  );
-  const privateKey = await readFile(join(temporary, "key.pem"), "utf8");
-  const certificate = await readFile(join(temporary, "cert.pem"), "utf8");
-  const now = Math.floor(Date.now() / 1000);
-  const token = await new SignJWT({
-    iss: "https://securetoken.google.com/runtime-test",
-    aud: "runtime-test",
-    sub: "local-user",
-    iat: now - 1,
-    exp: now + 300,
-    auth_time: now - 1,
-    email: "local@example.test",
-    email_verified: true,
-  })
-    .setProtectedHeader({ alg: "RS256", kid: "runtime-key" })
-    .sign(await importPKCS8(privateKey, "RS256"));
   const reservation = createServer();
   reservation.listen(0, "127.0.0.1");
   await once(reservation, "listening");
@@ -102,8 +66,6 @@ try {
   assert(ready, `Local Worker failed to start: ${output}`);
   const response = await fetch(url, {
     method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ certificate, privateKey, token }),
     signal: AbortSignal.timeout(30_000),
   });
   assert.equal(response.status, 200, `Runtime probe failed: ${output}`);
@@ -113,10 +75,10 @@ try {
     capabilities: true,
     auth: true,
     vancouver: true,
-    firebase: true,
+    betterAuth: true,
   });
   console.log(
-    "Workers runtime: pgvector transaction, Firebase X509/RS256, secret comparison, local R2, and direct PUT signing and signed private/public media read routes passed.",
+    "Workers runtime: pgvector transaction, Better Auth email-code sign-in, secret comparison, local R2, and direct PUT signing and signed private/public media read routes passed.",
   );
 } finally {
   if (worker && worker.exitCode === null) {

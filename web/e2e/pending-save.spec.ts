@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { existingProfile, mockApi, mockEvent } from "./support/auth";
+import { existingProfile, mockApi, mockEvent, setAuthenticatedUser } from "./support/auth";
 
 test("resumes a Save after an existing member signs in", async ({ page }) => {
   let saves = 0;
@@ -70,11 +70,8 @@ test("does not loop a failed pending Save and allows retry", async ({ page }) =>
         }),
       );
     }
-    window.sessionStorage.setItem(
-      "ubc-discovery-test-firebase-user",
-      JSON.stringify({ uid: "existing-uid", email: "member@example.com" }),
-    );
   });
+  await setAuthenticatedUser(page);
   await page.goto("/events/event-1");
   await expect(page.getByRole("alert")).toContainText(/not saved/i);
   expect(saves).toBe(1);

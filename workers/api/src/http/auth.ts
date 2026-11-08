@@ -1,8 +1,8 @@
 import { timingSafeEqual } from "node:crypto";
 import { eq } from "drizzle-orm";
 import type { Db, DbTransaction } from "../db";
-import { apiCredentials, users, type CredentialScope } from "../db/schema";
-import type { FirebaseService } from "../services/firebase";
+import { apiCredentials, users, type CredentialScope, type User } from "../db/schema";
+import type { RequestServices } from "../services";
 import { ApiError } from "./errors";
 
 export interface AuditActor {
@@ -15,44 +15,49 @@ export interface IngestionCredential extends AuditActor {
   scopes: CredentialScope[];
 }
 
-export async function requireIdentity(request: Request, firebase: FirebaseService) {
-  const authorization = request.headers.get("authorization");
-  if (!authorization) throw new ApiError(401, "Authorization header missing");
-  if (!authorization.startsWith("Bearer "))
-    throw new ApiError(403, "Firebase administrator authentication required");
-  const identity = await firebase.verifyIdToken(authorization.slice(7));
-  if (!identity.email_verified)
+/**
+ * Cookie sessions ride along on cross-site navigations (SameSite=Lax), so member
+ * routes only accept requests the browser marks as coming from this site.
+ */
+function rejectCrossSite(request: Request) {
+  const site = request.headers.get("sec-fetch-site");
+  if (site && site !== "same-origin" && site !== "none")
+    throw new ApiError(403, "Cross-site request rejected");
+}
+
+export async function requireSignedIn(
+  db: Db | DbTransaction,
+  request: Request,
+  services: Pick<RequestServices, "auth">,
+): Promise<User> {
+  rejectCrossSite(request);
+  const session = await services.auth(db).api.getSession({ headers: request.headers });
+  if (!session) throw new ApiError(401, "Sign in required");
+  const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+  if (!user) throw new ApiError(401, "Sign in required");
+  if (!user.emailVerified)
     throw new ApiError(403, "Email not verified. Please check your inbox and verify your email.");
-  return identity;
+  return user;
 }
 
 export async function requireMember(
   db: Db | DbTransaction,
   request: Request,
-  firebase: FirebaseService,
+  services: Pick<RequestServices, "auth">,
 ) {
-  const identity = await requireIdentity(request, firebase);
-  const [member] = await db
-    .select()
-    .from(users)
-    .where(eq(users.firebaseUid, identity.uid))
-    .limit(1);
-  if (!member) throw new ApiError(404, "User profile not found. Complete onboarding first.");
+  const member = await requireSignedIn(db, request, services);
+  if (!member.onboardingCompleted)
+    throw new ApiError(404, "User profile not found. Complete onboarding first.");
   return member;
 }
 
 export async function requireAdmin(
   db: Db | DbTransaction,
   request: Request,
-  firebase: FirebaseService,
+  services: Pick<RequestServices, "auth">,
 ): Promise<AuditActor> {
-  const identity = await requireIdentity(request, firebase);
-  const [member] = await db
-    .select()
-    .from(users)
-    .where(eq(users.firebaseUid, identity.uid))
-    .limit(1);
-  if (!member?.isAdmin) throw new ApiError(403, "Admin access required");
+  const member = await requireSignedIn(db, request, services);
+  if (!member.isAdmin) throw new ApiError(403, "Admin access required");
   return { actorType: "member", actorId: member.id };
 }
 

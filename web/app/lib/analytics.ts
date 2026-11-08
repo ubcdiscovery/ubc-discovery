@@ -1,5 +1,5 @@
 import type { Analytics } from "firebase/analytics";
-import { getFirebaseApp, getFirebaseConfigError } from "~/lib/firebase";
+import { getFirebaseApp, isFirebaseConfigured } from "~/lib/firebase";
 
 type LoadedAnalytics = {
   analytics: Analytics;
@@ -15,8 +15,8 @@ function isAnalyticsEnabled() {
   return (
     typeof window !== "undefined" &&
     Boolean(import.meta.env.VITE_FIREBASE_MEASUREMENT_ID) &&
-    import.meta.env.VITE_AUTH_TEST_MODE !== "true" &&
-    !getFirebaseConfigError() &&
+    import.meta.env.VITE_ANALYTICS_DISABLED !== "true" &&
+    isFirebaseConfigured() &&
     (!import.meta.env.DEV || ANALYTICS_DEBUG)
   );
 }

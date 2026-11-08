@@ -112,7 +112,7 @@ describe.skipIf(!testUrl)("administrator credential lifecycle against PostgreSQL
       (await fixture.request("/admin/api-keys/not-a-uuid/revoke", "POST", undefined, "admin"))
         .status,
     ).toBe(422);
-    expect((await fixture.request("/admin/api-keys", "GET", undefined, "ingest")).status).toBe(403);
+    expect((await fixture.request("/admin/api-keys", "GET", undefined, "ingest")).status).toBe(401);
     expect(
       (
         await fixture.request(

@@ -14,7 +14,7 @@ export async function adminTransaction<T>(
     env,
     (db) =>
       db.transaction(async (tx) => {
-        const actor = await requireAdmin(tx, request, services.firebase);
+        const actor = await requireAdmin(tx, request, services);
         return callback(tx, actor, services);
       }),
     { direct },

@@ -9,6 +9,7 @@ import { ApiError, errorResponse } from "../src/http/errors";
 import { createRecommendationRoutes } from "../src/routes/recommendations";
 import type { RequestServices } from "../src/services";
 import { personalizedEvents, roundScore, similarEvents } from "../src/services/recommender";
+import { authTestEnv, realAuth, sessionCookie } from "./auth-fixture";
 
 interface Body {
   events: { id: string; [key: string]: unknown }[];
@@ -23,12 +24,14 @@ if (testUrl && !["localhost", "127.0.0.1", "[::1]"].includes(new URL(testUrl).ho
 const schemaName = `recommendations_${crypto.randomUUID().replaceAll("-", "")}`;
 const url = new URL(testUrl ?? "postgres://localhost/unused");
 url.searchParams.set("options", `-c search_path=${schemaName},public`);
-const env = { DATABASE_URL: url.toString() } as ApiEnv;
+const env = { ...authTestEnv, DATABASE_URL: url.toString() } as ApiEnv;
+const deps = { now: () => new Date("2030-01-01T00:00:00Z"), sendOtpEmail: async () => {} };
 const services = {
-  now: () => new Date("2030-01-01T00:00:00Z"),
-  firebase: { verifyIdToken: async () => ({ uid: schemaName, email_verified: true }) },
+  ...deps,
+  auth: realAuth(env, deps),
   storage: { publicUrl: (key: string) => `https://images.example/${key}` },
 } as unknown as RequestServices;
+let session = "";
 const app = new Elysia({ adapter: CloudflareAdapter })
   .onError(({ code, error }) => {
     if (code === "VALIDATION") return errorResponse(new ApiError(422, "Invalid request"));
@@ -39,9 +42,10 @@ const app = new Elysia({ adapter: CloudflareAdapter })
 const request = (path: string, authenticated = false) =>
   app.handle(
     new Request(`http://localhost${path}`, {
-      headers: authenticated ? { authorization: "Bearer fixture" } : {},
+      headers: authenticated ? { cookie: session } : {},
     }),
   );
+let memberId = "";
 const vector = (first = 1, second = 0) => [first, second, ...Array<number>(1022).fill(0)];
 
 describe("Python-compatible score presentation", () => {
@@ -56,18 +60,23 @@ describe.skipIf(!testUrl)("recommendation API against PostgreSQL", () => {
   beforeAll(async () => {
     await withDatabase({ DATABASE_URL: testUrl } as ApiEnv, async (db) => {
       await db.execute(sql`CREATE SCHEMA ${sql.identifier(schemaName)}`);
-      for (const table of ["users", "events", "saved_events"])
+      for (const table of ["users", "sessions", "events", "saved_events"])
         await db.execute(
           sql`CREATE TABLE ${sql.identifier(schemaName)}.${sql.identifier(table)} (LIKE public.${sql.identifier(table)} INCLUDING ALL)`,
         );
     });
     await withDatabase(env, async (db) => {
-      await db.insert(users).values({
-        firebaseUid: schemaName,
-        email: `${schemaName}@example.test`,
-        preferredName: "Fixture",
-        interests: ["social"],
-      });
+      const [member] = await db
+        .insert(users)
+        .values({
+          email: `${schemaName}@example.test`,
+          emailVerified: true,
+          preferredName: "Fixture",
+          onboardingCompleted: true,
+          interests: ["social"],
+        })
+        .returning();
+      memberId = member!.id;
       await db.insert(events).values([
         {
           id: "source01",
@@ -125,6 +134,7 @@ describe.skipIf(!testUrl)("recommendation API against PostgreSQL", () => {
         },
       ]);
     });
+    session = await sessionCookie(env, memberId);
   });
   afterAll(async () => {
     await withDatabase({ DATABASE_URL: testUrl } as ApiEnv, (db) =>

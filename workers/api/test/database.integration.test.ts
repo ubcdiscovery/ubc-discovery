@@ -72,7 +72,6 @@ describe.skipIf(!testUrl)("existing Alembic database compatibility", () => {
             .insert(schema.users)
             .values({
               id,
-              firebaseUid: id,
               email: `${id}@example.test`,
               preferredName: "Integration fixture",
               interests: ["music"],

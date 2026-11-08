@@ -1,14 +1,14 @@
 // Local-only runtime harness. Never deploy this test entry point.
 import { sql } from "drizzle-orm";
 import { env as cloudflareEnv } from "cloudflare:workers";
-import { decodeJwt } from "jose";
 import { AwsV4Signer } from "aws4fetch";
 import type { ApiEnv } from "../../src/env";
 
 // The probe's own wrangler.jsonc binds a local R2 bucket.
 type ProbeEnv = ApiEnv & { R2_BUCKET: R2Bucket };
 import { withDatabase, withTransaction } from "../../src/db";
-import { createFirebase } from "../../src/services/firebase";
+import { createAuth } from "../../src/auth";
+import { users } from "../../src/db/schema";
 import { R2Storage } from "../../src/services/storage";
 import { hashSecret, verifySecret } from "../../src/http/auth";
 import { localDayBounds } from "../../src/services/candidate-publication";
@@ -19,7 +19,6 @@ const storageEnv: ProbeEnv = {
   STORAGE_PROVIDER: "r2",
   API_PUBLIC_BASE_URL: "http://localhost",
   UPLOAD_SIGNING_SECRET: "local-runtime-capability-secret-at-least-32-bytes",
-  CORS_ALLOWED_ORIGINS: '["http://web.localhost"]',
   R2_ACCOUNT_ID: "a".repeat(32),
   R2_BUCKET_NAME: "local-runtime-test",
   R2_ACCESS_KEY_ID: "synthetic-access-key",
@@ -37,32 +36,44 @@ export default {
     ) {
       return new Response("Disposable localhost database required", { status: 403 });
     }
-    const fixture = await request.json<{
-      certificate: string;
-      privateKey: string;
-      token: string;
-    }>();
-    const firebase = createFirebase(
-      {
-        ...env,
-        FIREBASE_PROJECT_ID: "runtime-test",
-        FIREBASE_CREDENTIALS_JSON: JSON.stringify({
-          project_id: "runtime-test",
-          client_email: "local@runtime-test.iam.gserviceaccount.com",
-          private_key: fixture.privateKey,
-        }),
-      },
-      {
-        fetch: async () =>
-          Response.json(
-            { "runtime-key": fixture.certificate },
-            { headers: { "cache-control": "max-age=60" } },
-          ),
-      },
-    );
-    // Exercises the production X509 importer, rather than injecting a CryptoKey.
-    const identity = await firebase.verifyIdToken(fixture.token);
-    const customToken = decodeJwt(await firebase.createCustomToken(identity.uid));
+    const authEnv: ApiEnv = {
+      ...env,
+      API_PUBLIC_BASE_URL: "http://localhost/api",
+      BETTER_AUTH_SECRET: "local-runtime-better-auth-secret-0123456789",
+    };
+    const address = `runtime-${crypto.randomUUID()}@example.test`;
+    const betterAuth = await withDatabase(authEnv, async (db) => {
+      let code = "";
+      const auth = createAuth(authEnv, db, {
+        sendOtpEmail: async (_email, otp) => {
+          code = otp;
+        },
+        now: () => new Date(),
+      });
+      const post = (path: string, body: unknown) =>
+        auth.handler(
+          new Request(`http://localhost/api/auth${path}`, {
+            method: "POST",
+            headers: { "content-type": "application/json", origin: "http://localhost" },
+            body: JSON.stringify(body),
+          }),
+        );
+      try {
+        const sent = await post("/email-otp/send-verification-otp", {
+          email: address,
+          type: "sign-in",
+        });
+        const signedIn = await post("/sign-in/email-otp", { email: address, otp: code });
+        const cookie = signedIn.headers
+          .getSetCookie()
+          .map((value) => value.split(";")[0])
+          .join("; ");
+        const session = await auth.api.getSession({ headers: new Headers({ cookie }) });
+        return sent.status === 200 && signedIn.status === 200 && session?.user.email === address;
+      } finally {
+        await db.delete(users).where(sql`${users.email} = ${address}`);
+      }
+    });
     const hash = await hashSecret("runtime-test-secret");
     const auth =
       (await verifySecret("runtime-test-secret", hash)) && !(await verifySecret("wrong", hash));
@@ -170,7 +181,7 @@ export default {
       capabilities,
       auth,
       vancouver,
-      firebase: identity.uid === "local-user" && customToken.uid === "local-user",
+      betterAuth,
     });
   },
 } satisfies ExportedHandler<ProbeEnv>;

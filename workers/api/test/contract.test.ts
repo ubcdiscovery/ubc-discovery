@@ -23,11 +23,21 @@ describe("Python API migration contract", () => {
     const baseline: Specification = JSON.parse(
       readFileSync(join(import.meta.dirname, "fixtures/python-openapi.json"), "utf8"),
     );
-    const response = await createApp({ CORS_ALLOWED_ORIGINS: "[]" } as ApiEnv).handle(
+    const response = await createApp({} as ApiEnv).handle(
       new Request("http://localhost/openapi.json"),
     );
     expect(response.status).toBe(200);
     const actual = operations((await response.json()) as Specification);
-    expect(operations(baseline).filter((operation) => !actual.includes(operation))).toEqual([]);
+    const retired = [
+      "POST /auth/otp/send",
+      "POST /auth/otp/verify",
+      "POST /auth/ubc-verify/send",
+      "POST /auth/ubc-verify/confirm",
+    ];
+    expect(
+      operations(baseline).filter(
+        (operation) => !actual.includes(operation) && !retired.includes(operation),
+      ),
+    ).toEqual([]);
   });
 });

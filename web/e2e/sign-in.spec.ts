@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { existingProfile, mockApi, setAuthenticatedUser } from "./support/auth";
+import { existingProfile, mockApi, setAuthenticatedUser, setMockSession } from "./support/auth";
 
 test("shows both sign-in methods to a signed-out visitor", async ({ page }) => {
   await mockApi(page);
@@ -10,7 +10,7 @@ test("shows both sign-in methods to a signed-out visitor", async ({ page }) => {
   await expect(page.locator('input[type="email"]:visible')).toBeVisible();
 });
 
-test("restores an existing Firebase session", async ({ page }) => {
+test("restores an existing session", async ({ page }) => {
   await mockApi(page, { profile: existingProfile });
   await setAuthenticatedUser(page);
   await page.goto("/profile");
@@ -52,7 +52,7 @@ test("resends a replacement code after the cooldown", async ({ page }) => {
   await page.clock.install();
   await mockApi(page);
   page.on("request", (request) => {
-    if (request.url().endsWith("/auth/otp/send")) {
+    if (request.url().endsWith("/auth/email-otp/send-verification-otp")) {
       sendRequests += 1;
     }
   });
@@ -79,11 +79,11 @@ test("normalizes email and submits both forms with Enter", async ({ page }) => {
   let verifiedCode = "";
   await mockApi(page);
   page.on("request", (request) => {
-    if (request.url().endsWith("/auth/otp/send")) {
+    if (request.url().endsWith("/auth/email-otp/send-verification-otp")) {
       sentEmail = request.postDataJSON().email;
     }
-    if (request.url().endsWith("/auth/otp/verify")) {
-      verifiedCode = request.postDataJSON().code;
+    if (request.url().endsWith("/auth/sign-in/email-otp")) {
+      verifiedCode = request.postDataJSON().otp;
     }
   });
   await page.goto("/sign-in");
@@ -122,7 +122,7 @@ test("presents actionable OTP and rate-limit errors", async ({ page }) => {
     verifyError: {
       status: 400,
       detail: "Wording can change.",
-      code: "OTP_INVALID",
+      code: "INVALID_OTP",
     },
   });
   await page.goto("/sign-in");
@@ -145,20 +145,13 @@ test("presents actionable OTP and rate-limit errors", async ({ page }) => {
   await expect(page.getByRole("alert")).toHaveText(/wait 15 minutes/i);
 });
 
-test("treats Google cancellation as non-fatal and explains blocked popups", async ({ page }) => {
-  await mockApi(page);
-  await page.addInitScript(() => {
-    window.sessionStorage.setItem("ubc-discovery-test-google-error", "auth/popup-closed-by-user");
-  });
+test("explains a Google sign-in that comes back without a session", async ({ page }) => {
+  await mockApi(page, { googleError: true });
   await page.goto("/sign-in");
   await page.getByRole("button", { name: /continue with google/i }).click();
-  await expect(page.getByRole("alert")).toHaveCount(0);
-
-  await page.evaluate(() => {
-    window.sessionStorage.setItem("ubc-discovery-test-google-error", "auth/popup-blocked");
-  });
-  await page.getByRole("button", { name: /continue with google/i }).click();
-  await expect(page.getByRole("alert")).toHaveText(/allow pop-ups/i);
+  await expect(page).toHaveURL(/\/sign-in\?error=google$/);
+  await expect(page.getByRole("alert")).toHaveText(/google sign-in could not be completed/i);
+  await expect(page.getByRole("button", { name: /continue with google/i })).toBeEnabled();
 });
 
 test("preserves a same-origin destination with its query string", async ({ page }) => {
@@ -175,10 +168,7 @@ test("rejects external and protocol-relative redirect targets", async ({ page })
   await page.getByRole("button", { name: /continue with google/i }).click();
   await expect(page).toHaveURL("/");
 
-  await page.evaluate(() => {
-    window.sessionStorage.removeItem("ubc-discovery-test-firebase-user");
-    window.dispatchEvent(new CustomEvent("ubc-test-auth-changed"));
-  });
+  setMockSession(page, null);
   await page.goto("/sign-in?redirect=%2F%2Fevil.example%2Fsteal");
   await page.getByRole("button", { name: /continue with google/i }).click();
   await expect(page).toHaveURL("/");
