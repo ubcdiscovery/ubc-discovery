@@ -112,7 +112,7 @@ docs/operations/                 # Runbooks for production, migrations, storage,
 
 - Auth: event discovery is public; saved events, ratings, profiles, and personalized recommendations are member-only
 - Members authenticate with the Better Auth session cookie (`requireMember`/`requireAdmin` in `src/http/auth.ts`); ingestion integrations use managed API credentials. Better Auth owns `/api/auth/*` and maps its user onto `users`: sign-in creates the row, `POST /users/onboarding` completes it
-- UBC email is not required for membership; `*.ubc.ca` is only used to confirm the optional `ubc_verified` entry for future functionality
+- UBC email is not required for membership; onboarding sets the optional `ubc_verified` badge when the sign-in email is `*.ubc.ca`, for future functionality
 - Profile pictures and event images: exact-size presigned R2 PUT uploads, served through the API's `/media/public/` route; key stored in DB (`profile_picture_key`, `event_picture_key`)
 - Location text is the human-facing source of truth for where an event happens
 - Schema changes: edit `workers/api/src/db/schema.ts`, run `pnpm run db:generate --name <change>` in `workers/api/`, and commit the generated `drizzle/` files. See [Database migrations](docs/operations/database-migrations.md).

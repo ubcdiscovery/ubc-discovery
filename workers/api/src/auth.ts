@@ -23,6 +23,12 @@ const CAMPUS_NETWORK_SIGN_INS_PER_IP = 60;
 /** What the API answers when it sends a sign-in code. */
 export type SignInCodeSent = { success: true; expires_in_seconds: number };
 
+/**
+ * Better Auth catches and only logs errors thrown while sending a code, so a failed
+ * send is recorded against its request for the after hook to report.
+ */
+const failedSends = new WeakSet<Request>();
+
 export function apiPublicBase(env: ApiEnv): URL {
   if (!env.API_PUBLIC_BASE_URL) throw new Error("API_PUBLIC_BASE_URL is not configured");
   return new URL(env.API_PUBLIC_BASE_URL.replace(/\/+$/, ""));
@@ -62,9 +68,6 @@ export function authOptions(env: ApiEnv, db: Db | DbTransaction, deps: AuthDepen
   const base = apiPublicBase(env);
   const expiryMinutes = integerSetting(env.OTP_EXPIRY_MINUTES, 10);
   const emailLimit = integerSetting(env.OTP_RATE_LIMIT_PER_15MIN, 3);
-  // Better Auth swallows errors thrown while sending a code, so the code is handed
-  // over here and delivered in the after hook, where a failure can reach the member.
-  let pendingCode: { email: string; otp: string } | undefined;
 
   return {
     appName: "UBC Discovery",
@@ -136,12 +139,8 @@ export function authOptions(env: ApiEnv, db: Db | DbTransaction, deps: AuthDepen
         }
       }),
       after: createAuthMiddleware(async (ctx) => {
-        if (ctx.path !== SEND_OTP_PATH || !pendingCode) return;
-        const { email, otp } = pendingCode;
-        pendingCode = undefined;
-        try {
-          await deps.sendOtpEmail(email, otp);
-        } catch {
+        if (ctx.path !== SEND_OTP_PATH || ctx.context.returned instanceof Error) return;
+        if (ctx.request && failedSends.has(ctx.request)) {
           throw new APIError("INTERNAL_SERVER_ERROR", {
             code: "OTP_DELIVERY_FAILED",
             message: "Failed to send verification email.",
@@ -158,8 +157,13 @@ export function authOptions(env: ApiEnv, db: Db | DbTransaction, deps: AuthDepen
         otpLength: 6,
         expiresIn: expiryMinutes * 60,
         allowedAttempts: integerSetting(env.OTP_MAX_ATTEMPTS, 5),
-        async sendVerificationOTP({ email, otp, type }) {
-          if (type === "sign-in") pendingCode = { email, otp };
+        storeOTP: "hashed",
+        async sendVerificationOTP({ email, otp, type }, ctx) {
+          if (type !== "sign-in") return;
+          await deps.sendOtpEmail(email, otp).catch((error: unknown) => {
+            if (ctx?.request) failedSends.add(ctx.request);
+            throw error;
+          });
         },
       }),
     ],

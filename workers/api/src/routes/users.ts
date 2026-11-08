@@ -16,7 +16,7 @@ import {
 } from "../schemas/member";
 import { uploadFileSize } from "../schemas/upload-size";
 import { createServices, type ServicesFactory } from "../services";
-import { createUbcVerificationRoutes, createBetterAuthRoutes } from "./auth";
+import { createBetterAuthRoutes } from "./auth";
 import { createSavedEventRoutes } from "./saved-events";
 import { createRatingRoutes } from "./ratings";
 
@@ -131,7 +131,6 @@ export function createMemberRoutes(
   servicesFactory: ServicesFactory = () => createServices(env),
 ) {
   return new Elysia({ name: "member-api", adapter: CloudflareAdapter, normalize: false })
-    .use(createUbcVerificationRoutes(env, servicesFactory))
     .use(createBetterAuthRoutes(env, servicesFactory))
     .use(createUserRoutes(env, servicesFactory))
     .use(createSavedEventRoutes(env, servicesFactory))

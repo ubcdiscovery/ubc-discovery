@@ -19,7 +19,6 @@ const storageEnv: ProbeEnv = {
   STORAGE_PROVIDER: "r2",
   API_PUBLIC_BASE_URL: "http://localhost",
   UPLOAD_SIGNING_SECRET: "local-runtime-capability-secret-at-least-32-bytes",
-  CORS_ALLOWED_ORIGINS: '["http://web.localhost"]',
   R2_ACCOUNT_ID: "a".repeat(32),
   R2_BUCKET_NAME: "local-runtime-test",
   R2_ACCESS_KEY_ID: "synthetic-access-key",

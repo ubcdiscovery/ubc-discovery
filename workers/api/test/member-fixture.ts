@@ -3,7 +3,7 @@ import { Elysia } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { vi } from "vite-plus/test";
 import { withDatabase } from "../src/db";
-import { events, otpCodes, rateLimits, users, verifications } from "../src/db/schema";
+import { events, rateLimits, users, verifications } from "../src/db/schema";
 import type { ApiEnv } from "../src/env";
 import { errorResponse } from "../src/http/errors";
 import { createMemberRoutes } from "../src/routes/users";
@@ -149,23 +149,6 @@ export async function member(extra: Partial<typeof users.$inferInsert> = {}) {
   return { row: row!, session: who.session };
 }
 
-export async function otp(address: string, extra: Partial<typeof otpCodes.$inferInsert> = {}) {
-  fixtureEmails.add(address);
-  return withDatabase(env, async (db) => {
-    const [row] = await db
-      .insert(otpCodes)
-      .values({
-        email: address.toLowerCase(),
-        code: "123456",
-        expiresAt: new Date(fixedNow.getTime() + 600_000),
-        createdAt: fixedNow,
-        ...extra,
-      })
-      .returning();
-    return row!;
-  });
-}
-
 export async function event(extra: Partial<typeof events.$inferInsert> = {}) {
   return withDatabase(env, async (db) => {
     const [row] = await db
@@ -188,13 +171,6 @@ export async function cleanupMemberFixtures() {
   if (!testUrl) return;
   await withDatabase(env, async (db) => {
     await db.delete(rateLimits).where(like(rateLimits.key, `${clientIp}|%`));
-    if (fixtureEmails.size)
-      await db.delete(otpCodes).where(
-        inArray(
-          otpCodes.email,
-          [...fixtureEmails].map((value) => value.toLowerCase()),
-        ),
-      );
     if (fixtureEmails.size) {
       const addresses = [...fixtureEmails].map((value) => value.toLowerCase());
       await db.delete(rateLimits).where(

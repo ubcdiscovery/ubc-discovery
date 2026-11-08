@@ -62,7 +62,6 @@ describe.skipIf(!testUrl)("complete API R2 contract against PostgreSQL", () => {
     R2_SECRET_ACCESS_KEY: "synthetic-secret",
     UPLOAD_SIGNING_SECRET: "isolated-integration-only-32-byte-key",
     R2_BUCKET: bucket,
-    CORS_ALLOWED_ORIGINS: '["https://web.example.test"]',
   });
   fixture.services.storage = new R2Storage(fixture.env);
   const app = createApp(fixture.env, () => fixture.services);

@@ -15,7 +15,6 @@ import {
   app,
   request,
   member,
-  otp,
   cleanupMemberFixtures,
 } from "./member-fixture";
 
@@ -215,50 +214,5 @@ describe.skipIf(!testUrl)("member authentication, onboarding and profile contrac
         (await db.select().from(users).where(eq(users.id, existing.row.id)))[0]!.profilePictureKey,
       ).toBe(value.file_key),
     );
-  });
-
-  it("UBC confirmation consumes a code and sets only the optional badge", async () => {
-    const existing = await member();
-    const address = `${crypto.randomUUID()}@alumni.ubc.ca`;
-    fixtureEmails.add(address);
-    await otp(address);
-    const api = app(serviceMocks());
-    const response = await api.handle(
-      request("/auth/ubc-verify/confirm", {
-        method: "POST",
-        session: existing.session,
-        body: { email: address, code: "123456" },
-      }),
-    );
-    expect(response.status).toBe(200);
-    expect(await response.json<MemberTestJson>()).toMatchObject({
-      email: existing.row.email,
-      ubc_verified: true,
-    });
-    expect(
-      (
-        await api.handle(
-          request("/auth/ubc-verify/send", {
-            method: "POST",
-            session: existing.session,
-            body: { email: address },
-          }),
-        )
-      ).status,
-    ).toBe(400);
-  });
-
-  it("rejects UBC lookalike domains without sending mail", async () => {
-    const existing = await member();
-    const mocks = serviceMocks();
-    const response = await app(mocks).handle(
-      request("/auth/ubc-verify/send", {
-        method: "POST",
-        session: existing.session,
-        body: { email: "member@ubc.ca.example.com" },
-      }),
-    );
-    expect(response.status).toBe(400);
-    expect(mocks.sendEmail).not.toHaveBeenCalled();
   });
 });

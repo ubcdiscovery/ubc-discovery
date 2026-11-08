@@ -57,14 +57,6 @@ export const updateProfileSchema = t.Object(
   { additionalProperties: false },
 );
 
-export const otpSendSchema = t.Object(
-  { email: t.String({ format: "email" }) },
-  { additionalProperties: true },
-);
-export const otpVerifySchema = t.Object(
-  { email: t.String({ format: "email" }), code: t.String() },
-  { additionalProperties: true },
-);
 export const ratingSchema = t.Object(
   {
     stars: t.Numeric({ minimum: 1, maximum: 5, multipleOf: 1 }),
@@ -82,11 +74,11 @@ export const memberPagination = t.Object(
   { additionalProperties: true },
 );
 
-/** Pydantic strips profile-name/major whitespace and normalizes email input. */
+/** Pydantic strips profile-name/major whitespace. */
 export function normalizeMemberInput(body: unknown): void {
   if (typeof body !== "object" || body === null || Array.isArray(body)) return;
   const input = body as Record<string, unknown>;
-  for (const key of ["preferred_name", "major", "email"]) {
+  for (const key of ["preferred_name", "major"]) {
     if (typeof input[key] === "string") input[key] = input[key].trim();
   }
 }

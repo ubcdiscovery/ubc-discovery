@@ -58,6 +58,7 @@ export const users = pgTable(
   ],
 );
 
+/** Read only by the Firebase-era build. Drop it with `users.firebase_uid` after the cutover. */
 export const otpCodes = pgTable(
   "otp_codes",
   {

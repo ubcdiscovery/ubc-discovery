@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { createApp } from "../src/app";
+import { authRequest, createAuth } from "../src/auth";
 import { withDatabase } from "../src/db";
 import { users } from "../src/db/schema";
 import {
@@ -79,18 +80,12 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
   it("reaches Better Auth with an unread body when Elysia runs without compilation (dev)", async () => {
     const address = email("dev");
     const mocks = serviceMocks();
-    const api = createApp({ ...env, CORS_ALLOWED_ORIGINS: "[]" }, mocks.factory, { aot: false });
+    const api = createApp(env, mocks.factory, { aot: false });
     const sent = await api.handle(sendCode(address));
     expect(sent.status).toBe(200);
     const signedIn = await api.handle(signIn(address, mocks.sendEmail.mock.calls[0]![1]));
     expect(signedIn.status).toBe(200);
-    expect(
-      (
-        await api.handle(
-          request("/auth/ubc-verify/send", { method: "POST", body: { email: "x@ubc.ca" } }),
-        )
-      ).status,
-    ).toBe(401);
+    expect((await api.handle(request("/users/me"))).status).toBe(401);
   });
 
   it("signs an existing member into their existing row", async () => {
@@ -142,6 +137,32 @@ describe.skipIf(!testUrl)("Better Auth email-code sign-in", () => {
     expect(limited.status).toBe(429);
     expect(await limited.json()).toMatchObject({ code: "OTP_RATE_LIMITED" });
     expect(mocks.sendEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a failed send only to its own request when one auth instance serves several", async () => {
+    const failing = email("failing");
+    const working = email("working");
+    let releaseWorking = () => {};
+    const workingMayFinish = new Promise<void>((resolve) => (releaseWorking = resolve));
+    const sendOtpEmail = vi.fn(async (recipient: string) => {
+      if (recipient === failing) throw new Error("private provider failure");
+      await workingMayFinish;
+    });
+    const [failed, sent] = await withDatabase(env, async (db) => {
+      const auth = createAuth(env, db, { sendOtpEmail, now: () => new Date() });
+      const failedResponse = auth.handler(authRequest(env, sendCode(failing)));
+      const sentResponse = auth.handler(authRequest(env, sendCode(working)));
+      const failedResult = await failedResponse;
+      releaseWorking();
+      return [failedResult, await sentResponse];
+    });
+    expect(failed.status).toBe(500);
+    expect(await failed.json()).toMatchObject({ code: "OTP_DELIVERY_FAILED" });
+    expect(sent.status).toBe(200);
+    expect(await sent.json()).toEqual({ success: true, expires_in_seconds: 600 });
+    expect(sendOtpEmail.mock.calls.map(([recipient]) => recipient).sort()).toEqual(
+      [failing, working].sort(),
+    );
   });
 
   it("counts concurrent sends to one address against the same limit", async () => {
