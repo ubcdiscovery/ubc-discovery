@@ -18,8 +18,8 @@ Every check runs before anything deploys, and the extraction Worker (the Queue c
 always deploys before the web Worker (the producer), so a Queue message change reaches
 its consumer first. Database migrations apply just before the web Worker deploys.
 
-Use the existing production Neon database's direct endpoint. `EXTRACTION_QUEUE_PRODUCER_SECRET` must
-match the existing extraction Worker's `EXTRACTION_DISPATCH_SECRET`. `VITE_FIREBASE_*`
+Use the existing production Neon database's direct endpoint. The web Worker sends Candidates to the
+extraction Queue through its `EXTRACTION_QUEUE` binding. `VITE_FIREBASE_*`
 configure Google Analytics only; sign-in is Better Auth (`workers/api/src/auth.ts`).
 Changing `BETTER_AUTH_SECRET` signs every member out.
 

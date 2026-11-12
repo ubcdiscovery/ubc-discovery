@@ -35,6 +35,39 @@ Interests describe what a Member wants to explore. Vibes describe the feel or in
 
 UBC Discovery is a web app at [ubcdiscovery.com](https://ubcdiscovery.com). It runs on Cloudflare Workers, stores data in PostgreSQL, and gathers club events from public posts that are extracted with AI and then published automatically or reviewed by an administrator. Recommendations compare events by their content and vibes.
 
+```mermaid
+flowchart LR
+    Browser([Browser])
+    Instagram[Instagram]
+    Scraper[Scraper Worker]
+    subgraph Web["Web Worker"]
+        Site[React site]
+        API["API (/api)"]
+    end
+    R2[(R2 storage)]
+    DB[("PostgreSQL (Neon)")]
+    AWS[AWS<br/>Bedrock embeddings, SES email]
+    Queue[[Cloudflare Queue]]
+    Extraction[Extraction Worker]
+    OpenAI[OpenAI API]
+
+    Browser --> Site
+    Browser --> API
+    Scraper -->|fetch posts and images| Instagram
+    Scraper -->|upload images| R2
+    Scraper -->|ingest, capture-ready| API
+    API <--> DB
+    API <--> R2
+    API --> AWS
+    API -->|send Candidate| Queue
+    Queue -->|deliver batch| Extraction
+    Extraction -->|evidence, results| API
+    Extraction <--> OpenAI
+    OpenAI -.->|signed image URLs| API
+```
+
+The scraper runs twice a day. Each new post becomes a Candidate: the API sends it to the Queue, the extraction Worker asks OpenAI to extract event details, and the API saves the result and publishes it or holds it for review. See [Queue extraction](docs/operations/queue-extraction.md) for the details.
+
 ## Contributing
 
 See [`AGENTS.md`](AGENTS.md) to set up the project and start working on it. Domain vocabulary lives in [`CONTEXT.md`](CONTEXT.md).

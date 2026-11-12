@@ -33,6 +33,8 @@ describe("Python API migration contract", () => {
       "POST /auth/otp/verify",
       "POST /auth/ubc-verify/send",
       "POST /auth/ubc-verify/confirm",
+      "GET /extraction/recovery",
+      "POST /extraction/dispatched",
     ];
     expect(
       operations(baseline).filter(

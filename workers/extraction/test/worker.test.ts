@@ -1,7 +1,6 @@
-import { beforeAll, describe, expect, it } from "vite-plus/test";
+import { describe, expect, it } from "vite-plus/test";
 import worker, { consume } from "../src/index";
 import {
-  useNodeTimingSafeEqual,
   first,
   second,
   environment,
@@ -15,49 +14,16 @@ import {
   httpMock,
 } from "./fixtures";
 
-beforeAll(useNodeTimingSafeEqual);
-
-describe("producer", () => {
-  it("requires producer authentication and validates bounded candidate IDs", async () => {
-    const env = environment();
-    const unauthorized = await worker.fetch(
+describe("HTTP", () => {
+  it("serves only the health check", async () => {
+    expect(await (await worker.fetch(new Request("https://worker/health"))).json()).toEqual({
+      status: "ok",
+    });
+    for (const request of [
       new Request("https://worker/enqueue", { method: "POST" }),
-      env,
-    );
-    expect(unauthorized.status).toBe(401);
-    const invalid = await worker.fetch(
-      new Request("https://worker/enqueue", {
-        method: "POST",
-        headers: { Authorization: "Bearer local-secret" },
-        body: JSON.stringify({ candidates: [{ candidate_id: "invalid", generation: 1 }] }),
-      }),
-      env,
-    );
-    expect(invalid.status).toBe(400);
-    expect(env.EXTRACTION_QUEUE.sendBatch).not.toHaveBeenCalled();
-  });
-
-  it("enqueues IDs only and deduplicates the producer request", async () => {
-    const env = environment();
-    const response = await worker.fetch(
-      new Request("https://worker/enqueue", {
-        method: "POST",
-        headers: { Authorization: "Bearer local-secret" },
-        body: JSON.stringify({
-          candidates: [
-            { candidate_id: first, generation: 1 },
-            { candidate_id: first, generation: 1 },
-            { candidate_id: second, generation: 1 },
-          ],
-        }),
-      }),
-      env,
-    );
-    expect(response.status).toBe(202);
-    expect(env.EXTRACTION_QUEUE.sendBatch).toHaveBeenCalledWith([
-      { body: { candidate_id: first, generation: 1 } },
-      { body: { candidate_id: second, generation: 1 } },
-    ]);
+      new Request("https://worker/health", { method: "POST" }),
+    ])
+      expect(worker.fetch(request).status).toBe(404);
   });
 });
 

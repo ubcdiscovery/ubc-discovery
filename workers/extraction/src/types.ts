@@ -1,7 +1,4 @@
-// Wrangler generates binding, variable and secret names; specialize message bodies.
-export interface Env extends Omit<CloudflareBindings, "EXTRACTION_QUEUE"> {
-  EXTRACTION_QUEUE: Queue<ExtractionMessage>;
-}
+export type Env = CloudflareBindings;
 
 export interface ExtractionMessage {
   candidate_id: string;

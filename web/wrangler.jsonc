@@ -22,7 +22,6 @@
     "API_PUBLIC_BASE_URL": "https://ubc-discovery-web-staging.ubcdiscovery.workers.dev/api",
     "AWS_REGION": "us-west-2",
     "DATABASE_SSL": "true",
-    "EXTRACTION_DELIVERY_TIMEOUT_SECONDS": "90000",
     "OTP_EXPIRY_MINUTES": "10",
     "OTP_MAX_ATTEMPTS": "5",
     "OTP_RATE_LIMIT_PER_15MIN": "3",
@@ -31,13 +30,15 @@
     "STORAGE_PROVIDER": "r2",
   },
   "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-api-staging-media" }],
+  "queues": {
+    "producers": [{ "binding": "EXTRACTION_QUEUE", "queue": "ubc-discovery-extraction-staging" }],
+  },
   // Pull request Previews use the staging settings and storage.
   "previews": {
     "vars": {
       "API_PUBLIC_BASE_URL": "https://ubc-discovery-web-staging.ubcdiscovery.workers.dev/api",
       "AWS_REGION": "us-west-2",
       "DATABASE_SSL": "true",
-      "EXTRACTION_DELIVERY_TIMEOUT_SECONDS": "90000",
       "OTP_EXPIRY_MINUTES": "10",
       "OTP_MAX_ATTEMPTS": "5",
       "OTP_RATE_LIMIT_PER_15MIN": "3",
@@ -46,6 +47,9 @@
       "STORAGE_PROVIDER": "r2",
     },
     "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-api-staging-media" }],
+    "queues": {
+      "producers": [{ "binding": "EXTRACTION_QUEUE", "queue": "ubc-discovery-extraction-staging" }],
+    },
   },
   "env": {
     "production": {
@@ -64,8 +68,6 @@
         "API_PUBLIC_BASE_URL": "https://ubcdiscovery.com/api",
         "AWS_REGION": "us-west-2",
         "DATABASE_SSL": "true",
-        "EXTRACTION_DELIVERY_TIMEOUT_SECONDS": "90000",
-        "EXTRACTION_QUEUE_PRODUCER_URL": "https://ubc-discovery-extraction.ubcdiscovery.workers.dev/enqueue",
         "OTP_EXPIRY_MINUTES": "10",
         "OTP_MAX_ATTEMPTS": "5",
         "OTP_RATE_LIMIT_PER_15MIN": "3",
@@ -74,6 +76,9 @@
         "STORAGE_PROVIDER": "r2",
       },
       "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-media" }],
+      "queues": {
+        "producers": [{ "binding": "EXTRACTION_QUEUE", "queue": "ubc-discovery-extraction" }],
+      },
       "secrets": {
         "required": [
           "DATABASE_URL",
@@ -86,7 +91,6 @@
           "R2_ACCESS_KEY_ID",
           "R2_SECRET_ACCESS_KEY",
           "UPLOAD_SIGNING_SECRET",
-          "EXTRACTION_QUEUE_PRODUCER_SECRET",
         ],
       },
     },

@@ -1,9 +1,12 @@
+import type { Delivery } from "./schemas/candidates";
+
 /**
  * Bindings and settings the API reads. The web Worker that serves the API under
  * /api declares them in web/wrangler.jsonc.
  */
 export interface ApiEnv {
   R2_BUCKET?: R2Bucket;
+  EXTRACTION_QUEUE?: Queue<Delivery>;
   DATABASE_SSL?: string;
   AWS_REGION?: string;
   STORAGE_PROVIDER?: string;
@@ -12,7 +15,6 @@ export interface ApiEnv {
   OTP_EXPIRY_MINUTES?: string;
   OTP_MAX_ATTEMPTS?: string;
   OTP_RATE_LIMIT_PER_15MIN?: string;
-  EXTRACTION_DELIVERY_TIMEOUT_SECONDS?: string;
   DATABASE_URL?: string;
   DIRECT_DATABASE_URL?: string;
   HYPERDRIVE?: Hyperdrive;
@@ -29,8 +31,6 @@ export interface ApiEnv {
   R2_SECRET_ACCESS_KEY?: string;
   UPLOAD_SIGNING_SECRET?: string;
   API_PUBLIC_BASE_URL?: string;
-  EXTRACTION_QUEUE_PRODUCER_URL?: string;
-  EXTRACTION_QUEUE_PRODUCER_SECRET?: string;
   PROFILE_PHOTO_MAX_BYTES?: string;
   EVENT_IMAGE_MAX_BYTES?: string;
   CANDIDATE_IMAGE_MAX_BYTES?: string;

@@ -5,7 +5,10 @@ import { defineConfig, lazyPlugins } from "vite-plus";
 
 export default defineConfig({
   plugins: lazyPlugins(() => [
-    cloudflare({ viteEnvironment: { name: "ssr" } }),
+    cloudflare({
+      viteEnvironment: { name: "ssr" },
+      auxiliaryWorkers: [{ configPath: "../workers/extraction/wrangler.jsonc", devOnly: true }],
+    }),
     tailwindcss(),
     reactRouter(),
   ]),

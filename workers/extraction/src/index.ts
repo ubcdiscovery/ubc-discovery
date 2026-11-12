@@ -7,8 +7,8 @@ import type {
   ResultStatus,
   HttpClient,
 } from "./types";
-import { deliveries, identity, validExtraction } from "./validation";
-import { UpstreamError, matchesDispatchSecret, api } from "./http";
+import { identity, validExtraction } from "./validation";
+import { UpstreamError, api } from "./http";
 
 export type { Env, ExtractionMessage, Extraction, EvidenceItem, EvidenceBatch } from "./types";
 
@@ -216,47 +216,13 @@ export async function consume(
   }
 }
 
-export async function recover(env: Env, http: HttpClient = fetch): Promise<void> {
-  const recovery = await api<{ candidates: ExtractionMessage[] }>(
-    env,
-    "/recovery?limit=10",
-    undefined,
-    http,
-  );
-  if (recovery.candidates.length) {
-    await env.EXTRACTION_QUEUE.sendBatch(recovery.candidates.map((body) => ({ body })));
-    await api(env, "/dispatched", { candidates: recovery.candidates }, http);
-  }
-}
-
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  fetch(request: Request): Response {
     const path = new URL(request.url).pathname;
     if (path === "/health" && request.method === "GET") return Response.json({ status: "ok" });
-    if (path !== "/enqueue" || request.method !== "POST")
-      return new Response("Not found", { status: 404 });
-    if (
-      !env.EXTRACTION_DISPATCH_SECRET ||
-      !(await matchesDispatchSecret(
-        request.headers.get("Authorization") ?? "",
-        `Bearer ${env.EXTRACTION_DISPATCH_SECRET}`,
-      ))
-    ) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-    let candidates: ExtractionMessage[];
-    try {
-      candidates = deliveries(await request.json());
-    } catch {
-      return new Response("Expected 1–10 candidate IDs with generation", { status: 400 });
-    }
-    await env.EXTRACTION_QUEUE.sendBatch(candidates.map((body) => ({ body })));
-    return Response.json({ enqueued: candidates.length }, { status: 202 });
+    return new Response("Not found", { status: 404 });
   },
   async queue(batch: MessageBatch<ExtractionMessage>, env: Env): Promise<void> {
     await consume(batch, env);
-  },
-  async scheduled(_event: ScheduledController, env: Env): Promise<void> {
-    await recover(env);
   },
 } satisfies ExportedHandler<Env, ExtractionMessage>;

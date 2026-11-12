@@ -26,7 +26,7 @@ This is a single-context repository using the root domain glossary and root ADR 
 - **AWS (us-west-2)**: Bedrock Titan Embeddings for recommendations, SES for OTP email
 - **Auth**: [Better Auth](https://better-auth.com) in the API (`workers/api/src/auth.ts`) — Google sign-in or an emailed sign-in code; sessions are cookies stored in Postgres. Firebase remains only for Google Analytics
 
-The API enqueues Candidates for the extraction Worker, which calls back into the API with results.
+The API sends Candidates to the extraction Worker through a Cloudflare Queue binding; the Worker calls back into the API with results.
 
 ## Getting started
 
@@ -61,7 +61,7 @@ Browsing events needs only the database. Sign-in needs `BETTER_AUTH_SECRET` (any
 
 ### Extraction Worker
 
-Only needed when working on Candidate extraction. See [Queue extraction](docs/operations/queue-extraction.md#local-development).
+`pnpm dev` in `web/` also runs the extraction Worker, sharing a local Queue with the API. Real extraction needs `workers/extraction/.dev.vars`; see [Queue extraction](docs/operations/queue-extraction.md#local-development).
 
 ## Checks
 

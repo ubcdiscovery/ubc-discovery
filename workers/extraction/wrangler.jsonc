@@ -24,12 +24,6 @@
     "OPENAI_TIMEOUT_MS": "60000",
   },
   "queues": {
-    "producers": [
-      {
-        "binding": "EXTRACTION_QUEUE",
-        "queue": "ubc-discovery-extraction-staging",
-      },
-    ],
     "consumers": [
       {
         "queue": "ubc-discovery-extraction-staging",
@@ -48,7 +42,7 @@
     ],
   },
   "secrets": {
-    "required": ["DISCOVERY_API_KEY", "EXTRACTION_DISPATCH_SECRET", "OPENAI_API_KEY"],
+    "required": ["DISCOVERY_API_KEY", "OPENAI_API_KEY"],
   },
   "env": {
     "production": {
@@ -59,12 +53,6 @@
         "OPENAI_TIMEOUT_MS": "60000",
       },
       "queues": {
-        "producers": [
-          {
-            "binding": "EXTRACTION_QUEUE",
-            "queue": "ubc-discovery-extraction",
-          },
-        ],
         "consumers": [
           {
             "queue": "ubc-discovery-extraction",
@@ -81,11 +69,8 @@
           },
         ],
       },
-      "triggers": {
-        "crons": ["*/15 * * * *"],
-      },
       "secrets": {
-        "required": ["DISCOVERY_API_KEY", "EXTRACTION_DISPATCH_SECRET", "OPENAI_API_KEY"],
+        "required": ["DISCOVERY_API_KEY", "OPENAI_API_KEY"],
       },
     },
   },

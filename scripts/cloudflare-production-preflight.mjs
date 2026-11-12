@@ -16,7 +16,6 @@ export const secretNames = [
   "R2_ACCESS_KEY_ID",
   "R2_SECRET_ACCESS_KEY",
   "UPLOAD_SIGNING_SECRET",
-  "EXTRACTION_QUEUE_PRODUCER_SECRET",
 ];
 const requiredNames = [
   ...secretNames,
