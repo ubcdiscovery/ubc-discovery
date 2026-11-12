@@ -1,5 +1,3 @@
-# Local development runs this Worker inside `pnpm dev` in web/, sharing its local Queue.
-# The checked-in DISCOVERY_API_URL is the staging API; point it at the local API instead.
 DISCOVERY_API_URL=http://localhost:5173/api
 # Use a candidates:extract managed API credential from the local API.
 DISCOVERY_API_KEY=replace-with-local-extraction-credential

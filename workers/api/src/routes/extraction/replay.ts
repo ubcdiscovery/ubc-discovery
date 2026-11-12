@@ -7,12 +7,8 @@ import type { ApiEnv } from "../../env";
 import { requireApiCredential } from "../../http/auth";
 import { ApiError } from "../../http/errors";
 import { createServices, type ServicesFactory } from "../../services";
-import { enqueueCandidates } from "../../services/extraction-queue";
+import { dispatchCandidates } from "../../services/extraction-queue";
 
-/**
- * Explicit replay: advance each unfinished Candidate's generation, clear its terminal
- * error and send it to the extraction Queue. Deliveries of earlier generations become stale.
- */
 export function createReplayRoutes(
   env: ApiEnv,
   servicesFactory: ServicesFactory = () => createServices(env),
@@ -46,7 +42,6 @@ export function createReplayRoutes(
                   .set({
                     processingGeneration: candidate.processingGeneration + 1,
                     processingError: null,
-                    processingDispatchedAt: services.now(),
                   })
                   .where(eq(candidates.id, candidate.id));
                 replayed.push({
@@ -54,8 +49,7 @@ export function createReplayRoutes(
                   generation: candidate.processingGeneration + 1,
                 });
               }
-            // Send last: if it fails (503), the replay is rolled back and can simply be repeated.
-            await enqueueCandidates(env, replayed);
+            await dispatchCandidates(tx, env, services.now(), replayed);
             return { candidates: replayed };
           }),
         { direct: true },

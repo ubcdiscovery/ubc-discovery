@@ -1,6 +1,8 @@
+import { inArray } from "drizzle-orm";
+import type { DbTransaction } from "../db";
 import type { ApiEnv } from "../env";
 import { integerSetting } from "../env";
-import type { EventListingCandidate } from "../db/schema";
+import { eventListingCandidates, type EventListingCandidate } from "../db/schema";
 import { ApiError } from "../http/errors";
 import type { Delivery } from "../schemas/candidates";
 export function captureTimedOut(candidate: EventListingCandidate, now: Date, env: ApiEnv): boolean {
@@ -9,23 +11,30 @@ export function captureTimedOut(candidate: EventListingCandidate, now: Date, env
     integerSetting(env.EXTRACTION_IMAGE_WAIT_SECONDS, 300) * 1000
   );
 }
-/**
- * Send Candidates to the extraction Queue. Callers send inside the transaction that
- * records the dispatch, so a failed send records nothing and the caller's retry sends again.
- * A send whose transaction then fails leaves a message for a generation the database
- * never recorded as dispatched; it is harmless (the Worker sees the same generation and
- * retries or acknowledges, and duplicate deliveries are idempotent).
- */
-export async function enqueueCandidates(env: ApiEnv, candidates: Delivery[]): Promise<void> {
-  if (!candidates.length) return;
+export async function dispatchCandidates(
+  tx: DbTransaction,
+  env: ApiEnv,
+  now: Date,
+  deliveries: Delivery[],
+): Promise<void> {
+  if (!deliveries.length) return;
+  await tx
+    .update(eventListingCandidates)
+    .set({ processingDispatchedAt: now })
+    .where(
+      inArray(
+        eventListingCandidates.id,
+        deliveries.map((item) => item.candidate_id),
+      ),
+    );
   try {
     if (!env.EXTRACTION_QUEUE) throw new Error("EXTRACTION_QUEUE binding is not configured");
-    await env.EXTRACTION_QUEUE.sendBatch(candidates.map((body) => ({ body })));
+    await env.EXTRACTION_QUEUE.sendBatch(deliveries.map((body) => ({ body })));
   } catch (error) {
     console.error(
       JSON.stringify({
         event: "queue_dispatch_failed",
-        candidate_ids: candidates.map((item) => item.candidate_id),
+        candidate_ids: deliveries.map((item) => item.candidate_id),
         error: error instanceof Error ? error.message : "unknown",
       }),
     );

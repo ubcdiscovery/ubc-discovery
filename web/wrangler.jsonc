@@ -30,7 +30,6 @@
     "STORAGE_PROVIDER": "r2",
   },
   "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-api-staging-media" }],
-  // The API sends Candidates to the extraction Worker's Queue (workers/extraction).
   "queues": {
     "producers": [{ "binding": "EXTRACTION_QUEUE", "queue": "ubc-discovery-extraction-staging" }],
   },

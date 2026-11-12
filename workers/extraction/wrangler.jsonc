@@ -2,7 +2,6 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   // The default configuration is staging, like the web Worker's.
   // Production is selected with --env production (or CLOUDFLARE_ENV=production).
-  // This Worker only consumes: the API (in the web Worker) produces to these Queues.
   "name": "ubc-discovery-extraction-staging",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-11",

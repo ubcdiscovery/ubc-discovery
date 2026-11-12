@@ -1,4 +1,3 @@
-// Wrangler generates variable and secret names.
 export type Env = CloudflareBindings;
 
 export interface ExtractionMessage {

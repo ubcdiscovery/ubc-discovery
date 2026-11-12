@@ -10,7 +10,7 @@ import { candidateIngestionSchema } from "../../schemas/candidates";
 import { candidateImageFileSizes } from "../../schemas/upload-size";
 import { createServices, type ServicesFactory } from "../../services";
 import { ingestCandidate } from "../../services/candidate-ingestion";
-import { captureTimedOut, enqueueCandidates } from "../../services/extraction-queue";
+import { captureTimedOut, dispatchCandidates } from "../../services/extraction-queue";
 
 export function createIngestionRoutes(
   env: ApiEnv,
@@ -83,14 +83,10 @@ export function createIngestionRoutes(
               const dispatch = !candidate.processingError && !candidate.processingDispatchedAt;
               await tx
                 .update(candidates)
-                .set({
-                  captureReadyAt: candidate.captureReadyAt ?? services.now(),
-                  ...(dispatch ? { processingDispatchedAt: services.now() } : {}),
-                })
+                .set({ captureReadyAt: candidate.captureReadyAt ?? services.now() })
                 .where(eq(candidates.id, candidate.id));
-              // Send last: if it fails (503), nothing is recorded and the ingester's retry sends again.
               if (dispatch)
-                await enqueueCandidates(env, [
+                await dispatchCandidates(tx, env, services.now(), [
                   { candidate_id: candidate.id, generation: candidate.processingGeneration },
                 ]);
               return { candidate_id: params.candidate_id, status: "ready", dispatched: dispatch };

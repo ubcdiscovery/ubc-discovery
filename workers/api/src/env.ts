@@ -6,7 +6,6 @@ import type { Delivery } from "./schemas/candidates";
  */
 export interface ApiEnv {
   R2_BUCKET?: R2Bucket;
-  /** Producer for the extraction Worker's Queue; messages carry a Candidate ID and generation. */
   EXTRACTION_QUEUE?: Queue<Delivery>;
   DATABASE_SSL?: string;
   AWS_REGION?: string;
