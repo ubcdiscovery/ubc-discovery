@@ -53,11 +53,18 @@ export const events = pgTable(
     archivedAt: instant("archived_at"),
     archivedBy: uuid("archived_by"),
     embeddingVector: vector("embedding_vector", { dimensions: 1024 }),
+    // Vectors from different models are not comparable; the recommender only
+    // compares vectors made by the current model (see services/embeddings.ts).
+    embeddingModel: varchar("embedding_model", { length: 100 }),
   },
   (table) => [
     check(
       "ck_event_source_label",
       sql`${table.sourceLabel} IN ('ubc_official', 'ams_club', 'campus_community')`,
+    ),
+    check(
+      "ck_event_embedding_model",
+      sql`(${table.embeddingVector} IS NULL) = (${table.embeddingModel} IS NULL)`,
     ),
     index("ix_events_search_trgm").using(
       "gin",

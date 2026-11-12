@@ -1,14 +1,19 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 import type { ApiEnv } from "../src/env";
-import { embedText, generateEventText, isValidEmbedding } from "../src/services/embeddings";
+import {
+  EMBEDDING_MODEL_ID,
+  embedText,
+  generateEventText,
+  isValidEmbedding,
+} from "../src/services/embeddings";
 
-const env = {
-  AWS_ACCESS_KEY_ID: "example",
-  AWS_SECRET_ACCESS_KEY: "example",
-  AWS_REGION: "us-west-2",
-} as ApiEnv;
+function envWith(run: (model: string, inputs: unknown) => Promise<unknown>) {
+  return { AI: { run: vi.fn(run) } } as unknown as ApiEnv & {
+    AI: { run: ReturnType<typeof vi.fn> };
+  };
+}
 
-describe("Titan embeddings", () => {
+describe("Workers AI embeddings", () => {
   it("preserves event text ordering and skips empty description/organizer", () => {
     expect(
       generateEventText({
@@ -27,16 +32,11 @@ describe("Titan embeddings", () => {
       }),
     ).toBe("Concert. Location: Nest");
   });
-  it("invokes the same model and dimensions, preserving normalization defaults", async () => {
+  it("embeds event text as a document with the configured model", async () => {
     const embedding = Array.from({ length: 1024 }, (_, index) => index / 1024);
-    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ embedding }));
-    expect(await embedText(env, "Example event", fetcher)).toEqual(embedding);
-    const request = fetcher.mock.calls[0]![0] as Request;
-    expect(request.url).toBe(
-      "https://bedrock-runtime.us-west-2.amazonaws.com/model/amazon.titan-embed-text-v2%3A0/invoke",
-    );
-    expect(request.headers.get("authorization")).toContain("/bedrock/aws4_request");
-    expect(await request.json()).toEqual({ inputText: "Example event", dimensions: 1024 });
+    const env = envWith(async () => ({ shape: [1, 1024], data: [embedding] }));
+    expect(await embedText(env, "Example event")).toEqual(embedding);
+    expect(env.AI.run).toHaveBeenCalledWith(EMBEDDING_MODEL_ID, { documents: ["Example event"] });
   });
   it("rejects wrong dimensions, booleans, non-finite values, and malformed model responses", async () => {
     expect(isValidEmbedding(Array(1023).fill(0))).toBe(false);
@@ -44,22 +44,29 @@ describe("Titan embeddings", () => {
     expect(isValidEmbedding([...Array(1023).fill(0), Infinity])).toBe(false);
     expect(
       await embedText(
-        env,
+        envWith(async () => ({ data: [[]] })),
         "text",
-        vi.fn<typeof fetch>().mockResolvedValue(Response.json({ embedding: [] })),
       ),
     ).toBeNull();
     expect(
       await embedText(
-        env,
+        envWith(async () => ({ data: [] })),
         "text",
-        vi.fn<typeof fetch>().mockResolvedValue(new Response("invalid JSON")),
+      ),
+    ).toBeNull();
+    expect(
+      await embedText(
+        envWith(async () => "invalid"),
+        "text",
       ),
     ).toBeNull();
   });
   it("keeps failures best-effort and does not retry an invocation", async () => {
-    const fetcher = vi.fn<typeof fetch>().mockRejectedValue(new Error("network failure"));
-    expect(await embedText(env, "text", fetcher)).toBeNull();
-    expect(fetcher).toHaveBeenCalledTimes(1);
+    const env = envWith(async () => {
+      throw new Error("network failure");
+    });
+    expect(await embedText(env, "text")).toBeNull();
+    expect(env.AI.run).toHaveBeenCalledTimes(1);
+    expect(await embedText({} as ApiEnv, "text")).toBeNull();
   });
 });

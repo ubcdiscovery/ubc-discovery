@@ -23,7 +23,8 @@ This is a single-context repository using the root domain glossary and root ADR 
 - **Extraction**: Cloudflare Queue Worker in `workers/extraction/` — calls Workers AI (Gemma 4), no database access
 - **Database**: Neon PostgreSQL 18 with pgvector; migrations via Drizzle Kit
 - **Storage**: private Cloudflare R2 bucket
-- **AWS (us-west-2)**: Bedrock Titan Embeddings for recommendations, SES for OTP email
+- **Workers AI**: Qwen3 embeddings (`@cf/qwen/qwen3-embedding-0.6b`) for recommendations, via the web Worker's `AI` binding
+- **AWS (us-west-2)**: SES for OTP email
 - **Auth**: [Better Auth](https://better-auth.com) in the API (`workers/api/src/auth.ts`) — Google sign-in or an emailed sign-in code; sessions are cookies stored in Postgres. Firebase remains only for Google Analytics
 
 The API sends Candidates to the extraction Worker through a Cloudflare Queue binding; the Worker calls back into the API with results.
@@ -57,7 +58,7 @@ cp .dev.vars.example .dev.vars # API settings and secrets
 pnpm dev # http://localhost:5173, API at http://localhost:5173/api
 ```
 
-Browsing events needs only the database. Sign-in needs `BETTER_AUTH_SECRET` (any random 32+ bytes) in `.dev.vars`; Google sign-in also needs `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, and emailed codes need AWS SES. Image uploads need staging R2 credentials and `UPLOAD_SIGNING_SECRET`. AWS Bedrock is optional: without it, new events get no embedding and are left out of similarity ranking.
+Browsing events needs only the database. Sign-in needs `BETTER_AUTH_SECRET` (any random 32+ bytes) in `.dev.vars`; Google sign-in also needs `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, and emailed codes need AWS SES. Image uploads need staging R2 credentials and `UPLOAD_SIGNING_SECRET`. Embeddings use the remote Workers AI binding (needs `wrangler login`): without it, new events get no embedding and are left out of similarity ranking until `workers/api/scripts/reembed-events.mjs` fills them.
 
 ### Extraction Worker
 
@@ -116,7 +117,7 @@ docs/operations/                 # Runbooks for production, migrations, storage,
 - Profile pictures and event images: exact-size presigned R2 PUT uploads, served through the API's `/media/public/` route; key stored in DB (`profile_picture_key`, `event_picture_key`)
 - Location text is the human-facing source of truth for where an event happens
 - Schema changes: edit `workers/api/src/db/schema.ts`, run `pnpm run db:generate --name <change>` in `workers/api/`, and commit the generated `drizzle/` files. See [Database migrations](docs/operations/database-migrations.md).
-- Recommender: Content-based event similarity using Bedrock Titan embeddings + vibe Jaccard weighted blend. Embeddings are pre-computed at event creation and stored as 1024-dimensional pgvector values.
+- Recommender: Content-based event similarity using Workers AI Qwen3 embeddings + vibe Jaccard weighted blend. Embeddings are pre-computed at event creation and stored as 1024-dimensional pgvector values with `embedding_model`; only vectors from the current model are compared. After changing the model, run `scripts/reembed-events.mjs`.
 
 ### Web
 

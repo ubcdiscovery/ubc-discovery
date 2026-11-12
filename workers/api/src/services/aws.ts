@@ -3,7 +3,7 @@ import type { ApiEnv } from "../env";
 import { ApiError } from "../http/errors";
 
 export type Fetcher = typeof fetch;
-export type AwsService = "ses" | "bedrock" | "s3";
+export type AwsService = "ses" | "s3";
 
 export function awsCredentials(env: ApiEnv) {
   if (!env.AWS_ACCESS_KEY_ID || !env.AWS_SECRET_ACCESS_KEY) {
@@ -18,7 +18,7 @@ export function awsCredentials(env: ApiEnv) {
 }
 
 export function createAwsClient(env: ApiEnv, service: AwsService) {
-  // No implicit retries: SES sends and model invocations are not idempotent.
+  // No implicit retries: SES sends are not idempotent.
   return new AwsClient({ ...awsCredentials(env), service, retries: 0 });
 }
 
