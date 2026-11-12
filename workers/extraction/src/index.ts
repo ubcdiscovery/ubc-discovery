@@ -12,6 +12,8 @@ import { UpstreamError, api } from "./http";
 
 export type { Env, ExtractionMessage, Extraction, EvidenceItem, EvidenceBatch } from "./types";
 
+const MAX_OUTPUT_TOKENS = 4096;
+
 export async function extract(
   env: Env,
   evidence: EvidenceBatch,
@@ -24,33 +26,23 @@ export async function extract(
       type: "text",
       text: `candidate_id: ${item.candidate_id}\nsource_account: @${item.source_account}\nsource_type: ${item.source_type}\nreference_timestamp: ${item.reference_timestamp}\ncaption:\n${item.caption}`,
     });
-    for (const image of item.images) {
-      content.push({
-        type: "image_url",
-        image_url: { url: image.url, detail: evidence.image_detail },
-      });
-    }
+    for (const image of item.images)
+      content.push({ type: "image_url", image_url: { url: await inlineImage(image.url, http) } });
   }
-  const response = await http("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: evidence.model,
-      reasoning_effort: evidence.reasoning_effort,
-      messages: [
-        { role: "system", content: evidence.system_prompt },
-        { role: "user", content },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: { name: "candidate_extractions", strict: true, schema: evidence.schema },
-      },
-    }),
-    signal: AbortSignal.timeout(Number(env.OPENAI_TIMEOUT_MS) || 60000),
+  const response = await runModel(env, {
+    messages: [
+      { role: "system", content: evidence.system_prompt },
+      { role: "user", content },
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: { name: "candidate_extractions", strict: true, schema: evidence.schema },
+    },
+    max_tokens: MAX_OUTPUT_TOKENS,
+    chat_template_kwargs: { enable_thinking: false },
   });
-  if (!response.ok) throw new UpstreamError("OpenAI", response.status);
-  const body = (await response.json()) as { choices: { message: { content?: string } }[] };
-  const parsed = JSON.parse(body.choices[0]?.message.content ?? "{}") as {
+  const output = response.choices?.[0]?.message?.content;
+  const parsed = (typeof output === "string" ? JSON.parse(output || "{}") : (output ?? {})) as {
     extractions?: Extraction[];
   };
   const results = parsed.extractions;
@@ -64,6 +56,47 @@ export async function extract(
     throw new Error("extractor returned the wrong candidate set");
   }
   return items.map((item) => results.find((result) => result.candidate_id === item.candidate_id)!);
+}
+
+interface ChatCompletion {
+  choices?: { message?: { content?: unknown } }[];
+}
+
+async function runModel(env: Env, inputs: Record<string, unknown>): Promise<ChatCompletion> {
+  const run = env.AI.run.bind(env.AI) as (model: string, inputs: unknown) => Promise<unknown>;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return (await Promise.race([
+      run(env.EXTRACTION_MODEL, inputs),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new UpstreamError("Workers AI", 504, "timeout")),
+          Number(env.EXTRACTION_TIMEOUT_MS) || 120000,
+        );
+      }),
+    ])) as ChatCompletion;
+  } catch (error) {
+    if (error instanceof UpstreamError) throw error;
+    // Workers AI errors carry a numeric code (for example 3040 capacity, 4006 daily limit).
+    const code = /\b(\d{4})\b/.exec(error instanceof Error ? error.message : "")?.[1];
+    throw new UpstreamError("Workers AI", Number(code ?? 500), "error");
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+async function inlineImage(url: string, http: HttpClient): Promise<string> {
+  const response = await http(url, { signal: AbortSignal.timeout(30000) });
+  const type = response.headers.get("Content-Type")?.split(";")[0].trim() ?? "";
+  if (!response.ok || !type.startsWith("image/")) {
+    await response.body?.cancel();
+    throw new Error("Candidate image download failed");
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += 0x8000)
+    binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+  return `data:${type};base64,${btoa(binary)}`;
 }
 
 async function failed(
@@ -169,9 +202,9 @@ export async function consume(
         });
       }
     } catch (error) {
-      // Rate limits/auth failures affect the entire batch; avoid ten more paid calls.
-      // A bad image or oversized packed request (400/413) can affect just one
-      // candidate. Isolate those; shared auth/rate/server failures use backoff.
+      // Workers AI failures (capacity, daily limit, timeout) affect the entire batch, so
+      // they back off instead of making one more call per candidate. A bad image or a
+      // malformed packed result can affect just one candidate, so isolate those.
       if (error instanceof UpstreamError && ![400, 413].includes(error.status)) {
         for (const item of ready)
           for (const message of messages.get(identity(item)) ?? [])
@@ -197,7 +230,7 @@ export async function consume(
     const saved = await api<{ results: ResultStatus[] }>(
       env,
       "/results",
-      { model: evidence.model, results },
+      { model: env.EXTRACTION_MODEL, results },
       http,
     );
     for (const result of results) {

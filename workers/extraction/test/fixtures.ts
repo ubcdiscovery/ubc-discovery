@@ -12,11 +12,12 @@ export const second = "cand0002";
 
 export function environment(): Env {
   return {
+    AI: { run: vi.fn() } as unknown as Ai,
     DISCOVERY_API_URL: "http://localhost:8000",
     DISCOVERY_API_KEY: "local-scoped-key",
-    OPENAI_API_KEY: "fake-test-key",
+    EXTRACTION_MODEL: "@cf/test/model",
+    EXTRACTION_TIMEOUT_MS: "60000",
     MAX_ATTEMPTS: "5",
-    OPENAI_TIMEOUT_MS: "60000",
   };
 }
 
@@ -34,13 +35,12 @@ export function item(
     source_type: "instagram",
     reference_timestamp: "2026-10-11T12:00:00Z",
     created_at: "2026-10-11T12:00:00Z",
-    images: [{ url: "https://s3.example/signed-image" }],
+    images: [],
   };
 }
 
 export function evidence(items: EvidenceItem[]): EvidenceBatch {
   return {
-    model: "fixture-model",
     system_prompt: "fixture prompt",
     schema: {
       type: "object",
@@ -50,8 +50,6 @@ export function evidence(items: EvidenceItem[]): EvidenceBatch {
         },
       },
     },
-    reasoning_effort: "low",
-    image_detail: "high",
     items,
   };
 }
@@ -95,8 +93,11 @@ export function batch(
 export function json(value: unknown, status = 200): Response {
   return Response.json(value, { status });
 }
-export function ai(results: Extraction[]): Response {
-  return json({ choices: [{ message: { content: JSON.stringify({ extractions: results }) } }] });
+export function ai(results: Extraction[]) {
+  return { choices: [{ message: { content: JSON.stringify({ extractions: results }) } }] };
+}
+export function aiRun(env: Env) {
+  return vi.mocked(env.AI.run as unknown as (model: string, inputs: unknown) => Promise<unknown>);
 }
 export function httpMock() {
   return vi.fn<typeof fetch>();

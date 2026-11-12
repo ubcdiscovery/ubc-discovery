@@ -93,9 +93,6 @@ export function createDeliveryRoutes(
                 items.push(item);
               }
               return {
-                model: env.EXTRACTION_MODEL || "gpt-5.6-luna",
-                reasoning_effort: env.EXTRACTION_REASONING_EFFORT || "none",
-                image_detail: env.EXTRACTION_IMAGE_DETAIL || "high",
                 system_prompt: SYSTEM_PROMPT,
                 schema: RESPONSE_SCHEMA,
                 items,

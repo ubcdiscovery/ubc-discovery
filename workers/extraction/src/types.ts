@@ -29,11 +29,8 @@ export interface EvidenceItem {
 }
 
 export interface EvidenceBatch {
-  model: string;
   system_prompt: string;
   schema: Record<string, unknown>;
-  reasoning_effort: string;
-  image_detail: string;
   items: EvidenceItem[];
 }
 

@@ -20,14 +20,16 @@
   // Staging makes one attempt per Candidate to keep model charges low.
   "vars": {
     "DISCOVERY_API_URL": "https://ubc-discovery-web-staging.ubcdiscovery.workers.dev/api",
+    "EXTRACTION_MODEL": "@cf/google/gemma-4-26b-a4b-it",
+    "EXTRACTION_TIMEOUT_MS": "120000",
     "MAX_ATTEMPTS": "1",
-    "OPENAI_TIMEOUT_MS": "60000",
   },
+  "ai": { "binding": "AI" },
   "queues": {
     "consumers": [
       {
         "queue": "ubc-discovery-extraction-staging",
-        "max_batch_size": 10,
+        "max_batch_size": 5,
         "max_batch_timeout": 1,
         "max_concurrency": 1,
         "max_retries": 0,
@@ -42,21 +44,23 @@
     ],
   },
   "secrets": {
-    "required": ["DISCOVERY_API_KEY", "OPENAI_API_KEY"],
+    "required": ["DISCOVERY_API_KEY"],
   },
   "env": {
     "production": {
       "name": "ubc-discovery-extraction",
       "vars": {
         "DISCOVERY_API_URL": "https://ubcdiscovery.com/api",
+        "EXTRACTION_MODEL": "@cf/google/gemma-4-26b-a4b-it",
+        "EXTRACTION_TIMEOUT_MS": "120000",
         "MAX_ATTEMPTS": "5",
-        "OPENAI_TIMEOUT_MS": "60000",
       },
+      "ai": { "binding": "AI" },
       "queues": {
         "consumers": [
           {
             "queue": "ubc-discovery-extraction",
-            "max_batch_size": 10,
+            "max_batch_size": 5,
             "max_batch_timeout": 60,
             "max_concurrency": 1,
             "max_retries": 4,
@@ -70,7 +74,7 @@
         ],
       },
       "secrets": {
-        "required": ["DISCOVERY_API_KEY", "OPENAI_API_KEY"],
+        "required": ["DISCOVERY_API_KEY"],
       },
     },
   },

@@ -49,7 +49,7 @@ flowchart LR
     AWS[AWS<br/>Bedrock embeddings, SES email]
     Queue[[Cloudflare Queue]]
     Extraction[Extraction Worker]
-    OpenAI[OpenAI API]
+    WorkersAI[Workers AI]
 
     Browser --> Site
     Browser --> API
@@ -61,12 +61,11 @@ flowchart LR
     API --> AWS
     API -->|send Candidate| Queue
     Queue -->|deliver batch| Extraction
-    Extraction -->|evidence, results| API
-    Extraction <--> OpenAI
-    OpenAI -.->|signed image URLs| API
+    Extraction -->|evidence, images, results| API
+    Extraction --> WorkersAI
 ```
 
-The scraper runs twice a day. Each new post becomes a Candidate: the API sends it to the Queue, the extraction Worker asks OpenAI to extract event details, and the API saves the result and publishes it or holds it for review. See [Queue extraction](docs/operations/queue-extraction.md) for the details.
+The scraper runs twice a day. Each new post becomes a Candidate: the API sends it to the Queue, the extraction Worker asks Workers AI to extract event details, and the API saves the result and publishes it or holds it for review. See [Queue extraction](docs/operations/queue-extraction.md) for the details.
 
 ## Contributing
 

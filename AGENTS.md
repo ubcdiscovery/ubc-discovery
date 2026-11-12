@@ -20,7 +20,7 @@ This is a single-context repository using the root domain glossary and root ADR 
 
 - **Web**: React app in `web/` — React Router 8 SSR + React 19 + Tailwind CSS. Its Cloudflare Worker also serves the API under `/api`
 - **API**: Elysia TypeScript app in `workers/api/` — Drizzle ORM + node-postgres. A library bundled into the web Worker, not a Worker of its own
-- **Extraction**: Cloudflare Queue Worker in `workers/extraction/` — calls OpenAI, no database access
+- **Extraction**: Cloudflare Queue Worker in `workers/extraction/` — calls Workers AI (Gemma 4), no database access
 - **Database**: Neon PostgreSQL 18 with pgvector; migrations via Drizzle Kit
 - **Storage**: private Cloudflare R2 bucket
 - **AWS (us-west-2)**: Bedrock Titan Embeddings for recommendations, SES for OTP email
@@ -90,7 +90,7 @@ workers/
 ├── api/
 │   ├── src/                     # Routes, services, presenters, Drizzle schema (src/db/schema.ts)
 │   └── drizzle/                 # Generated SQL migrations
-└── extraction/                  # Queue consumer that calls OpenAI
+└── extraction/                  # Queue consumer that calls Workers AI
 
 web/
 ├── app/

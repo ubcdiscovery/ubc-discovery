@@ -2,8 +2,9 @@
 
 The API (`workers/api`, served by the web Worker under `/api`) owns Candidates, validation, publication,
 embeddings, and audit history. `workers/extraction` is a separate Cloudflare
-Worker that consumes the Queue and handles the AI request. It has no
-database credentials. The API is the only producer: the web Worker binds the Queue
+Worker that consumes the Queue and calls Workers AI through its `AI` binding
+(model `@cf/google/gemma-4-26b-a4b-it`, set by `EXTRACTION_MODEL`). It has no
+database credentials and no AI provider key. The API is the only producer: the web Worker binds the Queue
 as `EXTRACTION_QUEUE`.
 
 ## Contract and processing
@@ -19,11 +20,19 @@ inside the transaction that records capture readiness and the dispatch time. If 
 send fails, the endpoint returns 503 and records nothing, so the ingester's retry
 sends again (the scraper leaves the post unseen and retries it on its next run).
 A Candidate already dispatched, or with a terminal error, is not sent again. The Queue holds
-only Candidate IDs and their processing generation. Queue delivery groups up to ten Candidates; the Worker
-fetches fresh signed image URLs from `/extraction/evidence`, calls OpenAI once
-with the packed evidence, and submits `/extraction/results`. Invalid packed
-output falls back to individual Candidates. Candidate-specific HTTP 400/413 failures also fall back individually. Shared
-authentication, rate-limit, and server failures use Queue backoff.
+only Candidate IDs and their processing generation. Queue delivery groups up to five Candidates
+(larger batches made the model drop or truncate items); the Worker fetches fresh signed
+image URLs from `/extraction/evidence`, downloads the images and sends them inline,
+calls the model once with the packed evidence and thinking disabled, and submits
+`/extraction/results` with the model name. Invalid packed output, or an image that
+cannot be downloaded, falls back to individual Candidates. Workers AI failures
+(capacity, the daily allocation, timeouts after `EXTRACTION_TIMEOUT_MS`) affect the
+whole batch and use Queue backoff.
+
+Extraction runs within the Workers AI free allocation of 10,000 Neurons per day,
+shared by the account and reset at 00:00 UTC. A Candidate costs about 9 Neurons
+(roughly 370 on a typical 40-Candidate day). On Workers Free, requests fail once the
+allocation is used; check usage in the Workers AI dashboard before large replays.
 
 The result endpoint saves extraction before publication and sorts publication
 by `(created_at, id)` within a batch. Existing same-club/day locking and review
@@ -49,7 +58,7 @@ it automatically: watch for dispatched Candidates that never complete and replay
 
 Five processing attempts exhaust delivery. The primary consumer records a
 terminal error; the dead-letter consumer repeats that report if necessary, then
-acknowledges. It does not call OpenAI. Failures remain visible in Candidate
+acknowledges. It does not call the model. Failures remain visible in Candidate
 processing state even after the dead-letter message is acknowledged.
 
 For deliberate replay, call `POST /extraction/replay` with up to ten Candidate IDs using
@@ -77,12 +86,12 @@ Worker); both bind the same local Queue, so capture-ready is consumed locally.
    extraction endpoints.
 2. In `workers/extraction`, copy `.dev.vars.example` to `.dev.vars` and fill in the
    extraction credential. It points `DISCOVERY_API_URL` at the local API; the
-   checked-in value is the staging API. Real extraction also requires an OpenAI
-   key and incurs model charges. Without one, Candidates fail with
-   `OpenAI HTTP 401` and move to the local dead-letter Queue.
+   checked-in value is the staging API. The `AI` binding always runs on Cloudflare,
+   even locally, so `pnpm dev` needs `wrangler login` and real extraction uses the
+   account's daily Neurons.
 3. Run `pnpm dev` in `web`. Ingest a fixture, finish image uploads, then call
    capture-ready. Local staging configuration delivers within a second.
-4. Use `pnpm check` for fixture-driven AI/retry tests without AWS/OpenAI calls.
+4. Use `pnpm check` for fixture-driven AI/retry tests without calling Workers AI.
    `pnpm build` checks bundling without publishing.
 
 See official [Queue local development](https://developers.cloudflare.com/queues/configuration/local-development/)
@@ -98,8 +107,8 @@ and its `-dlq`, calls the staging API, and makes one attempt per Candidate.
 `env.production` is Worker `ubc-discovery-extraction`, which consumes the
 `ubc-discovery-extraction` Queue and its `ubc-discovery-extraction-dlq`
 dead-letter Queue and calls the production API.
-Required Worker secrets in both are `DISCOVERY_API_KEY` (a scoped extraction credential
-for that environment's API) and `OPENAI_API_KEY`. The web Worker produces to the
+The only required Worker secret in both is `DISCOVERY_API_KEY` (a scoped extraction
+credential for that environment's API). The web Worker produces to the
 matching Queue: staging and Previews to `ubc-discovery-extraction-staging`,
 production to `ubc-discovery-extraction`.
 

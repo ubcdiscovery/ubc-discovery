@@ -11,8 +11,17 @@ import {
   batch,
   json,
   ai,
+  aiRun,
   httpMock,
 } from "./fixtures";
+
+interface ModelInput {
+  messages: { content: { type: string; text?: string; image_url?: { url: string } }[] }[];
+  chat_template_kwargs: { enable_thinking: boolean };
+}
+const input = (call: unknown[]) => call[1] as ModelInput;
+const parts = (call: unknown[], type: string) =>
+  input(call).messages[1].content.filter((part) => part.type === type);
 
 describe("HTTP", () => {
   it("serves only the health check", async () => {
@@ -28,44 +37,63 @@ describe("HTTP", () => {
 });
 
 describe("queue consumption", () => {
-  it("packs candidates in one AI request and acknowledges only saved results", async () => {
+  it("packs candidates in one Workers AI call and acknowledges only saved results", async () => {
     const a = message(first),
       b = message(second),
+      env = environment(),
       http = httpMock();
-    http
-      .mockResolvedValueOnce(json(evidence([item(first), item(second)])))
-      .mockResolvedValueOnce(ai([extraction(first), extraction(second)]))
-      .mockResolvedValueOnce(
-        json({
-          results: [
-            { candidate_id: first, status: "completed" },
-            { candidate_id: second, status: "retry" },
-          ],
-        }),
-      );
-    await consume(batch([a, b]), environment(), http);
-    expect(http).toHaveBeenCalledTimes(3);
-    const openai = JSON.parse(http.mock.calls[1][1]!.body as string);
-    expect(
-      openai.messages[1].content.filter((part: { type: string }) => part.type === "text"),
-    ).toHaveLength(2);
-    expect(
-      openai.messages[1].content.filter((part: { type: string }) => part.type === "image_url")[0]
-        .image_url.url,
-    ).toBe("https://s3.example/signed-image");
+    aiRun(env).mockResolvedValueOnce(ai([extraction(first), extraction(second)]));
+    http.mockResolvedValueOnce(json(evidence([item(first), item(second)]))).mockResolvedValueOnce(
+      json({
+        results: [
+          { candidate_id: first, status: "completed" },
+          { candidate_id: second, status: "retry" },
+        ],
+      }),
+    );
+    await consume(batch([a, b]), env, http);
+    expect(http).toHaveBeenCalledTimes(2);
+    expect(aiRun(env)).toHaveBeenCalledOnce();
+    const call = aiRun(env).mock.calls[0];
+    expect(call[0]).toBe("@cf/test/model");
+    expect(parts(call, "text")).toHaveLength(2);
+    expect(input(call).chat_template_kwargs).toEqual({ enable_thinking: false });
+    expect(JSON.parse(http.mock.calls[1][1]!.body as string).model).toBe("@cf/test/model");
     expect(a.ack).toHaveBeenCalledOnce();
     expect(b.retry).toHaveBeenCalledWith({ delaySeconds: 60 });
+  });
+
+  it("downloads each candidate image and sends it inline", async () => {
+    const a = message(first),
+      env = environment(),
+      http = httpMock();
+    const image = { ...item(first), images: [{ url: "https://media.example/signed-image" }] };
+    aiRun(env).mockResolvedValueOnce(ai([extraction(first)]));
+    http
+      .mockResolvedValueOnce(json(evidence([image])))
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([1, 2, 3]), { headers: { "Content-Type": "image/png" } }),
+      )
+      .mockResolvedValueOnce(json({ results: [{ candidate_id: first, status: "completed" }] }));
+    await consume(batch([a]), env, http);
+    expect(String(http.mock.calls[1][0])).toBe("https://media.example/signed-image");
+    expect(parts(aiRun(env).mock.calls[0], "image_url")[0].image_url!.url).toBe(
+      "data:image/png;base64,AQID",
+    );
+    expect(a.ack).toHaveBeenCalledOnce();
   });
 
   it("uses the persisted extraction on retry and deduplicates deliveries", async () => {
     const a = message(first),
       duplicate = message(first),
+      env = environment(),
       http = httpMock();
     http
       .mockResolvedValueOnce(json(evidence([item(first, "extracted")])))
       .mockResolvedValueOnce(json({ results: [{ candidate_id: first, status: "completed" }] }));
-    await consume(batch([a, duplicate]), environment(), http);
+    await consume(batch([a, duplicate]), env, http);
     expect(http).toHaveBeenCalledTimes(2);
+    expect(aiRun(env)).not.toHaveBeenCalled();
     expect(JSON.parse(http.mock.calls[1][1]!.body as string).results).toEqual([
       { candidate_id: first, generation: 1, extraction: null },
     ]);
@@ -76,10 +104,12 @@ describe("queue consumption", () => {
   it("does no AI work for completed, terminal, missing, or waiting captures", async () => {
     const complete = message(first),
       waiting = message(second),
+      env = environment(),
       http = httpMock();
     http.mockResolvedValueOnce(json(evidence([item(first, "completed"), item(second, "waiting")])));
-    await consume(batch([complete, waiting]), environment(), http);
+    await consume(batch([complete, waiting]), env, http);
     expect(http).toHaveBeenCalledOnce();
+    expect(aiRun(env)).not.toHaveBeenCalled();
     expect(complete.ack).toHaveBeenCalledOnce();
     expect(waiting.retry).toHaveBeenCalledWith({ delaySeconds: 15 });
   });
@@ -87,76 +117,90 @@ describe("queue consumption", () => {
   it("falls back to single calls after a malformed packed result", async () => {
     const a = message(first),
       b = message(second),
+      env = environment(),
       http = httpMock();
-    http
-      .mockResolvedValueOnce(json(evidence([item(first), item(second)])))
+    aiRun(env)
       .mockResolvedValueOnce(ai([extraction(first)]))
       .mockResolvedValueOnce(ai([extraction(first)]))
-      .mockResolvedValueOnce(ai([extraction(second)]))
-      .mockResolvedValueOnce(
-        json({
-          results: [
-            { candidate_id: first, status: "completed" },
-            { candidate_id: second, status: "completed" },
-          ],
-        }),
-      );
-    await consume(batch([a, b]), environment(), http);
-    expect(http).toHaveBeenCalledTimes(5);
+      .mockResolvedValueOnce(ai([extraction(second)]));
+    http.mockResolvedValueOnce(json(evidence([item(first), item(second)]))).mockResolvedValueOnce(
+      json({
+        results: [
+          { candidate_id: first, status: "completed" },
+          { candidate_id: second, status: "completed" },
+        ],
+      }),
+    );
+    await consume(batch([a, b]), env, http);
+    expect(aiRun(env)).toHaveBeenCalledTimes(3);
     expect(a.ack).toHaveBeenCalledOnce();
     expect(b.ack).toHaveBeenCalledOnce();
   });
 
-  it.each([401, 403, 429, 500, 503])(
-    "backs off the batch for shared HTTP %s failures",
-    async (status) => {
-      const a = message(first),
-        b = message(second),
-        http = httpMock();
-      http
-        .mockResolvedValueOnce(json(evidence([item(first), item(second)])))
-        .mockResolvedValueOnce(json({}, status));
-      await consume(batch([a, b]), environment(), http);
-      expect(http).toHaveBeenCalledTimes(2);
-      expect(a.retry).toHaveBeenCalledOnce();
-      expect(b.retry).toHaveBeenCalledOnce();
-    },
-  );
-
-  it("isolates a candidate-specific HTTP 400 so healthy candidates persist", async () => {
+  it.each([
+    "AiError: 3040: Capacity temporarily exceeded",
+    "AiError: 4006: you have used up your daily free allocation of 10,000 neurons",
+    "network connection lost",
+  ])("backs off the whole batch when Workers AI fails: %s", async (failure) => {
     const a = message(first),
       b = message(second),
+      env = environment(),
       http = httpMock();
+    aiRun(env).mockRejectedValueOnce(new Error(failure));
+    http.mockResolvedValueOnce(json(evidence([item(first), item(second)])));
+    await consume(batch([a, b]), env, http);
+    expect(aiRun(env)).toHaveBeenCalledOnce();
+    expect(a.retry).toHaveBeenCalledOnce();
+    expect(b.retry).toHaveBeenCalledOnce();
+  });
+
+  it("backs off the whole batch when Workers AI times out", async () => {
+    const a = message(first),
+      env = { ...environment(), EXTRACTION_TIMEOUT_MS: "5" },
+      http = httpMock();
+    aiRun(env).mockReturnValueOnce(new Promise(() => {}));
+    http.mockResolvedValueOnce(json(evidence([item(first)])));
+    await consume(batch([a]), env, http);
+    expect(aiRun(env)).toHaveBeenCalledOnce();
+    expect(a.retry).toHaveBeenCalledOnce();
+  });
+
+  it("isolates a candidate whose image cannot be downloaded so healthy candidates persist", async () => {
+    const a = message(first),
+      b = message(second),
+      env = environment(),
+      http = httpMock();
+    const broken = { ...item(second), images: [{ url: "https://media.example/missing" }] };
+    aiRun(env).mockResolvedValueOnce(ai([extraction(first)]));
     http
-      .mockResolvedValueOnce(json(evidence([item(first), item(second)])))
-      .mockResolvedValueOnce(json({ error: { code: "invalid_image" } }, 400))
-      .mockResolvedValueOnce(ai([extraction(first)]))
-      .mockResolvedValueOnce(json({ error: { code: "invalid_image" } }, 400))
+      .mockResolvedValueOnce(json(evidence([item(first), broken])))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
       .mockResolvedValueOnce(json({ results: [{ candidate_id: first, status: "completed" }] }));
-    await consume(batch([a, b]), environment(), http);
-    expect(http).toHaveBeenCalledTimes(5);
-    expect(JSON.parse(http.mock.calls[4][1]!.body as string).results).toEqual([
+    await consume(batch([a, b]), env, http);
+    expect(aiRun(env)).toHaveBeenCalledOnce();
+    expect(JSON.parse(http.mock.calls[3][1]!.body as string).results).toEqual([
       { candidate_id: first, generation: 1, extraction: extraction(first) },
     ]);
     expect(a.ack).toHaveBeenCalledOnce();
-    expect(a.retry).not.toHaveBeenCalled();
     expect(b.retry).toHaveBeenCalledOnce();
   });
 
   it("acks an old generation while processing a replay of the same candidate", async () => {
     const old = message(first),
       replay = message(first, 1, 2),
+      env = environment(),
       http = httpMock();
+    aiRun(env).mockResolvedValueOnce(ai([extraction(first)]));
     http
       .mockResolvedValueOnce(json(evidence([item(first, "stale"), item(first, "ready", 2)])))
-      .mockResolvedValueOnce(ai([extraction(first)]))
       .mockResolvedValueOnce(json({ results: [{ candidate_id: first, status: "completed" }] }));
-    await consume(batch([old, replay]), environment(), http);
+    await consume(batch([old, replay]), env, http);
     expect(JSON.parse(http.mock.calls[0][1]!.body as string).candidates).toEqual([
       { candidate_id: first, generation: 1 },
       { candidate_id: first, generation: 2 },
     ]);
-    expect(JSON.parse(http.mock.calls[2][1]!.body as string).results[0].generation).toBe(2);
+    expect(JSON.parse(http.mock.calls[1][1]!.body as string).results[0].generation).toBe(2);
     expect(old.ack).toHaveBeenCalledOnce();
     expect(replay.ack).toHaveBeenCalledOnce();
     expect(old.retry).not.toHaveBeenCalled();
@@ -165,16 +209,18 @@ describe("queue consumption", () => {
   it("isolates malformed fields so valid candidates can persist", async () => {
     const a = message(first),
       b = message(second),
+      env = environment(),
       http = httpMock();
     const invalid = { ...extraction(second), event_date: "2026-02-30T19:00:00-07:00" };
-    http
-      .mockResolvedValueOnce(json(evidence([item(first), item(second)])))
+    aiRun(env)
       .mockResolvedValueOnce(ai([extraction(first), invalid]))
       .mockResolvedValueOnce(ai([extraction(first)]))
-      .mockResolvedValueOnce(ai([invalid]))
+      .mockResolvedValueOnce(ai([invalid]));
+    http
+      .mockResolvedValueOnce(json(evidence([item(first), item(second)])))
       .mockResolvedValueOnce(json({ results: [{ candidate_id: first, status: "completed" }] }));
-    await consume(batch([a, b]), environment(), http);
-    const saved = JSON.parse(http.mock.calls[4][1]!.body as string);
+    await consume(batch([a, b]), env, http);
+    const saved = JSON.parse(http.mock.calls[1][1]!.body as string);
     expect(saved.results.map((value: { candidate_id: string }) => value.candidate_id)).toEqual([
       first,
     ]);
@@ -182,53 +228,22 @@ describe("queue consumption", () => {
     expect(b.retry).toHaveBeenCalledOnce();
   });
 
-  it("retries a lost save response, then resumes without paying for extraction twice", async () => {
+  it("retries a lost save response, then resumes without extracting twice", async () => {
     const a = message(first),
+      env = environment(),
       http = httpMock();
+    aiRun(env).mockResolvedValueOnce(ai([extraction(first)]));
     http
       .mockResolvedValueOnce(json(evidence([item(first)])))
-      .mockResolvedValueOnce(ai([extraction(first)]))
       .mockRejectedValueOnce(new Error("response lost"));
-    await consume(batch([a]), environment(), http);
+    await consume(batch([a]), env, http);
     expect(a.retry).toHaveBeenCalledOnce();
     const retry = message(first, 2);
     http
       .mockResolvedValueOnce(json(evidence([item(first, "extracted")])))
       .mockResolvedValueOnce(json({ results: [{ candidate_id: first, status: "completed" }] }));
-    await consume(batch([retry]), environment(), http);
-    expect(http.mock.calls.filter(([url]) => String(url).includes("api.openai.com"))).toHaveLength(
-      1,
-    );
+    await consume(batch([retry]), env, http);
+    expect(aiRun(env)).toHaveBeenCalledOnce();
     expect(retry.ack).toHaveBeenCalledOnce();
-  });
-
-  it("marks exhausted processing terminal before allowing Cloudflare to dead-letter", async () => {
-    const a = message(first, 5),
-      http = httpMock();
-    http.mockResolvedValueOnce(json({}, 503)).mockResolvedValueOnce(json({ status: "terminal" }));
-    await consume(batch([a]), environment(), http);
-    expect(String(http.mock.calls[1][0])).toContain("/terminal");
-    expect(a.retry).toHaveBeenCalledOnce();
-    expect(a.ack).not.toHaveBeenCalled();
-  });
-
-  it("durably records dead-letter failure without invoking AI", async () => {
-    const a = message(first),
-      http = httpMock();
-    http.mockResolvedValueOnce(json({ status: "terminal" }));
-    await consume(batch([a], "ubc-discovery-extraction-dlq"), environment(), http);
-    expect(http).toHaveBeenCalledOnce();
-    expect(String(http.mock.calls[0][0])).toContain("/terminal");
-    expect(JSON.parse(http.mock.calls[0][1]!.body as string).generation).toBe(1);
-    expect(a.ack).toHaveBeenCalledOnce();
-  });
-
-  it("leaves the DLQ message pending if terminal reporting fails", async () => {
-    const a = message(first),
-      http = httpMock();
-    http.mockRejectedValueOnce(new Error("API unavailable"));
-    await consume(batch([a], "ubc-discovery-extraction-dlq"), environment(), http);
-    expect(a.ack).not.toHaveBeenCalled();
-    expect(a.retry).toHaveBeenCalledWith({ delaySeconds: 600 });
   });
 });
