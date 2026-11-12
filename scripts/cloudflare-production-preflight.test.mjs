@@ -154,7 +154,22 @@ test("web build defaults remain staged and extractor callback is deployable", ()
     },
   ]);
   const extraction = readJsonc("../workers/extraction/wrangler.jsonc");
-  assert.equal(extraction.vars.DISCOVERY_API_URL, apiOrigin);
-  assert.equal(extraction.name, "ubc-discovery-extraction");
-  assert.equal(extraction.queues.producers[0].queue, "ubc-discovery-extraction");
+  assert.equal(extraction.name, "ubc-discovery-extraction-staging");
+  assert.equal(
+    extraction.vars.DISCOVERY_API_URL,
+    "https://ubc-discovery-web-staging.ubcdiscovery.workers.dev/api",
+  );
+  for (const queue of [
+    ...extraction.queues.producers.map((item) => item.queue),
+    ...extraction.queues.consumers.map((item) => item.queue),
+  ])
+    assert.match(queue, /^ubc-discovery-extraction-staging(-dlq)?$/);
+  const production = extraction.env.production;
+  assert.equal(production.name, "ubc-discovery-extraction");
+  assert.equal(production.vars.DISCOVERY_API_URL, apiOrigin);
+  assert.equal(production.queues.producers[0].queue, "ubc-discovery-extraction");
+  assert.deepEqual(
+    production.queues.consumers.map((item) => item.queue),
+    ["ubc-discovery-extraction", "ubc-discovery-extraction-dlq"],
+  );
 });
