@@ -10,15 +10,6 @@ export class UpstreamError extends Error {
   }
 }
 
-export async function matchesDispatchSecret(provided: string, expected: string): Promise<boolean> {
-  const encoder = new TextEncoder();
-  const [providedHash, expectedHash] = await Promise.all([
-    crypto.subtle.digest("SHA-256", encoder.encode(provided)),
-    crypto.subtle.digest("SHA-256", encoder.encode(expected)),
-  ]);
-  return crypto.subtle.timingSafeEqual(providedHash, expectedHash);
-}
-
 export async function api<T>(
   env: Env,
   path: string,

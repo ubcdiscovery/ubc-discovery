@@ -124,15 +124,29 @@ describe.skipIf(!testUrl)("candidate publication and recovery PostgreSQL parity"
     });
     expect((await fixture.candidate("invalid1")).status).toBe("pending");
   });
-  it("marks overdue delivery terminal after25h and fences every old-generation operation after explicit replay", async () => {
+  it("rolls back a replay whose Queue send fails", async () => {
+    await fixture.seedCandidate("replay02", {
+      captureReadyAt: fixture.services.now(),
+      processingError: "exhausted",
+    });
+    fixture.queue.sendBatch.mockRejectedValueOnce(new Error("queue unavailable"));
+    const failed = await fixture.request("/extraction/replay", "POST", {
+      candidate_ids: ["replay02"],
+    });
+    expect(failed.status).toBe(503);
+    expect(await fixture.candidate("replay02")).toMatchObject({
+      processingGeneration: 1,
+      processingError: "exhausted",
+      processingDispatchedAt: null,
+    });
+  });
+  it("sends an explicit replay to the Queue and fences every old-generation operation", async () => {
     await fixture.seedCandidate("replay01", {
       captureReadyAt: fixture.services.now(),
       processingDispatchedAt: new Date(fixture.services.now().getTime() - 26 * 3600_000),
+      processingError: "exhausted",
     });
-    await fixture.request("/extraction/recovery");
-    expect((await fixture.candidate("replay01")).processingError).toBe(
-      "Queue delivery exceeded completion window; explicit replay required",
-    );
+    fixture.queue.sendBatch.mockClear();
     expect(
       await json(
         await fixture.request("/extraction/replay", "POST", { candidate_ids: ["replay01"] }),
@@ -157,9 +171,9 @@ describe.skipIf(!testUrl)("candidate publication and recovery PostgreSQL parity"
         }),
       ),
     ).toEqual({ results: [{ candidate_id: "replay01", status: "stale" }] });
-    await fixture.request("/extraction/dispatched", "POST", {
-      candidates: [{ candidate_id: "replay01", generation: 1 }],
-    });
+    expect(fixture.queue.sendBatch).toHaveBeenCalledExactlyOnceWith([
+      { body: { candidate_id: "replay01", generation: 2 } },
+    ]);
     const evidence = await json(
       await fixture.request("/extraction/evidence", "POST", {
         candidates: [{ candidate_id: "replay01", generation: 1 }],
@@ -169,9 +183,9 @@ describe.skipIf(!testUrl)("candidate publication and recovery PostgreSQL parity"
     const candidate = await fixture.candidate("replay01");
     expect(candidate.processingError).toBeNull();
     expect(candidate.extractedAt).toBeNull();
-    expect(candidate.processingDispatchedAt).toBeNull();
+    expect(candidate.processingDispatchedAt).toEqual(fixture.services.now());
   });
-  it("ignores extraction extras without echoing them and accepts unknown recovery query parameters", async () => {
+  it("ignores extraction extras without echoing them", async () => {
     const evidence = await json(
       await fixture.request("/extraction/evidence", "POST", {
         extra: "ignored",
@@ -179,14 +193,6 @@ describe.skipIf(!testUrl)("candidate publication and recovery PostgreSQL parity"
       }),
     );
     expect(evidence.items).toEqual([{ candidate_id: "missing1", generation: 1, state: "missing" }]);
-    const dispatched = await json(
-      await fixture.request("/extraction/dispatched", "POST", {
-        candidates: [{ candidate_id: "missing1", generation: 1, extra: "ignored" }],
-        extra: "ignored",
-      }),
-    );
-    expect(dispatched).toEqual({ candidates: [{ candidate_id: "missing1", generation: 1 }] });
-    expect((await fixture.request("/extraction/recovery?extra=ignored")).status).toBe(200);
     await fixture.seedCandidate("extras01");
     const result = await fixture.request("/extraction/results", "POST", {
       model: "test-model",

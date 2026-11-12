@@ -7,29 +7,13 @@ import {
   type ExtractionMessage,
 } from "../src/index";
 
-// Node lacks Workers' Web Crypto extension. Use Node's constant-time primitive
-// in fixture tests; the producer is also exercised in workerd below.
-export async function useNodeTimingSafeEqual() {
-  const { timingSafeEqual } =
-    await vi.importActual<Pick<SubtleCrypto, "timingSafeEqual">>("node:crypto");
-  Object.defineProperty(crypto.subtle, "timingSafeEqual", {
-    configurable: true,
-    value: (left: ArrayBuffer, right: ArrayBuffer) =>
-      timingSafeEqual(new Uint8Array(left), new Uint8Array(right)),
-  });
-}
-
 export const first = "cand0001";
 export const second = "cand0002";
 
 export function environment(): Env {
   return {
-    EXTRACTION_QUEUE: {
-      sendBatch: vi.fn().mockResolvedValue(undefined),
-    } as unknown as Queue<ExtractionMessage>,
     DISCOVERY_API_URL: "http://localhost:8000",
     DISCOVERY_API_KEY: "local-scoped-key",
-    EXTRACTION_DISPATCH_SECRET: "local-secret",
     OPENAI_API_KEY: "fake-test-key",
     MAX_ATTEMPTS: "5",
     OPENAI_TIMEOUT_MS: "60000",

@@ -22,15 +22,14 @@ describe.skipIf(!testUrl)("queue extraction and ingestion PostgreSQL parity", ()
   beforeAll(fixture.setup);
   afterAll(fixture.teardown);
   it("restricts ingestion and extraction to their own scopes and denies member tokens", async () => {
-    expect((await fixture.request("/extraction/recovery", "GET", undefined, "ingest")).status).toBe(
+    const replay = { candidate_ids: ["scope001"] };
+    expect((await fixture.request("/extraction/replay", "POST", replay, "ingest")).status).toBe(
       403,
     );
-    expect((await fixture.request("/extraction/recovery", "GET", undefined, "member")).status).toBe(
+    expect((await fixture.request("/extraction/replay", "POST", replay, "member")).status).toBe(
       401,
     );
-    expect((await fixture.request("/extraction/recovery", "GET", undefined, "none")).status).toBe(
-      401,
-    );
+    expect((await fixture.request("/extraction/replay", "POST", replay, "none")).status).toBe(401);
     expect((await fixture.request("/admin/candidates", "GET", undefined, "member")).status).toBe(
       403,
     );
@@ -99,7 +98,51 @@ describe.skipIf(!testUrl)("queue extraction and ingestion PostgreSQL parity", ()
         "ingest",
       ),
     );
-    expect(ready).toEqual({ candidate_id: "wait0001", status: "ready", dispatched: false });
+    expect(ready).toEqual({ candidate_id: "wait0001", status: "ready", dispatched: true });
+  });
+  it("returns 503 without recording dispatch when the Queue send fails, then sends once on retry", async () => {
+    await fixture.seedCandidate("send0001");
+    const path = "/ingestion/event-candidates/send0001/capture-ready";
+    fixture.queue.sendBatch.mockClear();
+    fixture.queue.sendBatch.mockRejectedValueOnce(new Error("queue unavailable"));
+    const failed = await fixture.request(path, "POST", undefined, "ingest");
+    expect(failed.status).toBe(503);
+    expect(await fixture.candidate("send0001")).toMatchObject({
+      captureReadyAt: null,
+      processingDispatchedAt: null,
+    });
+    expect(await json(await fixture.request(path, "POST", undefined, "ingest"))).toEqual({
+      candidate_id: "send0001",
+      status: "ready",
+      dispatched: true,
+    });
+    expect(fixture.queue.sendBatch).toHaveBeenLastCalledWith([
+      { body: { candidate_id: "send0001", generation: 1 } },
+    ]);
+    expect((await fixture.candidate("send0001")).processingDispatchedAt).toEqual(
+      fixture.services.now(),
+    );
+    expect(await json(await fixture.request(path, "POST", undefined, "ingest"))).toEqual({
+      candidate_id: "send0001",
+      status: "ready",
+      dispatched: false,
+    });
+    expect(fixture.queue.sendBatch).toHaveBeenCalledTimes(2);
+  });
+  it("does not send terminal Candidates from capture-ready", async () => {
+    await fixture.seedCandidate("term0001", { processingError: "exhausted" });
+    fixture.queue.sendBatch.mockClear();
+    expect(
+      await json(
+        await fixture.request(
+          "/ingestion/event-candidates/term0001/capture-ready",
+          "POST",
+          undefined,
+          "ingest",
+        ),
+      ),
+    ).toEqual({ candidate_id: "term0001", status: "ready", dispatched: false });
+    expect(fixture.queue.sendBatch).not.toHaveBeenCalled();
   });
   it("rejects duplicate generations, mismatched extraction IDs, and naive timestamps before changing rows", async () => {
     expect(

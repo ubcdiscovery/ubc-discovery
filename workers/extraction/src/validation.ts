@@ -1,36 +1,5 @@
 import type { ExtractionMessage, Extraction, EvidenceBatch } from "./types";
 
-export function deliveries(value: unknown): ExtractionMessage[] {
-  if (!value || typeof value !== "object" || !("candidates" in value)) {
-    throw new Error("candidates required");
-  }
-  const candidates = value.candidates;
-  if (
-    !Array.isArray(candidates) ||
-    candidates.length < 1 ||
-    candidates.length > 10 ||
-    candidates.some(
-      (item) =>
-        !item ||
-        typeof item !== "object" ||
-        typeof item.candidate_id !== "string" ||
-        !/^[A-Za-z0-9_-]{8}$/.test(item.candidate_id) ||
-        !Number.isSafeInteger(item.generation) ||
-        item.generation < 1,
-    )
-  ) {
-    throw new Error("expected 1–10 candidate IDs with generation");
-  }
-  return [
-    ...new Map(
-      candidates.map((item) => [
-        identity(item),
-        { candidate_id: item.candidate_id, generation: item.generation },
-      ]),
-    ).values(),
-  ];
-}
-
 export function identity(item: ExtractionMessage): string {
   return `${item.candidate_id}:${item.generation}`;
 }

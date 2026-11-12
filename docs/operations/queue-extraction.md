@@ -2,8 +2,9 @@
 
 The API (`workers/api`, served by the web Worker under `/api`) owns Candidates, validation, publication,
 embeddings, and audit history. `workers/extraction` is a separate Cloudflare
-Worker that handles the AI request and Cloudflare Queue delivery. It has no
-database credentials.
+Worker that consumes the Queue and handles the AI request. It has no
+database credentials. The API is the only producer: the web Worker binds the Queue
+as `EXTRACTION_QUEUE`.
 
 ## Contract and processing
 
@@ -13,9 +14,11 @@ its existing ingestion key. A retry of an existing capture must also retry its
 returned upload targets. Before the image wait timeout, missing images produce
 409; after the timeout the existing caption/available-image fallback applies.
 
-The API sends `{ "candidates": [{ "candidate_id": "xxxxxxxx", "generation": 1 }] }`
-to the Worker's `/enqueue`
-endpoint, authenticated with a separate Bearer dispatch secret. The Queue holds
+capture-ready sends `{ "candidate_id": "xxxxxxxx", "generation": 1 }` to the Queue
+inside the transaction that records capture readiness and the dispatch time. If the
+send fails, the endpoint returns 503 and records nothing, so the ingester's retry
+sends again (the scraper leaves the post unseen and retries it on its next run).
+A Candidate already dispatched, or with a terminal error, is not sent again. The Queue holds
 only Candidate IDs and their processing generation. Queue delivery groups up to ten Candidates; the Worker
 fetches fresh signed image URLs from `/extraction/evidence`, calls OpenAI once
 with the packed evidence, and submits `/extraction/results`. Invalid packed
@@ -35,30 +38,25 @@ review; that is not unfinished processing. Duplicate deliveries are safe for
 persistence/publication; simultaneous duplicates can still issue duplicate AI
 calls before either extraction is saved.
 
-The scheduled handler asks `/extraction/recovery?limit=10` for bounded undispatched
-Candidates every fifteen minutes. After Queue acceptance it calls `/extraction/dispatched`
-to record acceptance. Failed sends leave the Candidate undispatched. A crash
-after acceptance but before recording it can enqueue a duplicate; persistence and
-publication are idempotent, though duplicate AI charges remain possible before
-either extraction is saved. Acceptance, evidence, results, and terminal reports
-carry the generation; reports from an earlier explicit replay are ignored. Completed and terminal Candidates are excluded.
+There is no scheduled recovery. A send whose transaction then fails to commit
+leaves a message the database did not record; its delivery is handled like any
+duplicate, and the ingester's retry sends again. Evidence, results, and terminal reports
+carry the generation; reports from an earlier explicit replay are ignored.
 
-An accepted Candidate that has not completed after twenty-five hours is marked
-terminal for explicit replay. It is not automatically resubmitted; this keeps
-recovery from resetting exhausted retries. The timeout exceeds Free Queue's
-twenty-four-hour retention. A prolonged outage can therefore require operator
-replay when the API is available again.
+A Candidate whose message is lost (for example, a Queue outage longer than its
+retention) stays pending with a dispatch time and no completion. Nothing resubmits
+it automatically: watch for dispatched Candidates that never complete and replay them.
 
 Five processing attempts exhaust delivery. The primary consumer records a
 terminal error; the dead-letter consumer repeats that report if necessary, then
 acknowledges. It does not call OpenAI. Failures remain visible in Candidate
 processing state even after the dead-letter message is acknowledged.
 
-For deliberate replay, call `POST /extraction/replay` with Candidate IDs using
-an extraction key. Its response returns `candidates` containing each new
-generation; pass that response to `/enqueue` (or allow scheduled recovery).
-Replay advances the generation atomically while clearing the terminal error and
-acceptance timestamp. Old primary and DLQ deliveries are acknowledged as stale
+For deliberate replay, call `POST /extraction/replay` with up to ten Candidate IDs using
+an extraction key. In one transaction it advances each unfinished Candidate's generation,
+clears its terminal error, records the dispatch time and sends it to the Queue; the
+response lists each new generation. If the send fails it returns 503 and changes
+nothing, so the call can simply be repeated. Old primary and DLQ deliveries are acknowledged as stale
 and cannot terminate or overwrite the replay. Saved extraction survives replay,
 so publication resumes without another AI call. Completed/reviewed Candidates
 are not replayed.
@@ -68,28 +66,24 @@ are not replayed.
 Use a dedicated development/test database. Do not point tests at production;
 the test fixture applies migrations and existing rows affect queries.
 
-1. Run the web Worker locally (`pnpm dev` in `web`), which serves the API at
-   `http://localhost:5173/api`. In `web/.dev.vars`, set
-   `EXTRACTION_QUEUE_PRODUCER_URL=http://localhost:8788/enqueue` and a local
-   `EXTRACTION_QUEUE_PRODUCER_SECRET`.
-2. As an administrator, create a separate managed API credential through
+`pnpm dev` in `web` runs this Worker beside the web Worker (a Vite auxiliary
+Worker); both bind the same local Queue, so capture-ready is consumed locally.
+
+1. As an administrator, create a managed API credential through
    `POST /admin/api-keys` with
    `{ "label": "local extraction", "scopes": ["candidates:extract"] }`.
-   Existing credentials retain the `candidates:ingest` scope. The extraction
+   Ingestion credentials have the `candidates:ingest` scope. The extraction
    credential cannot ingest, and an ingestion credential cannot operate the
    extraction endpoints.
-3. Run `pnpm install` from the repository root. In `workers/extraction`, copy `.dev.vars.example` to
-   `.dev.vars`, and fill the local extraction token and dispatch secret. Set
-   the same dispatch secret on the API and Worker. Real extraction additionally
-   requires an OpenAI key and incurs model charges.
-4. Set `DISCOVERY_API_URL` in `.dev.vars` to `http://localhost:5173/api`; the
-   checked-in value is the production API. Run `pnpm dev --port 8788`. Wrangler
-   simulates Queue production/consumption locally.
-5. Ingest a fixture and finish image uploads, then call capture-ready. Wait up
-   to sixty seconds for a partial Queue batch. Use `/health` for Worker health.
-6. Use `pnpm check` for fixture-driven AI/retry tests without AWS/OpenAI calls.
-   `pnpm build` checks bundling without publishing. To invoke local recovery,
-   call Wrangler's `/cdn-cgi/local/scheduled` endpoint.
+2. In `workers/extraction`, copy `.dev.vars.example` to `.dev.vars` and fill in the
+   extraction credential. It points `DISCOVERY_API_URL` at the local API; the
+   checked-in value is the staging API. Real extraction also requires an OpenAI
+   key and incurs model charges. Without one, Candidates fail with
+   `OpenAI HTTP 401` and move to the local dead-letter Queue.
+3. Run `pnpm dev` in `web`. Ingest a fixture, finish image uploads, then call
+   capture-ready. Local staging configuration delivers within a second.
+4. Use `pnpm check` for fixture-driven AI/retry tests without AWS/OpenAI calls.
+   `pnpm build` checks bundling without publishing.
 
 See official [Queue local development](https://developers.cloudflare.com/queues/configuration/local-development/)
 and [batching/retries](https://developers.cloudflare.com/queues/configuration/batching-retries/)
@@ -105,12 +99,14 @@ and its `-dlq`, calls the staging API, and makes one attempt per Candidate.
 `ubc-discovery-extraction` Queue and its `ubc-discovery-extraction-dlq`
 dead-letter Queue and calls the production API.
 Required Worker secrets in both are `DISCOVERY_API_KEY` (a scoped extraction credential
-for that environment's API), `EXTRACTION_DISPATCH_SECRET`, and `OPENAI_API_KEY`. The production API's
-`EXTRACTION_QUEUE_PRODUCER_SECRET` must equal the Worker's dispatch secret.
+for that environment's API) and `OPENAI_API_KEY`. The web Worker produces to the
+matching Queue: staging and Previews to `ubc-discovery-extraction-staging`,
+production to `ubc-discovery-extraction`.
 
 The **Deploy Cloudflare production** workflow deploys the production Worker
 (`wrangler deploy --env production`) when `workers/extraction/` or shared
-dependencies changed since its last successful run, before the web Worker.
+dependencies changed since its last successful run, before the web Worker,
+so a Queue message change reaches its consumer before its producer.
 Deploy staging from `workers/extraction` with `pnpm run deploy`.
 
 The `candidate_extraction_jobs` table from the former in-process worker is
@@ -122,5 +118,5 @@ Monitor oldest unfinished Candidate, terminal failures, Queue retry counts, and
 time since the last completion; API health alone does not prove extraction runs.
 
 Wrangler generates binding types during type checking. Worker logs are enabled,
-and traces sample one percent of invocations. Dispatch-secret comparisons use
-Workers Web Crypto with fixed-size hashing and timing-safe comparison.
+and traces sample one percent of invocations. A failed Queue send is logged by the
+API as `queue_dispatch_failed` with the Candidate IDs.

@@ -24,8 +24,9 @@ export function extractionFixture() {
     ...authTestEnv,
     DATABASE_URL: url.toString(),
     DIRECT_DATABASE_URL: url.toString(),
-    EXTRACTION_DELIVERY_TIMEOUT_SECONDS: "90000",
-  } as ApiEnv;
+    EXTRACTION_QUEUE: { send: vi.fn(async () => {}), sendBatch: vi.fn(async () => {}) },
+  } as unknown as ApiEnv;
+  const queue = vi.mocked(env.EXTRACTION_QUEUE!);
   const storage: ObjectStorage = {
     publicUrl: (key) => `https://images.test/${key}`,
     objectExists: vi.fn(async () => true),
@@ -180,7 +181,18 @@ export function extractionFixture() {
           await db.select().from(eventListingCandidates).where(eq(eventListingCandidates.id, id))
         )[0]!,
     );
-  return { env, services, storage, sessions, request, setup, teardown, seedCandidate, candidate };
+  return {
+    env,
+    queue,
+    services,
+    storage,
+    sessions,
+    request,
+    setup,
+    teardown,
+    seedCandidate,
+    candidate,
+  };
 }
 
 export async function json(response: Response): Promise<Record<string, unknown>> {

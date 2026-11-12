@@ -24,7 +24,6 @@ const fixture = {
   R2_ACCESS_KEY_ID: "synthetic-r2",
   R2_SECRET_ACCESS_KEY: "synthetic-r2-secret",
   UPLOAD_SIGNING_SECRET: "synthetic-storage-signing-secret-longer-than-32-bytes",
-  EXTRACTION_QUEUE_PRODUCER_SECRET: "synthetic-dispatch-secret",
   CLOUDFLARE_ACCOUNT_ID: account,
   CLOUDFLARE_API_TOKEN: "synthetic-cloudflare",
   CLOUDFLARE_ENV: "production",
@@ -48,7 +47,6 @@ test("production preflight rejects missing credentials and unsafe build settings
   for (const patch of [
     { DATABASE_URL: "" },
     { R2_ACCESS_KEY_ID: "" },
-    { EXTRACTION_QUEUE_PRODUCER_SECRET: "" },
     { CLOUDFLARE_ACCOUNT_ID: "wrong-account" },
     { VITE_API_URL: "http://localhost:8000" },
     { CLOUDFLARE_ENV: "" },
@@ -128,13 +126,10 @@ test("production bindings remain distinct from staging and Previews", () => {
     assert.notEqual(staged.vars.R2_BUCKET_NAME, production.vars.R2_BUCKET_NAME);
     assert.notEqual(staged.vars.API_PUBLIC_BASE_URL, apiOrigin);
   }
-  assert.equal(
-    production.vars.EXTRACTION_QUEUE_PRODUCER_URL,
-    "https://ubc-discovery-extraction.ubcdiscovery.workers.dev/enqueue",
-  );
-  assert.equal(production.vars.EXTRACTION_DELIVERY_TIMEOUT_SECONDS, "90000");
+  assert.deepEqual(production.queues.producers, [
+    { binding: "EXTRACTION_QUEUE", queue: "ubc-discovery-extraction" },
+  ]);
   assert.ok(production.secrets.required.includes("DATABASE_URL"));
-  assert.ok(production.secrets.required.includes("EXTRACTION_QUEUE_PRODUCER_SECRET"));
   assert.ok(production.secrets.required.includes("BETTER_AUTH_SECRET"));
   assert.equal(production.hyperdrive, undefined);
 });
@@ -153,21 +148,26 @@ test("web build defaults remain staged and extractor callback is deployable", ()
       zone_id: "bcd291566a7b602657d980a51d542c5f",
     },
   ]);
+  for (const config of [web, web.previews])
+    assert.deepEqual(config.queues.producers, [
+      { binding: "EXTRACTION_QUEUE", queue: "ubc-discovery-extraction-staging" },
+    ]);
   const extraction = readJsonc("../workers/extraction/wrangler.jsonc");
   assert.equal(extraction.name, "ubc-discovery-extraction-staging");
   assert.equal(
     extraction.vars.DISCOVERY_API_URL,
     "https://ubc-discovery-web-staging.ubcdiscovery.workers.dev/api",
   );
-  for (const queue of [
-    ...extraction.queues.producers.map((item) => item.queue),
-    ...extraction.queues.consumers.map((item) => item.queue),
-  ])
-    assert.match(queue, /^ubc-discovery-extraction-staging(-dlq)?$/);
+  assert.equal(extraction.queues.producers, undefined);
+  assert.deepEqual(
+    extraction.queues.consumers.map((item) => item.queue),
+    ["ubc-discovery-extraction-staging", "ubc-discovery-extraction-staging-dlq"],
+  );
   const production = extraction.env.production;
   assert.equal(production.name, "ubc-discovery-extraction");
   assert.equal(production.vars.DISCOVERY_API_URL, apiOrigin);
-  assert.equal(production.queues.producers[0].queue, "ubc-discovery-extraction");
+  assert.equal(production.queues.producers, undefined);
+  assert.equal(production.triggers, undefined);
   assert.deepEqual(
     production.queues.consumers.map((item) => item.queue),
     ["ubc-discovery-extraction", "ubc-discovery-extraction-dlq"],
