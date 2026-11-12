@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useLoaderData } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import { api, type ApiEvent, type ApiPastEvent } from "~/lib/api";
 import { VIBES, SOURCES, type VibeId, type SourceId } from "~/lib/constants";
 import { VibeTag } from "~/components/VibeTag";
@@ -260,6 +260,12 @@ export default function Discover() {
               )}
             </>
           )}
+          <footer className="mt-16 flex flex-wrap gap-x-3 gap-y-1 border-t border-rule-soft pt-4 font-mono text-xs tracking-wide text-muted uppercase">
+            <span>Independent student project · Not affiliated with UBC</span>
+            <Link to="/privacy" className="underline underline-offset-2 hover:text-ink">
+              Privacy policy
+            </Link>
+          </footer>
         </section>
       </div>
     </div>

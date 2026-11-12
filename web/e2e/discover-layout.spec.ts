@@ -25,7 +25,8 @@ test("desktop filter rail reaches the viewport without a bottom rule", async ({
   const viewport = page.viewportSize();
   expect(railBox).not.toBeNull();
   expect(viewport).not.toBeNull();
-  expect(railBox!.y + railBox!.height).toBeCloseTo(viewport!.height, 0);
+  // The feed (and its footer) may be taller than the viewport; the rail must never stop short of it.
+  expect(railBox!.y + railBox!.height).toBeGreaterThanOrEqual(viewport!.height - 0.5);
   await expect(rail.locator("..")).toHaveCSS("border-bottom-width", "0px");
 });
 
