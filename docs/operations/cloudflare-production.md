@@ -8,6 +8,15 @@ its own Workers address.
 
 The manual **Deploy Cloudflare production** workflow reads its settings from the GitHub
 environment `cloudflare-production`; configure every variable and secret its `env` block names.
+`CLOUDFLARE_API_TOKEN` needs Workers Scripts and Queues edit permission.
+
+Each run deploys only the Workers whose code changed since the last successful run:
+the [extraction Worker](queue-extraction.md#production) when `workers/extraction/` changed,
+and the web Worker when `web/`, `workers/api/` or the preflight scripts changed.
+Dependency and workflow changes deploy both, and so does the `deploy_all` input.
+Every check runs before anything deploys, and the extraction Worker (the Queue consumer)
+always deploys before the web Worker (the producer), so a Queue message change reaches
+its consumer first. Database migrations apply just before the web Worker deploys.
 
 Use the existing production Neon database's direct endpoint. `EXTRACTION_QUEUE_PRODUCER_SECRET` must
 match the existing extraction Worker's `EXTRACTION_DISPATCH_SECRET`. `VITE_FIREBASE_*`

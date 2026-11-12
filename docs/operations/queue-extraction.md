@@ -98,14 +98,20 @@ quotas, or connectivity.
 
 ## Production
 
-The production Worker `ubc-discovery-extraction` consumes the
+The default configuration in `workers/extraction/wrangler.jsonc` is staging:
+Worker `ubc-discovery-extraction-staging` consumes `ubc-discovery-extraction-staging`
+and its `-dlq`, calls the staging API, and makes one attempt per Candidate.
+`env.production` is Worker `ubc-discovery-extraction`, which consumes the
 `ubc-discovery-extraction` Queue and its `ubc-discovery-extraction-dlq`
-dead-letter Queue. Its checked-in `DISCOVERY_API_URL` is the production API.
-Required Worker secrets are `DISCOVERY_API_KEY` (a scoped extraction credential),
-`EXTRACTION_DISPATCH_SECRET`, and `OPENAI_API_KEY`. The production API's
+dead-letter Queue and calls the production API.
+Required Worker secrets in both are `DISCOVERY_API_KEY` (a scoped extraction credential
+for that environment's API), `EXTRACTION_DISPATCH_SECRET`, and `OPENAI_API_KEY`. The production API's
 `EXTRACTION_QUEUE_PRODUCER_SECRET` must equal the Worker's dispatch secret.
-Deploy from `workers/extraction` with `pnpm exec wrangler deploy`; the production
-deploy workflow does not deploy this Worker.
+
+The **Deploy Cloudflare production** workflow deploys the production Worker
+(`wrangler deploy --env production`) when `workers/extraction/` or shared
+dependencies changed since its last successful run, before the web Worker.
+Deploy staging from `workers/extraction` with `pnpm run deploy`.
 
 The `candidate_extraction_jobs` table from the former in-process worker is
 retained but unused.

@@ -1,6 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "ubc-discovery-extraction",
+  // The default configuration is staging, like the web Worker's.
+  // Production is selected with --env production (or CLOUDFLARE_ENV=production).
+  "name": "ubc-discovery-extraction-staging",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-11",
   "compatibility_flags": ["global_fetch_strictly_public"],
@@ -15,38 +17,76 @@
       "head_sampling_rate": 0.01,
     },
   },
+  // Staging makes one attempt per Candidate to keep model charges low.
   "vars": {
-    "DISCOVERY_API_URL": "https://ubcdiscovery.com/api",
-    "MAX_ATTEMPTS": "5",
+    "DISCOVERY_API_URL": "https://ubc-discovery-web-staging.ubcdiscovery.workers.dev/api",
+    "MAX_ATTEMPTS": "1",
     "OPENAI_TIMEOUT_MS": "60000",
   },
   "queues": {
     "producers": [
       {
         "binding": "EXTRACTION_QUEUE",
-        "queue": "ubc-discovery-extraction",
+        "queue": "ubc-discovery-extraction-staging",
       },
     ],
     "consumers": [
       {
-        "queue": "ubc-discovery-extraction",
+        "queue": "ubc-discovery-extraction-staging",
         "max_batch_size": 10,
-        "max_batch_timeout": 60,
+        "max_batch_timeout": 1,
         "max_concurrency": 1,
-        "max_retries": 4,
-        "dead_letter_queue": "ubc-discovery-extraction-dlq",
+        "max_retries": 0,
+        "dead_letter_queue": "ubc-discovery-extraction-staging-dlq",
       },
       {
-        "queue": "ubc-discovery-extraction-dlq",
+        "queue": "ubc-discovery-extraction-staging-dlq",
         "max_batch_size": 10,
-        "max_retries": 20,
+        "max_batch_timeout": 5,
+        "max_retries": 0,
       },
     ],
   },
-  "triggers": {
-    "crons": ["*/15 * * * *"],
-  },
   "secrets": {
     "required": ["DISCOVERY_API_KEY", "EXTRACTION_DISPATCH_SECRET", "OPENAI_API_KEY"],
+  },
+  "env": {
+    "production": {
+      "name": "ubc-discovery-extraction",
+      "vars": {
+        "DISCOVERY_API_URL": "https://ubcdiscovery.com/api",
+        "MAX_ATTEMPTS": "5",
+        "OPENAI_TIMEOUT_MS": "60000",
+      },
+      "queues": {
+        "producers": [
+          {
+            "binding": "EXTRACTION_QUEUE",
+            "queue": "ubc-discovery-extraction",
+          },
+        ],
+        "consumers": [
+          {
+            "queue": "ubc-discovery-extraction",
+            "max_batch_size": 10,
+            "max_batch_timeout": 60,
+            "max_concurrency": 1,
+            "max_retries": 4,
+            "dead_letter_queue": "ubc-discovery-extraction-dlq",
+          },
+          {
+            "queue": "ubc-discovery-extraction-dlq",
+            "max_batch_size": 10,
+            "max_retries": 20,
+          },
+        ],
+      },
+      "triggers": {
+        "crons": ["*/15 * * * *"],
+      },
+      "secrets": {
+        "required": ["DISCOVERY_API_KEY", "EXTRACTION_DISPATCH_SECRET", "OPENAI_API_KEY"],
+      },
+    },
   },
 }

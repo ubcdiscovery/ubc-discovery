@@ -127,7 +127,7 @@ docs/operations/                 # Runbooks for production, migrations, storage,
 
 ## Deployment
 
-Cloudflare Workers Builds deploys staging from `main` and a Preview for each pull request. Production is deployed by the manual **Deploy Cloudflare production** GitHub workflow. See [Cloudflare production deployment](docs/operations/cloudflare-production.md) and [Database migrations](docs/operations/database-migrations.md#applying-to-production).
+Cloudflare Workers Builds deploys the staging web Worker from `main` and a Preview for each pull request. Production (the web Worker and the extraction Worker) is deployed by the manual **Deploy Cloudflare production** GitHub workflow, which deploys whichever changed since its last run, extraction first. The extraction Worker's default Wrangler configuration is staging; production is `--env production`. See [Cloudflare production deployment](docs/operations/cloudflare-production.md) and [Database migrations](docs/operations/database-migrations.md#applying-to-production).
 
 ## Credentials
 
