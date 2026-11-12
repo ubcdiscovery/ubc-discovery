@@ -29,11 +29,6 @@ cannot be downloaded, falls back to individual Candidates. Workers AI failures
 (capacity, the daily allocation, timeouts after `EXTRACTION_TIMEOUT_MS`) affect the
 whole batch and use Queue backoff.
 
-Extraction runs within the Workers AI free allocation of 10,000 Neurons per day,
-shared by the account and reset at 00:00 UTC. A Candidate costs about 9 Neurons
-(roughly 370 on a typical 40-Candidate day). On Workers Free, requests fail once the
-allocation is used; check usage in the Workers AI dashboard before large replays.
-
 The result endpoint saves extraction before publication and sorts publication
 by `(created_at, id)` within a batch. Existing same-club/day locking and review
 rules still apply. The consumer runs with concurrency one. Cloudflare does not
@@ -87,8 +82,8 @@ Worker); both bind the same local Queue, so capture-ready is consumed locally.
 2. In `workers/extraction`, copy `.dev.vars.example` to `.dev.vars` and fill in the
    extraction credential. It points `DISCOVERY_API_URL` at the local API; the
    checked-in value is the staging API. The `AI` binding always runs on Cloudflare,
-   even locally, so `pnpm dev` needs `wrangler login` and real extraction uses the
-   account's daily Neurons.
+   even locally, so `pnpm dev` needs `wrangler login` and real extraction runs on
+   the logged-in account's Workers AI.
 3. Run `pnpm dev` in `web`. Ingest a fixture, finish image uploads, then call
    capture-ready. Local staging configuration delivers within a second.
 4. Use `pnpm check` for fixture-driven AI/retry tests without calling Workers AI.
