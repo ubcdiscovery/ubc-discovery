@@ -5,8 +5,9 @@ export class UpstreamError extends Error {
   constructor(
     service: string,
     readonly status: number,
+    kind = "HTTP",
   ) {
-    super(`${service} HTTP ${status}`);
+    super(kind === "timeout" ? `${service} timeout` : `${service} ${kind} ${status}`);
   }
 }
 

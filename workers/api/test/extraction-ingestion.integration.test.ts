@@ -90,6 +90,7 @@ describe.skipIf(!testUrl)("queue extraction and ingestion PostgreSQL parity", ()
       }),
     );
     expect(evidence.items).toEqual([expect.objectContaining({ state: "waiting", generation: 1 })]);
+    expect(evidence).not.toHaveProperty("model");
     const ready = await json(
       await fixture.request(
         "/ingestion/event-candidates/wait0001/capture-ready",

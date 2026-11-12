@@ -34,9 +34,6 @@ export interface ApiEnv {
   PROFILE_PHOTO_MAX_BYTES?: string;
   EVENT_IMAGE_MAX_BYTES?: string;
   CANDIDATE_IMAGE_MAX_BYTES?: string;
-  EXTRACTION_MODEL?: string;
-  EXTRACTION_REASONING_EFFORT?: string;
-  EXTRACTION_IMAGE_DETAIL?: string;
   EXTRACTION_IMAGE_WAIT_SECONDS?: string;
 }
 
