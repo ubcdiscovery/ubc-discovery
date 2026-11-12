@@ -92,6 +92,7 @@ describe.skipIf(!testUrl)("existing Alembic database compatibility", () => {
               locationName: "UBC",
               eventDate: new Date("2030-01-01T12:00:00Z"),
               embeddingVector: embedding,
+              embeddingModel: "test-model",
             })
             .returning();
           expect(event!.id).toMatch(/^[A-Za-z0-9_-]{8}$/);

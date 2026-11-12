@@ -1,7 +1,7 @@
 import type { Event } from "../db/schema";
 import type { ObjectStorage } from "../services/storage";
 
-export type PublicEventRow = Omit<Event, "embeddingVector">;
+export type PublicEventRow = Omit<Event, "embeddingVector" | "embeddingModel">;
 export function eventImageKey(id: string): string {
   return `event-pictures/${id}.webp`;
 }

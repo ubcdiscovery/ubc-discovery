@@ -165,7 +165,7 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
           );
           if (embeddingChanged) {
             const embedding = await embeddingFor(updated, services);
-            if (embedding) changes.embeddingVector = embedding;
+            if (embedding) Object.assign(changes, embedding);
           }
           if (Object.keys(changes).length) {
             const [saved] = await tx

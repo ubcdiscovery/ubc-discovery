@@ -21,6 +21,7 @@ export default defineConfig({
       PORT: "4173",
       VITE_ANALYTICS_DISABLED: "true",
       VITE_API_URL: "http://api.test",
+      CLOUDFLARE_REMOTE_BINDINGS: "false",
     },
   },
   projects: [

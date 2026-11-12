@@ -2,10 +2,15 @@ import { getTableColumns, sql, type SQL } from "drizzle-orm";
 import type { Db } from "../db";
 import { events, type Event } from "../db/schema";
 import type { PublicEventRow } from "../presenters/events";
+import { EMBEDDING_MODEL_ID } from "./embeddings";
 
 export const VIBE_WEIGHT_DEFAULT = 0.5;
 export type RankedEvent = [PublicEventRow, number];
-const { embeddingVector: _vector, ...columns } = getTableColumns(events);
+const { embeddingVector: _vector, embeddingModel: _model, ...columns } = getTableColumns(events);
+// Vectors from another model (for example, before a re-embed finishes) are not
+// comparable with current ones: treat them as missing.
+const currentModel = sql`embedding_model = ${EMBEDDING_MODEL_ID}`;
+const currentVector = sql`CASE WHEN ${currentModel} THEN embedding_vector END AS embedding_vector`;
 const publicColumns = sql.join(
   Object.entries(columns).map(
     ([property, column]) => sql`${column} AS ${sql.identifier(property)}`,
@@ -21,6 +26,7 @@ export async function averageSavedEmbedding(
   const result = await db.execute<{ embedding: string | null }>(sql`
     SELECT avg(embedding_vector)::text AS embedding FROM events
     WHERE id = ANY(${sql.param(savedEventIds)}::varchar[]) AND is_archived = false
+      AND ${currentModel}
   `);
   return result.rows[0]?.embedding ? (JSON.parse(result.rows[0].embedding) as number[]) : null;
 }
@@ -77,15 +83,15 @@ export async function similarEvents(
   source: Event,
   options: { topN: number; vibeWeight: number },
 ): Promise<RankedEvent[]> {
-  const vector = source.embeddingVector;
+  const vector = source.embeddingModel === EMBEDDING_MODEL_ID ? source.embeddingVector : null;
   const candidates =
     vector === null
       ? sql`
-    SELECT id, embedding_vector, vibes FROM events WHERE id <> ${source.id} AND is_archived = false
+    SELECT id, ${currentVector}, vibes FROM events WHERE id <> ${source.id} AND is_archived = false
   `
       : sql`
     SELECT id, embedding_vector, vibes FROM events
-    WHERE id <> ${source.id} AND is_archived = false AND embedding_vector IS NOT NULL
+    WHERE id <> ${source.id} AND is_archived = false AND ${currentModel}
     ORDER BY embedding_vector <=> ${JSON.stringify(vector)}::vector, id
     LIMIT ${Math.max(100, options.topN * 20)}
   `;
@@ -104,7 +110,7 @@ export async function personalizedEvents(
   options: { embedding: number[]; savedEventIds: string[]; vibes: string[]; topN: number },
 ): Promise<RankedEvent[]> {
   const candidates = sql`
-    SELECT id, embedding_vector, vibes FROM events
+    SELECT id, ${currentVector}, vibes FROM events
     WHERE NOT (id = ANY(${sql.param(options.savedEventIds)}::varchar[])) AND is_archived = false
     ORDER BY event_date DESC NULLS LAST, id LIMIT 200
   `;

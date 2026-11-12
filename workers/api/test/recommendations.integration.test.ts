@@ -8,6 +8,7 @@ import { events, savedEvents, users } from "../src/db/schema";
 import { ApiError, errorResponse } from "../src/http/errors";
 import { createRecommendationRoutes } from "../src/routes/recommendations";
 import type { RequestServices } from "../src/services";
+import { EMBEDDING_MODEL_ID } from "../src/services/embeddings";
 import { personalizedEvents, roundScore, similarEvents } from "../src/services/recommender";
 import { authTestEnv, realAuth, sessionCookie } from "./auth-fixture";
 
@@ -86,6 +87,7 @@ describe.skipIf(!testUrl)("recommendation API against PostgreSQL", () => {
           eventDate: new Date("2028-01-01Z"),
           vibes: ["social"],
           embeddingVector: vector(),
+          embeddingModel: EMBEDDING_MODEL_ID,
         },
         {
           id: "aligned1",
@@ -95,6 +97,7 @@ describe.skipIf(!testUrl)("recommendation API against PostgreSQL", () => {
           eventDate: new Date("2030-02-01Z"),
           vibes: ["social"],
           embeddingVector: vector(),
+          embeddingModel: EMBEDDING_MODEL_ID,
         },
         {
           id: "orthog01",
@@ -104,6 +107,7 @@ describe.skipIf(!testUrl)("recommendation API against PostgreSQL", () => {
           eventDate: new Date("2030-03-01Z"),
           vibes: ["academic"],
           embeddingVector: vector(0, 1),
+          embeddingModel: EMBEDDING_MODEL_ID,
         },
         {
           id: "novector",
@@ -121,6 +125,7 @@ describe.skipIf(!testUrl)("recommendation API against PostgreSQL", () => {
           eventDate: new Date("2030-05-01Z"),
           vibes: ["social"],
           embeddingVector: vector(0, 0),
+          embeddingModel: EMBEDDING_MODEL_ID,
         },
         {
           id: "archived",
@@ -130,6 +135,7 @@ describe.skipIf(!testUrl)("recommendation API against PostgreSQL", () => {
           eventDate: new Date("2040-01-01Z"),
           vibes: ["social"],
           embeddingVector: vector(),
+          embeddingModel: EMBEDDING_MODEL_ID,
           isArchived: true,
         },
       ]);
@@ -235,6 +241,7 @@ describe.skipIf(!testUrl)("recommendation API against PostgreSQL", () => {
         locationName: "UBC",
         eventDate: new Date("2030-01-01Z"),
         embeddingVector: vector(),
+        embeddingModel: EMBEDDING_MODEL_ID,
         vibes: ["academic"] as const,
       }));
       await db
@@ -249,6 +256,37 @@ describe.skipIf(!testUrl)("recommendation API against PostgreSQL", () => {
         expect(ranked.map(([, score]) => score)).toEqual([0]);
       } finally {
         await db.execute(sql`DELETE FROM events WHERE id ~ '^a[0-9]{7}$'`);
+      }
+    });
+  });
+
+  it("treats vectors from another embedding model as missing", async () => {
+    await withDatabase(env, async (db) => {
+      // Same vector as source01 (a perfect cosine match), but from another model.
+      await db.execute(sql`INSERT INTO events (id, title, description, source, source_label,
+        location_name, event_date, vibes, embedding_vector, embedding_model)
+        SELECT 'stale001', title, description, source, source_label, location_name, event_date,
+        '["academic"]', embedding_vector, 'amazon.titan-embed-text-v2:0'
+        FROM events WHERE id = 'source01'`);
+      try {
+        const rows = await db
+          .select()
+          .from(events)
+          .where(sql`id IN ('source01', 'stale001')`);
+        const [source, stale] = ["source01", "stale001"].map((id) => rows.find((r) => r.id === id));
+        const ids = (ranked: Awaited<ReturnType<typeof similarEvents>>) =>
+          ranked.map(([event]) => event.id);
+        expect(ids(await similarEvents(db, source!, { topN: 10, vibeWeight: 0 }))).not.toContain(
+          "stale001",
+        );
+        const personal = { embedding: vector(), savedEventIds: [], vibes: ["social"], topN: 10 };
+        expect(ids(await personalizedEvents(db, personal))).not.toContain("stale001");
+        // A stale source falls back to vibe overlap only.
+        expect(ids(await similarEvents(db, stale!, { topN: 10, vibeWeight: 0 }))).toEqual([
+          "orthog01",
+        ]);
+      } finally {
+        await db.execute(sql`DELETE FROM events WHERE id = 'stale001'`);
       }
     });
   });

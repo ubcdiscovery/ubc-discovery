@@ -11,7 +11,7 @@ import type { AuditActor } from "../http/auth";
 import { ApiError } from "../http/errors";
 import type { RequestServices } from "./index";
 import { eventValues, type EventInput } from "../schemas/events";
-import { isValidEmbedding } from "./embeddings";
+import { EMBEDDING_MODEL_ID, isValidEmbedding } from "./embeddings";
 export type Database = Db | DbTransaction;
 export function eventSnapshot(event: Event) {
   return {
@@ -71,7 +71,9 @@ export async function embeddingFor(
     club_name: event.clubName,
     location_name: event.locationName,
   });
-  return isValidEmbedding(embedding) ? embedding : null;
+  return isValidEmbedding(embedding)
+    ? { embeddingVector: embedding, embeddingModel: EMBEDDING_MODEL_ID }
+    : null;
 }
 export async function createCanonicalEvent(
   db: Database,
@@ -88,8 +90,8 @@ export async function createCanonicalEvent(
     .returning();
   const embedding = await embeddingFor(event!, services);
   if (embedding) {
-    await db.update(events).set({ embeddingVector: embedding }).where(eq(events.id, id));
-    event!.embeddingVector = embedding;
+    await db.update(events).set(embedding).where(eq(events.id, id));
+    Object.assign(event!, embedding);
   }
   await addEventAudit(db, event!, actor, "create", null, eventSnapshot(event!), services.now());
   return event!;

@@ -8,7 +8,11 @@ import { ApiError } from "../http/errors";
 import { presentEvent, presentPastEvent } from "../presenters/events";
 import { createServices, type ServicesFactory } from "../services";
 
-const { embeddingVector: _vector, ...eventColumns } = getTableColumns(events);
+const {
+  embeddingVector: _vector,
+  embeddingModel: _model,
+  ...eventColumns
+} = getTableColumns(events);
 export { eventColumns };
 const pagination = t.Object(
   {

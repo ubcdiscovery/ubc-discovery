@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
 import { withDatabase } from "../src/db";
 import { events, eventAuditLogs } from "../src/db/schema";
 import { extractionFixture, json, testUrl } from "./extraction-fixture";
+import { EMBEDDING_MODEL_ID } from "../src/services/embeddings";
 const fixture = extractionFixture();
 
 describe.skipIf(!testUrl)("administrator event and candidate lifecycle against PostgreSQL", () => {
@@ -49,6 +50,7 @@ describe.skipIf(!testUrl)("administrator event and candidate lifecycle against P
         )[0]!,
     );
     expect(saved.embeddingVector).toEqual([1, ...Array<number>(1023).fill(0)]);
+    expect(saved.embeddingModel).toBe(EMBEDDING_MODEL_ID);
     const audit = await json(
       await fixture.request(`/admin/events/${event.id}/audit`, "GET", undefined, "admin"),
     );

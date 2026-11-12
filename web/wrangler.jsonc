@@ -29,6 +29,7 @@
     "R2_BUCKET_NAME": "ubc-discovery-api-staging-media",
     "STORAGE_PROVIDER": "r2",
   },
+  "ai": { "binding": "AI" },
   "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-api-staging-media" }],
   "queues": {
     "producers": [{ "binding": "EXTRACTION_QUEUE", "queue": "ubc-discovery-extraction-staging" }],
@@ -46,6 +47,7 @@
       "R2_BUCKET_NAME": "ubc-discovery-api-staging-media",
       "STORAGE_PROVIDER": "r2",
     },
+    "ai": { "binding": "AI" },
     "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-api-staging-media" }],
     "queues": {
       "producers": [{ "binding": "EXTRACTION_QUEUE", "queue": "ubc-discovery-extraction-staging" }],
@@ -75,6 +77,7 @@
         "R2_BUCKET_NAME": "ubc-discovery-media",
         "STORAGE_PROVIDER": "r2",
       },
+      "ai": { "binding": "AI" },
       "r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "ubc-discovery-media" }],
       "queues": {
         "producers": [{ "binding": "EXTRACTION_QUEUE", "queue": "ubc-discovery-extraction" }],

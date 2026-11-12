@@ -5,6 +5,7 @@ import type { Delivery } from "./schemas/candidates";
  * /api declares them in web/wrangler.jsonc.
  */
 export interface ApiEnv {
+  AI?: Ai;
   R2_BUCKET?: R2Bucket;
   EXTRACTION_QUEUE?: Queue<Delivery>;
   DATABASE_SSL?: string;
