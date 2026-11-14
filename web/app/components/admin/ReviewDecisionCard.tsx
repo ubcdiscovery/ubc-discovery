@@ -3,7 +3,7 @@ import { Button } from "~/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/Card";
 import type { ApiCandidate, ApiCandidateDetail } from "~/lib/admin-candidates";
 
-type ReviewMatch = ApiCandidateDetail["same_club_same_day_matches"][number];
+type ReviewMatch = ApiCandidateDetail["same_host_same_day_matches"][number];
 
 type ReviewDecisionCardProps = {
   candidate: ApiCandidate;
@@ -34,7 +34,7 @@ export function ReviewDecisionCard({
         <p className="font-mono text-xs font-bold uppercase text-accent">{candidate.status}</p>
         {matches.length ? (
           <div className="mt-4 border border-rule-soft bg-accent-soft p-3">
-            <p className="font-mono text-xs font-bold uppercase text-ink">Same club, same day</p>
+            <p className="font-mono text-xs font-bold uppercase text-ink">Same host, same day</p>
             <ul className="mt-2 grid gap-2 text-sm">
               {matches.map((match) => (
                 <li key={`${match.kind}-${match.id}`}>

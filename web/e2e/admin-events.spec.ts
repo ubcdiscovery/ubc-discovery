@@ -128,7 +128,7 @@ test("administrator edits a canonical Event Listing", async ({ page }) => {
     title: "Updated Campus Welcome",
     location_name: "AMS Nest Great Hall",
     source_label: "ams_club",
-    club_name: null,
+    hosts: [],
     vibes: ["social", "academic"],
   });
   await expect(

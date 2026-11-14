@@ -6,7 +6,7 @@ import { events, savedEvents } from "../db/schema";
 import type { ApiEnv } from "../env";
 import { requireMember } from "../http/auth";
 import { ApiError } from "../http/errors";
-import { presentEvent } from "../presenters/events";
+import { presentEvents } from "../presenters/events";
 import { createServices, type ServicesFactory } from "../services";
 import {
   averageSavedEmbedding,
@@ -43,7 +43,11 @@ export function createRecommendationRoutes(
           });
           return {
             event_id: params.event_id,
-            events: ranked.map(([event]) => presentEvent(event, services.storage)),
+            events: await presentEvents(
+              db,
+              ranked.map(([event]) => event),
+              services.storage,
+            ),
             scores: ranked.map(([, score]) => roundScore(score)),
           };
         });
@@ -97,7 +101,11 @@ export function createRecommendationRoutes(
               });
               if (ranked.length > 0)
                 return {
-                  events: ranked.map(([event]) => presentEvent(event, services.storage)),
+                  events: await presentEvents(
+                    db,
+                    ranked.map(([event]) => event),
+                    services.storage,
+                  ),
                   scores: ranked.map(([, score]) => roundScore(score)),
                   source: "saved_events",
                 };
@@ -110,7 +118,7 @@ export function createRecommendationRoutes(
             .orderBy(sql`${events.eventDate} DESC NULLS LAST`, desc(events.createdAt))
             .limit(query.n ?? 10);
           return {
-            events: recent.map((event) => presentEvent(event, services.storage)),
+            events: await presentEvents(db, recent, services.storage),
             scores: recent.map(() => 0),
             source: "recent",
           };

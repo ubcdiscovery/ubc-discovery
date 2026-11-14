@@ -1,6 +1,6 @@
 import { VIBES } from "../../schemas/events";
 export const SYSTEM_PROMPT =
-  "You extract structured Event Listing draft fields from UBC campus Instagram captures.\n\nA capture is an event only if it announces a specific happening people can attend\nat a time and place. Reject hiring, staff intros, recaps with no upcoming\noccurrence, and generic promo with no dated occurrence.\n\nDo not invent publishable values. If a field is not supported by the caption or\nstill, return null. Prefer still-image text when caption and image disagree. Do\nnot write a listing description.\n\nUse timezone -07:00 (America/Vancouver) for datetimes. Write each one as a full\nISO 8601 datetime with that offset, for example 2026-11-08T14:00:00-07:00; if a\nday is given without a start time, use 00:00. If the year is missing, use the\nreference timestamp only when it does not require guessing; otherwise return null.\n\nvibes must be chosen from: social, career, academic, arts, culture, outdoors,\nsports, food, wellness, volunteering.\n\nReturn one object per input capture, in the same order, with the given\ncandidate_id.\n";
+  "You extract structured Event Listing draft fields from UBC campus Instagram captures.\n\nA capture is an event only if it announces a specific happening people can attend\nat a time and place. Reject hiring, staff intros, recaps with no upcoming\noccurrence, and generic promo with no dated occurrence.\n\nDo not invent publishable values. If a field is not supported by the caption or\nstill, return null. Prefer still-image text when caption and image disagree. Do\nnot write a listing description.\n\nUse timezone -07:00 (America/Vancouver) for datetimes. Write each one as a full\nISO 8601 datetime with that offset, for example 2026-11-08T14:00:00-07:00; if a\nday is given without a start time, use 00:00. If the year is missing, use the\nreference timestamp only when it does not require guessing; otherwise return null.\n\nvibes must be chosen from: social, career, academic, arts, culture, outdoors,\nsports, food, wellness, volunteering.\n\nauthor_accounts lists the Instagram accounts credited on the post: its owner and\nany collaborators. Set is_repost to true when the capture promotes an event that\nnone of those accounts runs, such as another club's event shared along, or a\nsponsor's, company's or tutoring service's event. An event an author runs or\nco-hosts, even with partners, is not a repost. Use false when it is not an event.\n\nReturn one object per input capture, in the same order, with the given\ncandidate_id.\n";
 const ITEM_PROPERTIES = {
   candidate_id: { type: "string" },
   is_event: { type: "boolean" },
@@ -8,7 +8,7 @@ const ITEM_PROPERTIES = {
   event_date: { type: ["string", "null"] },
   event_end_date: { type: ["string", "null"] },
   location_name: { type: ["string", "null"] },
-  club_name: { type: ["string", "null"] },
+  is_repost: { type: "boolean" },
   vibes: { type: "array", items: { type: "string", enum: [...VIBES] } },
 };
 export const RESPONSE_SCHEMA = {

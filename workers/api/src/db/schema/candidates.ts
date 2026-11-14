@@ -41,10 +41,13 @@ export const eventListingCandidates = pgTable(
       .default(sql`'[]'::json`),
     postedAt: instant("posted_at"),
     isEvent: boolean("is_event"),
+    /** The capture promotes an event run by someone other than its own accounts. */
+    isRepost: boolean("is_repost").notNull().default(false),
     title: varchar("title", { length: 500 }),
     locationName: varchar("location_name", { length: 255 }),
     eventDate: instant("event_date"),
     eventEndDate: instant("event_end_date"),
+    /** Superseded by candidate_hosts; dropped by the next migration. */
     clubName: varchar("club_name", { length: 255 }),
     vibes: json("vibes")
       .$type<EventVibe[]>()

@@ -18,7 +18,7 @@ export type AdminMockCandidate = {
     credential_label: string;
     received_at: string;
   }>;
-  same_club_same_day_matches?: Array<{
+  same_host_same_day_matches?: Array<{
     kind: "candidate" | "event";
     id: string;
     title: string;
@@ -38,6 +38,8 @@ export const mockCandidate: AdminMockCandidate = {
     "https://s3.example.com/candidates/candidate-1/00.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Expires=3600&X-Amz-Signature=mock",
   ],
   status: "pending",
+  hosts: [{ handle: "ubcams", name: "ubcams" }],
+  is_repost: false,
   created_at: "2026-08-08T12:00:00Z",
   updated_at: "2026-08-08T12:00:00Z",
   ingestion_audits: [
@@ -52,7 +54,7 @@ export const mockCandidate: AdminMockCandidate = {
       received_at: "2026-08-08T12:00:00Z",
     },
   ],
-  same_club_same_day_matches: [],
+  same_host_same_day_matches: [],
 };
 
 export const mockExtractedCandidate: AdminMockCandidate = {
@@ -65,7 +67,7 @@ export const mockExtractedCandidate: AdminMockCandidate = {
   location_name: "The Nest",
   event_date: "2026-09-04T20:00:00Z",
   event_end_date: null,
-  club_name: "UBC AMS",
+  hosts: [{ handle: "extractedclub", name: "UBC AMS" }],
   vibes: ["social"],
   source_label: "ams_club",
   extracted_original: { is_event: true, title: "Club Night" },

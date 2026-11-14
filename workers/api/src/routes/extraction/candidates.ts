@@ -32,7 +32,7 @@ export function extractionFields(value: ExtractionValue, model: string, now: Dat
     event_date: eventDate?.toISOString() ?? null,
     event_end_date: eventEndDate?.toISOString() ?? null,
     location_name: value.location_name ?? null,
-    club_name: value.club_name ?? null,
+    is_repost: value.is_repost ?? false,
     vibes: value.vibes ?? [],
   };
   const base = {
@@ -40,6 +40,7 @@ export function extractionFields(value: ExtractionValue, model: string, now: Dat
     extractionModel: model,
     extractedAt: now,
     isEvent: value.is_event,
+    isRepost: value.is_event && (value.is_repost ?? false),
   };
   return value.is_event
     ? {
@@ -48,7 +49,6 @@ export function extractionFields(value: ExtractionValue, model: string, now: Dat
         eventDate,
         eventEndDate,
         locationName: value.location_name ?? null,
-        clubName: value.club_name ?? null,
         vibes: value.vibes ?? [],
         sourceLabel: "ams_club" as const,
       }
@@ -58,7 +58,6 @@ export function extractionFields(value: ExtractionValue, model: string, now: Dat
         eventDate: null,
         eventEndDate: null,
         locationName: null,
-        clubName: null,
         vibes: [],
         sourceLabel: null,
       };

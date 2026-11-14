@@ -144,7 +144,7 @@ describe.skipIf(!testUrl)("administrator event and candidate lifecycle against P
         title: " Review Event ",
         location_name: " Nest ",
         source_label: "ams_club",
-        club_name: " Club ",
+        hosts: ["@Review.Club", "https://www.instagram.com/partner_club/"],
         event_date: "2030-03-01T20:00:00Z",
         vibes: ["arts"],
       },
@@ -154,7 +154,10 @@ describe.skipIf(!testUrl)("administrator event and candidate lifecycle against P
     expect(await json(correction)).toMatchObject({
       title: "Review Event",
       location_name: "Nest",
-      club_name: "Club",
+      hosts: [
+        { handle: "review.club", name: "review.club" },
+        { handle: "partner_club", name: "partner_club" },
+      ],
       image_urls: ["https://private.test/candidates/review01/00.jpg?signed=1"],
     });
     const responses = await Promise.all(
@@ -164,6 +167,11 @@ describe.skipIf(!testUrl)("administrator event and candidate lifecycle against P
     );
     expect(responses.every((response) => response.status === 200)).toBe(true);
     expect((await fixture.candidate("review01")).status).toBe("approved");
+    const published = await fixture.request("/admin/events/review01", "GET", undefined, "admin");
+    expect((await json(published)).hosts).toEqual([
+      { handle: "review.club", name: "review.club" },
+      { handle: "partner_club", name: "partner_club" },
+    ]);
     const rows = await withDatabase(fixture.env, (db) =>
       db.select().from(eventAuditLogs).where(eq(eventAuditLogs.eventId, "review01")),
     );

@@ -28,46 +28,56 @@ export function validDatetime(value: string): boolean {
   );
 }
 
+const STRING_LIMITS: Record<string, number> = { title: 500, location_name: 255, club_name: 255 };
+const DATETIME_KEYS = new Set(["event_date", "event_end_date"]);
+
+type ResponseSchema = {
+  properties?: {
+    extractions?: {
+      items?: {
+        required?: unknown[];
+        properties?: Record<string, { type?: unknown }> & {
+          vibes?: { items?: { enum?: unknown[] } };
+        };
+      };
+    };
+  };
+};
+
 export function validExtraction(value: unknown, evidence: EvidenceBatch): value is Extraction {
   if (!value || typeof value !== "object") return false;
   const result = value as Record<string, unknown>;
-  const keys = [
-    "candidate_id",
-    "is_event",
-    "title",
-    "event_date",
-    "event_end_date",
-    "location_name",
-    "club_name",
-    "vibes",
-  ];
+  // The API supplies the authoritative field list, so either side can change it first.
+  const items = (evidence.schema as ResponseSchema).properties?.extractions?.items;
+  const keys = items?.required;
   if (
+    !Array.isArray(keys) ||
+    !keys.every((key): key is string => typeof key === "string") ||
     Object.keys(result).length !== keys.length ||
     keys.some((key) => !(key in result)) ||
     typeof result.candidate_id !== "string" ||
     typeof result.is_event !== "boolean"
   )
     return false;
-  for (const [key, limit] of [
-    ["title", 500],
-    ["location_name", 255],
-    ["club_name", 255],
-  ] as const) {
+  for (const key of keys) {
     const field = result[key];
-    if (field !== null && (typeof field !== "string" || Array.from(field).length > limit))
+    if (items?.properties?.[key]?.type === "boolean" && typeof field !== "boolean") return false;
+    if (key in STRING_LIMITS) {
+      if (
+        field !== null &&
+        (typeof field !== "string" || Array.from(field).length > STRING_LIMITS[key]!)
+      )
+        return false;
+    }
+    if (
+      DATETIME_KEYS.has(key) &&
+      field !== null &&
+      (typeof field !== "string" || !validDatetime(field))
+    )
       return false;
   }
-  for (const key of ["event_date", "event_end_date"] as const) {
-    const field = result[key];
-    if (field !== null && (typeof field !== "string" || !validDatetime(field))) return false;
-  }
   // The API supplies its authoritative taxonomy; the Worker does not copy it.
-  const schema = evidence.schema as {
-    properties?: {
-      extractions?: { items?: { properties?: { vibes?: { items?: { enum?: unknown[] } } } } };
-    };
-  };
-  const allowed = schema.properties?.extractions?.items?.properties?.vibes?.items?.enum;
+  const allowed = items?.properties?.vibes?.items?.enum;
   return (
     Array.isArray(allowed) &&
     Array.isArray(result.vibes) &&

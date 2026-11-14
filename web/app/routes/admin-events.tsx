@@ -1,3 +1,4 @@
+import { hostCredit } from "~/lib/hosts";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router";
@@ -64,7 +65,7 @@ function EventTable({ events }: { events: AdminApiEvent[] }) {
                   {event.title}
                 </span>
                 <span className="mt-1 block font-mono text-2xs uppercase tracking-wide text-muted">
-                  {[event.club_name, event.id].filter(Boolean).join(" · ")}
+                  {[hostCredit(event.hosts), event.id].filter(Boolean).join(" · ")}
                 </span>
               </Link>
             </TableCell>

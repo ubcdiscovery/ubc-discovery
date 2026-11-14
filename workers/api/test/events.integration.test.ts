@@ -4,9 +4,10 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import type { ApiEnv } from "../src/env";
 import { withDatabase } from "../src/db";
-import { eventRatings, events, users } from "../src/db/schema";
+import { eventHosts, eventRatings, events, hosts, users } from "../src/db/schema";
 import { ApiError, errorResponse } from "../src/http/errors";
 import { createEventRoutes } from "../src/routes/events";
+import { createHostRoutes } from "../src/routes/hosts";
 import type { RequestServices } from "../src/services";
 
 interface Body {
@@ -33,6 +34,7 @@ const app = new Elysia({ adapter: CloudflareAdapter })
     return errorResponse(error);
   })
   .use(createEventRoutes(env, () => services))
+  .use(createHostRoutes(env, () => services))
   .compile();
 const request = async (path: string) => app.handle(new Request(`http://localhost${path}`));
 
@@ -40,7 +42,7 @@ describe.skipIf(!testUrl)("public event API against PostgreSQL", () => {
   beforeAll(async () => {
     await withDatabase({ DATABASE_URL: testUrl } as ApiEnv, async (db) => {
       await db.execute(sql`CREATE SCHEMA ${sql.identifier(schemaName)}`);
-      for (const table of ["users", "events", "event_ratings"]) {
+      for (const table of ["users", "events", "event_ratings", "hosts", "event_hosts"]) {
         await db.execute(
           sql`CREATE TABLE ${sql.identifier(schemaName)}.${sql.identifier(table)} (LIKE public.${sql.identifier(table)} INCLUDING ALL)`,
         );
@@ -87,6 +89,20 @@ describe.skipIf(!testUrl)("public event API against PostgreSQL", () => {
         },
       ]);
       await db.insert(eventRatings).values({ userId: member!.id, eventId: "past0001", stars: 4.5 });
+      await db
+        .insert(hosts)
+        .values([
+          { handle: "ubcfilmsociety", profileName: "UBC Film Society" },
+          { handle: "ubckwave", profileName: "UBC K-Wave", displayName: "K-Wave" },
+          { handle: "quietclub" },
+        ]);
+      await db.insert(eventHosts).values([
+        { eventId: "soon0001", hostHandle: "ubckwave", position: 0 },
+        { eventId: "soon0001", hostHandle: "ubcfilmsociety", position: 1 },
+        { eventId: "soon0002", hostHandle: "ubcfilmsociety", position: 0 },
+        { eventId: "past0001", hostHandle: "ubcfilmsociety", position: 0 },
+        { eventId: "hide0001", hostHandle: "quietclub", position: 0 },
+      ]);
     });
   });
   afterAll(async () => {
@@ -144,5 +160,52 @@ describe.skipIf(!testUrl)("public event API against PostgreSQL", () => {
       expect((await request(`/events?${query}`)).status).toBe(422);
     expect(((await (await request("/events?limit=0")).json()) as Body).events).toEqual([]);
     expect((await request("/events?limit=-1")).status).toBe(500);
+  });
+
+  it("presents Hosts in order and searches by Host name", async () => {
+    const detail = (await (await request("/events/soon0001")).json()) as Body["events"][number];
+    expect(detail.hosts).toEqual([
+      { handle: "ubckwave", name: "K-Wave" },
+      { handle: "ubcfilmsociety", name: "UBC Film Society" },
+    ]);
+    expect(
+      ((await (await request("/events/search?q=film%20soc")).json()) as Body).events.map(
+        (event: { id: string }) => event.id,
+      ),
+    ).toEqual(["soon0001", "soon0002"]);
+  });
+
+  it("lists browsable Hosts with event counts and their events", async () => {
+    const list = (await (await request("/hosts")).json()) as {
+      hosts: Record<string, unknown>[];
+      total: number;
+    };
+    // quietclub only has an archived listing, so it is not browsable.
+    expect(list.total).toBe(2);
+    expect(list.hosts).toEqual([
+      {
+        handle: "ubcfilmsociety",
+        name: "UBC Film Society",
+        instagram_url: "https://www.instagram.com/ubcfilmsociety/",
+        upcoming_event_count: 2,
+        past_event_count: 1,
+      },
+      expect.objectContaining({ handle: "ubckwave", upcoming_event_count: 1, past_event_count: 0 }),
+    ]);
+    expect(((await (await request("/hosts?q=k-wave")).json()) as { total: number }).total).toBe(1);
+    expect(await (await request("/hosts/@UBCFilmSociety")).json()).toMatchObject({
+      handle: "ubcfilmsociety",
+      upcoming_event_count: 2,
+    });
+    const upcoming = (await (await request("/hosts/ubcfilmsociety/events")).json()) as Body & {
+      total: number;
+    };
+    expect(upcoming.events.map((event) => event.id)).toEqual(["soon0001", "soon0002"]);
+    expect(upcoming.total).toBe(2);
+    const past = (await (await request("/hosts/ubcfilmsociety/events?when=past")).json()) as Body;
+    expect(past.events.map((event) => event.id)).toEqual(["past0001"]);
+    expect(((await (await request("/hosts/quietclub/events")).json()) as Body).events).toEqual([]);
+    for (const path of ["/hosts/missing", "/hosts/bad%20handle/events"])
+      expect((await request(path)).status).toBe(404);
   });
 });

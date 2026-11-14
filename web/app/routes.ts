@@ -7,6 +7,8 @@ export default [
     route("saved", "routes/saved.tsx"),
     route("profile", "routes/profile.tsx"),
     route("organizers", "routes/organizers.tsx"),
+    route("hosts", "routes/hosts.tsx"),
+    route("hosts/:handle", "routes/host-detail.tsx"),
   ]),
   layout("routes/anonymous-only-layout.tsx", [route("sign-in", "routes/sign-in.tsx")]),
   layout("routes/onboarding-only-layout.tsx", [
@@ -22,5 +24,6 @@ export default [
     route("events/:id", "routes/admin-event-edit.tsx"),
     route("candidates", "routes/admin-candidates.tsx"),
     route("candidates/:id", "routes/admin-candidate-detail.tsx"),
+    route("hosts", "routes/admin-hosts.tsx"),
   ]),
 ] satisfies RouteConfig;

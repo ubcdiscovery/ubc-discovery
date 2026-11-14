@@ -3,7 +3,8 @@ import type { ApiEvent, CreateEventInput, UpdateEventInput } from "~/lib/api";
 export type AdminEventDraft = {
   title: string;
   description: string;
-  clubName: string;
+  /** Instagram handles, main host first. */
+  hosts: string[];
   locationName: string;
   eventDate: string;
   eventEndDate: string;
@@ -23,7 +24,7 @@ export function draftFromEvent(event: ApiEvent): AdminEventDraft {
   return {
     title: event.title,
     description: event.description,
-    clubName: event.club_name ?? "",
+    hosts: event.hosts.map((host) => host.handle),
     locationName: event.location_name,
     eventDate: toLocalDateTime(event.event_date),
     eventEndDate: toLocalDateTime(event.event_end_date),
@@ -39,7 +40,7 @@ export function emptyAdminEventDraft(): AdminEventDraft {
   return {
     title: "",
     description: "",
-    clubName: "",
+    hosts: [],
     locationName: "",
     eventDate: toLocalDateTime(start.toISOString()),
     eventEndDate: toLocalDateTime(end.toISOString()),
@@ -66,7 +67,7 @@ export function updateInputFromDraft(draft: AdminEventDraft): UpdateEventInput {
   return {
     title: draft.title.trim(),
     description: draft.description,
-    club_name: draft.clubName.trim() || null,
+    hosts: draft.hosts,
     location_name: draft.locationName.trim(),
     event_date: new Date(draft.eventDate).toISOString(),
     event_end_date: draft.eventEndDate ? new Date(draft.eventEndDate).toISOString() : null,

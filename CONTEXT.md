@@ -73,8 +73,16 @@ An outbound contact action for flagging incorrect or inappropriate Event Listing
 _Avoid_: In-app report queue
 
 **Event Listing**:
-A public, shareable pointer to an external campus or club event, usually with an organizer name, source link, and human-readable location text. Location text is the human-facing source of truth; Event Listings are not a location-browsing or attendance system. Event Listing sharing starts with canonical public URL sharing, and each Event Listing detail page should open directly on web without requiring the app or prior in-app state; interactions are outbound-only in the current product model, and an Event Listing is not an RSVP, attendance record, ticket, or organizer-managed registration inside UBC Discovery. When a listing has no source link, show the known details without inventing a participation action.
+A public, shareable pointer to an external campus or club event, usually with one or more Hosts, a source link, and human-readable location text. Location text is the human-facing source of truth; Event Listings are not a location-browsing or attendance system. Event Listing sharing starts with canonical public URL sharing, and each Event Listing detail page should open directly on web without requiring the app or prior in-app state; interactions are outbound-only in the current product model, and an Event Listing is not an RSVP, attendance record, ticket, or organizer-managed registration inside UBC Discovery. When a listing has no source link, show the known details without inventing a participation action.
 _Avoid_: RSVP, attendance, booking
+
+**Host**:
+The club or organizer that runs an Event Listing, identified by its lowercase Instagram handle (`ubcfilmsociety`). An Event Listing can have several Hosts when it is co-hosted; the first is the main host. Hosts come from the accounts credited on a scraped post (its owner and Instagram collaborators), and each Host has a public page listing its upcoming and past Event Listings. A Host's name is its Instagram profile name unless an admin sets a display name.
+_Avoid_: Organizer (as free text), club name, Entity
+
+**Repost**:
+A Candidate whose post promotes an event that none of its credited accounts runs, such as another club's event shared along or a sponsor's study session. Extraction flags Reposts; they are never published automatically and stay pending for admin review.
+_Avoid_: Shared post, promo
 
 **Event Source**:
 An external origin for an Event Listing. Event Sources should use clear public labels such as UBC Official, AMS Club, and Campus Community; they are source labels only, not verification badges or safety guarantees.

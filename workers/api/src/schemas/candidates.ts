@@ -1,11 +1,17 @@
 import { t, type Static } from "elysia";
-import { nullableDate, sourceLabelSchema, vibeSchema } from "./events";
+import { hostHandlesSchema, nullableDate, sourceLabelSchema, vibeSchema } from "./events";
 export const candidateIngestionSchema = t.Object(
   {
     source_type: t.String({ minLength: 1, maxLength: 50 }),
     external_source_id: t.String({ minLength: 1, maxLength: 512 }),
     description: t.Optional(t.String({ maxLength: 20_000, default: "" })),
     source_account: t.String({ minLength: 1, maxLength: 255 }),
+    /** The source profile's own name, e.g. its Instagram full name. */
+    source_account_name: t.Optional(t.Nullable(t.String({ maxLength: 255 }))),
+    /** The source platform's stable numeric account id. */
+    source_account_id: t.Optional(t.Nullable(t.String({ maxLength: 32 }))),
+    /** Accounts credited on the post: its owner, then any collaborators. */
+    author_accounts: t.Optional(t.Array(t.String({ maxLength: 255 }), { maxItems: 10 })),
     source_url: t.Optional(t.Nullable(t.String({ maxLength: 1024 }))),
     posted_at: t.Optional(nullableDate),
     image_content_types: t.Array(
@@ -19,11 +25,12 @@ export type CandidateIngestionInput = Static<typeof candidateIngestionSchema>;
 export const correctCandidateSchema = t.Object(
   {
     is_event: t.Optional(t.Nullable(t.Boolean())),
+    is_repost: t.Optional(t.Boolean()),
     title: t.Optional(t.Nullable(t.String({ maxLength: 500 }))),
     location_name: t.Optional(t.Nullable(t.String({ maxLength: 255 }))),
     event_date: t.Optional(nullableDate),
     event_end_date: t.Optional(nullableDate),
-    club_name: t.Optional(t.Nullable(t.String({ maxLength: 255 }))),
+    hosts: t.Optional(hostHandlesSchema),
     vibes: t.Optional(t.Nullable(t.Array(vibeSchema))),
     source_label: t.Optional(t.Nullable(sourceLabelSchema)),
   },
@@ -47,7 +54,7 @@ export const extractionValueSchema = t.Object(
     event_date: t.Optional(nullableDate),
     event_end_date: t.Optional(nullableDate),
     location_name: t.Optional(t.Nullable(t.String({ maxLength: 255 }))),
-    club_name: t.Optional(t.Nullable(t.String({ maxLength: 255 }))),
+    is_repost: t.Optional(t.Boolean()),
     vibes: t.Optional(t.Array(vibeSchema)),
   },
   { additionalProperties: true },

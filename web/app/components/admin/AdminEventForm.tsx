@@ -1,3 +1,4 @@
+import { HostPicker } from "~/components/admin/HostPicker";
 import { useState, type FormEvent } from "react";
 import { AdminEventImage } from "~/components/admin/AdminEventImage";
 import { Alert } from "~/components/ui/Alert";
@@ -108,11 +109,15 @@ export function AdminEventForm({ event, onSave, onCreate, onUploadImage }: Admin
               />
             </Field>
             <div className="grid gap-5 md:grid-cols-2">
-              <Field label="Organizer" htmlFor="admin-organizer">
-                <Input
-                  id="admin-organizer"
-                  value={draft.clubName}
-                  onChange={(change) => updateDraft({ clubName: change.target.value })}
+              <Field
+                label="Hosts"
+                htmlFor="admin-hosts"
+                description="Instagram handles. The first is the main host; add co-hosts after it."
+              >
+                <HostPicker
+                  id="admin-hosts"
+                  value={draft.hosts}
+                  onChange={(hosts) => updateDraft({ hosts })}
                 />
               </Field>
               <Field

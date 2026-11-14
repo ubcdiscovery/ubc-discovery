@@ -10,17 +10,24 @@ import {
 import type { AuditActor } from "../http/auth";
 import { ApiError } from "../http/errors";
 import type { RequestServices } from "./index";
-import { eventValues, type EventInput } from "../schemas/events";
+import {
+  checkEndDate,
+  eventChanges,
+  eventValues,
+  type EventInput,
+  type EventUpdate,
+} from "../schemas/events";
 import { EMBEDDING_MODEL_ID, isValidEmbedding } from "./embeddings";
+import { hostsForEvent, normalizeHandles, setEventHosts, type HostSummary } from "./hosts";
 export type Database = Db | DbTransaction;
-export function eventSnapshot(event: Event) {
+export function eventSnapshot(event: Event, hosts: readonly HostSummary[]) {
   return {
     title: event.title,
     description: event.description,
     source: event.source,
     source_label: event.sourceLabel,
     source_url: event.sourceUrl,
-    club_name: event.clubName,
+    hosts: hosts.map((host) => host.handle),
     vibes: event.vibes ?? [],
     location_name: event.locationName,
     event_date: event.eventDate?.toISOString() ?? null,
@@ -62,13 +69,14 @@ export async function addEventAudit(
     .values({ eventId: event.id, ...actor, action, before, after, createdAt: now });
 }
 export async function embeddingFor(
-  event: Pick<Event, "title" | "description" | "clubName" | "locationName">,
+  event: Pick<Event, "title" | "description" | "locationName">,
+  hosts: readonly HostSummary[],
   services: RequestServices,
 ) {
   const embedding = await services.embedEvent({
     title: event.title,
     description: event.description,
-    club_name: event.clubName,
+    host_names: hosts.map((host) => host.name),
     location_name: event.locationName,
   });
   return isValidEmbedding(embedding)
@@ -83,18 +91,29 @@ export async function createCanonicalEvent(
   explicitId?: string,
 ) {
   const values = eventValues(body);
+  const handles = normalizeHandles(body.hosts ?? [], true);
   const id = explicitId ?? (await allocateEventId(db));
   const [event] = await db
     .insert(events)
     .values({ id, ...values, createdAt: services.now() })
     .returning();
-  const embedding = await embeddingFor(event!, services);
+  await setEventHosts(db, id, handles);
+  const hosts = await hostsForEvent(db, id);
+  const embedding = await embeddingFor(event!, hosts, services);
   if (embedding) {
     await db.update(events).set(embedding).where(eq(events.id, id));
     Object.assign(event!, embedding);
   }
-  await addEventAudit(db, event!, actor, "create", null, eventSnapshot(event!), services.now());
-  return event!;
+  await addEventAudit(
+    db,
+    event!,
+    actor,
+    "create",
+    null,
+    eventSnapshot(event!, hosts),
+    services.now(),
+  );
+  return { event: event!, hosts };
 }
 export function postgresErrorCode(error: unknown): string | undefined {
   if (error && typeof error === "object") {
@@ -102,4 +121,65 @@ export function postgresErrorCode(error: unknown): string | undefined {
     if ("cause" in error) return postgresErrorCode(error.cause);
   }
   return undefined;
+}
+
+/** Apply an admin update, re-embedding when the embedded text or Hosts change. */
+export async function updateCanonicalEvent(
+  db: Database,
+  event: Event,
+  body: EventUpdate,
+  actor: AuditActor,
+  services: RequestServices,
+) {
+  const hosts = await hostsForEvent(db, event.id);
+  const before = eventSnapshot(event, hosts);
+  const changes = eventChanges(body);
+  checkEndDate(
+    changes.eventDate ?? event.eventDate,
+    changes.eventEndDate === undefined ? event.eventEndDate : changes.eventEndDate,
+  );
+  let savedHosts = hosts;
+  if (body.hosts !== undefined) {
+    const handles = normalizeHandles(body.hosts, true);
+    if (JSON.stringify(handles) !== JSON.stringify(hosts.map((host) => host.handle))) {
+      await setEventHosts(db, event.id, handles);
+      savedHosts = await hostsForEvent(db, event.id);
+    }
+  }
+  const hostsChanged = savedHosts !== hosts;
+  const updated = { ...event, ...changes };
+  const embeddingFields = [
+    "title",
+    "description",
+    "vibes",
+    "locationName",
+    "eventDate",
+    "eventEndDate",
+  ] as const;
+  const embeddingChanged =
+    hostsChanged ||
+    embeddingFields.some(
+      (field) =>
+        field in changes && JSON.stringify(event[field]) !== JSON.stringify(updated[field]),
+    );
+  if (embeddingChanged) {
+    const embedding = await embeddingFor(updated, savedHosts, services);
+    if (embedding) Object.assign(changes, embedding);
+  }
+  if (Object.keys(changes).length || hostsChanged) {
+    const [saved] = Object.keys(changes).length
+      ? await db.update(events).set(changes).where(eq(events.id, event.id)).returning()
+      : [event];
+    await addEventAudit(
+      db,
+      saved!,
+      actor,
+      "update",
+      before,
+      eventSnapshot(saved!, savedHosts),
+      services.now(),
+    );
+    return [saved!, savedHosts] as const;
+  }
+  return [event, hosts] as const;
 }

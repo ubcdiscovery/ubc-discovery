@@ -12,7 +12,9 @@ export interface Extraction {
   event_date: string | null;
   event_end_date: string | null;
   location_name: string | null;
-  club_name: string | null;
+  /** Sent by API versions before Hosts. */
+  club_name?: string | null;
+  is_repost?: boolean;
   vibes: string[];
 }
 
@@ -22,6 +24,8 @@ export interface EvidenceItem {
   state: "ready" | "waiting" | "extracted" | "completed" | "terminal" | "missing" | "stale";
   caption: string;
   source_account: string;
+  /** The post's owner and collaborators; absent from API versions before Hosts. */
+  author_accounts?: string[];
   source_type: string;
   reference_timestamp: string;
   created_at: string;

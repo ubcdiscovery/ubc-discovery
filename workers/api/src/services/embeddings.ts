@@ -12,9 +12,17 @@ export const EMBEDDING_MODEL_ID = "@cf/qwen/qwen3-embedding-0.6b";
 export interface EmbeddingEvent {
   title: string;
   description?: string | null;
-  club_name?: string | null;
+  host_names?: string[] | null;
   location_name: string;
 }
+
+/**
+ * SQL for an event's Host names in display order, matching services/hosts.ts
+ * `hostName`. `events` must be in scope; Node scripts use it to rebuild event text.
+ */
+export const EVENT_HOST_NAMES_SQL = `ARRAY(SELECT coalesce(nullif(trim(h.display_name), ''), nullif(trim(h.profile_name), ''), h.handle)
+  FROM event_hosts eh JOIN hosts h ON h.handle = eh.host_handle
+  WHERE eh.event_id = events.id ORDER BY eh.position, eh.host_handle)`;
 
 export function isValidEmbedding(value: unknown): value is number[] {
   return (
@@ -27,7 +35,7 @@ export function isValidEmbedding(value: unknown): value is number[] {
 export function generateEventText(event: EmbeddingEvent): string {
   const parts = [event.title];
   if (event.description) parts.push(event.description);
-  if (event.club_name) parts.push(`Hosted by ${event.club_name}`);
+  if (event.host_names?.length) parts.push(`Hosted by ${event.host_names.join(", ")}`);
   parts.push(`Location: ${event.location_name}`);
   return parts.join(". ");
 }

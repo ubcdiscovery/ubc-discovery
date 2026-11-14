@@ -4,6 +4,7 @@ import { Checkbox } from "~/components/ui/Checkbox";
 import { Field } from "~/components/ui/Field";
 import { Input } from "~/components/ui/Input";
 import { Select } from "~/components/ui/Select";
+import { HostPicker } from "~/components/admin/HostPicker";
 import { SOURCES, VIBES } from "~/lib/constants";
 import type { ApiCandidate, CorrectCandidateInput } from "~/lib/admin-candidates";
 
@@ -13,7 +14,8 @@ export type CandidateDraft = {
   location_name: string;
   event_date: string;
   event_end_date: string;
-  club_name: string;
+  hosts: string[];
+  is_repost: boolean;
   vibes: string[];
   source_label: string;
 };
@@ -31,7 +33,8 @@ export function draftFromCandidate(candidate: ApiCandidate): CandidateDraft {
     location_name: candidate.location_name ?? "",
     event_date: localInput(candidate.event_date),
     event_end_date: localInput(candidate.event_end_date),
-    club_name: candidate.club_name ?? "",
+    hosts: candidate.hosts.map((host) => host.handle),
+    is_repost: candidate.is_repost,
     vibes: candidate.vibes ?? [],
     source_label: candidate.source_label ?? "campus_community",
   };
@@ -44,7 +47,8 @@ export function draftInput(draft: CandidateDraft): CorrectCandidateInput {
     location_name: draft.location_name,
     event_date: draft.event_date ? new Date(draft.event_date).toISOString() : null,
     event_end_date: draft.event_end_date ? new Date(draft.event_end_date).toISOString() : null,
-    club_name: draft.club_name || null,
+    hosts: draft.hosts,
+    is_repost: draft.is_repost,
     vibes: draft.vibes,
     source_label: draft.source_label,
   };
@@ -112,13 +116,29 @@ export function CandidateDraftForm({ draft, saving, onChange, onSave }: Candidat
             />
           </Field>
         </div>
-        <Field label="Club name" htmlFor="candidate-club">
-          <Input
-            id="candidate-club"
-            value={draft.club_name}
-            onChange={(event) => onChange({ club_name: event.target.value })}
+        <Field
+          label="Hosts"
+          htmlFor="candidate-hosts"
+          description="From the post's owner and collaborators. The first is the main host."
+        >
+          <HostPicker
+            id="candidate-hosts"
+            value={draft.hosts}
+            onChange={(hosts) => onChange({ hosts })}
           />
         </Field>
+        <label className="flex items-start gap-2 text-sm text-ink">
+          <Checkbox
+            checked={draft.is_repost}
+            onChange={() => onChange({ is_repost: !draft.is_repost })}
+          />
+          <span>
+            Repost
+            <span className="block text-muted">
+              Promotes an event none of the hosts runs. Reposts are never published automatically.
+            </span>
+          </span>
+        </label>
         <fieldset className="grid gap-3 sm:grid-cols-2">
           <legend className="mb-1 text-sm text-ink">Vibes</legend>
           {VIBES.map((vibe) => (

@@ -4,6 +4,7 @@ import { openapi } from "@elysiajs/openapi";
 import type { ApiEnv } from "./env";
 import { errorResponse } from "./http/errors";
 import { createEventRoutes } from "./routes/events";
+import { createHostRoutes } from "./routes/hosts";
 import { createRecommendationRoutes } from "./routes/recommendations";
 import { createMemberRoutes } from "./routes/users";
 import { createAdminRoutes } from "./routes/admin";
@@ -57,6 +58,7 @@ export function createApp(
     })
     .get("/", () => ({ status: "ok", app: "UBC Discovery API" }), { detail: { tags: ["Health"] } })
     .use(createEventRoutes(env, servicesFactory))
+    .use(createHostRoutes(env, servicesFactory))
     .use(createRecommendationRoutes(env, servicesFactory))
     .use(createMemberRoutes(env, servicesFactory))
     .use(createAdminRoutes(env, servicesFactory))

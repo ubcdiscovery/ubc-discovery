@@ -19,15 +19,15 @@ describe("Workers AI embeddings", () => {
       generateEventText({
         title: "Concert",
         description: "Music",
-        club_name: "AMS",
+        host_names: ["AMS", "UBC Film Society"],
         location_name: "Nest",
       }),
-    ).toBe("Concert. Music. Hosted by AMS. Location: Nest");
+    ).toBe("Concert. Music. Hosted by AMS, UBC Film Society. Location: Nest");
     expect(
       generateEventText({
         title: "Concert",
         description: "",
-        club_name: null,
+        host_names: [],
         location_name: "Nest",
       }),
     ).toBe("Concert. Location: Nest");

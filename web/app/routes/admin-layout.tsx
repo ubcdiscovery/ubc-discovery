@@ -74,6 +74,16 @@ export default function AdminLayout() {
                 Candidates
               </NavLink>
               <NavLink
+                to="/admin/hosts"
+                className={({ isActive }) =>
+                  `ml-4 border-b-2 pb-1 font-mono text-xs font-bold uppercase tracking-wide ${
+                    isActive ? "border-accent text-ink" : "border-transparent text-muted"
+                  }`
+                }
+              >
+                Hosts
+              </NavLink>
+              <NavLink
                 to="/admin/api-keys"
                 className={({ isActive }) =>
                   `ml-4 border-b-2 pb-1 font-mono text-xs font-bold uppercase tracking-wide ${

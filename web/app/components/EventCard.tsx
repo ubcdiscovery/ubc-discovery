@@ -69,7 +69,7 @@ export function EventCard({ event }: { event: ApiEvent | ApiPastEvent }) {
           )}
 
           <div className="min-w-0 pt-2 md:flex-1 md:pt-0">
-            <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
+            <SourceBadge sourceLabel={event.source_label} hosts={event.hosts} />
             <h3 className="mb-1 mt-1.5 max-w-[30ch] font-display text-xl/tight font-bold tracking-tight text-ink text-balance md:max-w-none">
               {event.title}
             </h3>

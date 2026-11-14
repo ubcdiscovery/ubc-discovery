@@ -8,7 +8,7 @@ const event = (id) => ({
   id,
   title: `Event ${id}`,
   description: "",
-  club_name: null,
+  host_names: [],
   location_name: "Nest",
 });
 

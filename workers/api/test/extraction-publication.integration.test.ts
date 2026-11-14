@@ -1,34 +1,42 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
 import { withDatabase } from "../src/db";
-import { events, eventAuditLogs } from "../src/db/schema";
+import { eventHosts, events, eventAuditLogs } from "../src/db/schema";
 import { extractionFixture, extraction, json, testUrl } from "./extraction-fixture";
 const fixture = extractionFixture();
 
 describe.skipIf(!testUrl)("candidate publication and recovery PostgreSQL parity", () => {
   beforeAll(fixture.setup);
   afterAll(fixture.teardown);
-  it("persists and publishes oldest first so same-club/day duplicates remain in human review", async () => {
-    await fixture.seedCandidate("batch001", {
-      createdAt: new Date("2029-12-30Z"),
-      captureReadyAt: fixture.services.now(),
-    });
-    await fixture.seedCandidate("batch002", {
-      createdAt: new Date("2029-12-31Z"),
-      captureReadyAt: fixture.services.now(),
-    });
+  it("persists and publishes oldest first so same-host/day duplicates remain in human review", async () => {
+    await fixture.seedCandidate(
+      "batch001",
+      {
+        createdAt: new Date("2029-12-30Z"),
+        captureReadyAt: fixture.services.now(),
+      },
+      ["batchclub"],
+    );
+    await fixture.seedCandidate(
+      "batch002",
+      {
+        createdAt: new Date("2029-12-31Z"),
+        captureReadyAt: fixture.services.now(),
+      },
+      ["batchclub", "partnerclub"],
+    );
     const response = await fixture.request("/extraction/results", "POST", {
       model: "test-model",
       results: [
         {
           candidate_id: "batch002",
           generation: 1,
-          extraction: extraction("batch002", " Batch Club "),
+          extraction: extraction("batch002"),
         },
         {
           candidate_id: "batch001",
           generation: 1,
-          extraction: extraction("batch001", "batch club"),
+          extraction: extraction("batch001"),
         },
       ],
     });
@@ -50,20 +58,44 @@ describe.skipIf(!testUrl)("candidate publication and recovery PostgreSQL parity"
     });
     expect((await fixture.candidate("batch001")).extractionModel).toBe("test-model");
   });
-  it("serializes concurrent same-club publication and never publishes two matching drafts", async () => {
-    await fixture.seedCandidate("race0001", { captureReadyAt: fixture.services.now() });
-    await fixture.seedCandidate("race0002", { captureReadyAt: fixture.services.now() });
+  it("holds reposts for human review", async () => {
+    await fixture.seedCandidate("repost01", { captureReadyAt: fixture.services.now() }, [
+      "sharingclub",
+    ]);
+    const response = await fixture.request("/extraction/results", "POST", {
+      model: "test-model",
+      results: [
+        { candidate_id: "repost01", generation: 1, extraction: extraction("repost01", true) },
+      ],
+    });
+    expect(await json(response)).toEqual({
+      results: [{ candidate_id: "repost01", status: "completed" }],
+    });
+    const candidate = await fixture.candidate("repost01");
+    expect(candidate.isRepost).toBe(true);
+    expect(candidate.status).toBe("pending");
+  });
+  it("serializes concurrent same-host publication and never publishes two matching drafts", async () => {
+    await fixture.seedCandidate("race0001", { captureReadyAt: fixture.services.now() }, [
+      "raceclub",
+    ]);
+    await fixture.seedCandidate("race0002", { captureReadyAt: fixture.services.now() }, [
+      "raceclub",
+    ]);
     const responses = await Promise.all(
       ["race0001", "race0002"].map((id) =>
         fixture.request("/extraction/results", "POST", {
           model: "test-model",
-          results: [{ candidate_id: id, generation: 1, extraction: extraction(id, "Race Club") }],
+          results: [{ candidate_id: id, generation: 1, extraction: extraction(id) }],
         }),
       ),
     );
     expect(responses.every((response) => response.status === 200)).toBe(true);
     const published = await withDatabase(fixture.env, (db) =>
-      db.select().from(events).where(eq(events.clubName, "Race Club")),
+      db
+        .select({ id: eventHosts.eventId })
+        .from(eventHosts)
+        .where(eq(eventHosts.hostHandle, "raceclub")),
     );
     expect(published.length).toBeLessThanOrEqual(1);
     expect((await fixture.candidate("race0001")).processingCompletedAt).not.toBeNull();
@@ -81,7 +113,7 @@ describe.skipIf(!testUrl)("candidate publication and recovery PostgreSQL parity"
         {
           candidate_id: "retry001",
           generation: 1,
-          extraction: extraction("retry001", "Retry Club"),
+          extraction: extraction("retry001"),
         },
       ],
     });
@@ -115,7 +147,7 @@ describe.skipIf(!testUrl)("candidate publication and recovery PostgreSQL parity"
         {
           candidate_id: "invalid1",
           generation: 1,
-          extraction: { ...extraction("invalid1", "Invalid Club"), location_name: "   " },
+          extraction: { ...extraction("invalid1"), location_name: "   " },
         },
       ],
     });
