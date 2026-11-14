@@ -13,6 +13,7 @@ import { processAutoPublication } from "../../services/candidate-publication";
 import { postgresErrorCode } from "../../services/event-administration";
 import { captureTimedOut } from "../../services/extraction-queue";
 import { SYSTEM_PROMPT, RESPONSE_SCHEMA } from "./contract";
+import { candidateHostHandles } from "../../services/hosts";
 import { settledStatus, uniqueDeliveries, lockedCandidate, extractionFields } from "./candidates";
 
 /** Evidence, result and terminal callbacks from the extraction Worker. */
@@ -85,6 +86,7 @@ export function createDeliveryRoutes(
                   Object.assign(item, {
                     caption: candidate.description,
                     source_account: candidate.sourceAccount,
+                    author_accounts: await candidateHostHandles(tx, candidate.id),
                     source_type: candidate.sourceType,
                     reference_timestamp: (candidate.postedAt ?? candidate.createdAt).toISOString(),
                     images,

@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
 import { withDatabase } from "../src/db";
-import { eventListingCandidateIngestionAudits, candidateExtractionJobs } from "../src/db/schema";
+import { eq } from "drizzle-orm";
+import {
+  eventListingCandidateIngestionAudits,
+  candidateExtractionJobs,
+  hosts,
+} from "../src/db/schema";
 import { localDayBounds, vancouverDay } from "../src/services/candidate-publication";
 import { extractionFixture, extraction, json, testUrl } from "./extraction-fixture";
 const fixture = extractionFixture();
@@ -66,6 +71,37 @@ describe.skipIf(!testUrl)("queue extraction and ingestion PostgreSQL parity", ()
     expect(conflict.status).toBe(409);
     expect(await json(conflict)).toEqual({
       detail: "Candidate image content types conflict with existing capture",
+    });
+  });
+  it("credits a post's owner and collaborators as Hosts and records the source profile", async () => {
+    const body = {
+      source_type: "instagram",
+      external_source_id: "collab-post",
+      source_account: "UBCea",
+      source_account_name: "UBC Esports",
+      source_account_id: "2036532873",
+      author_accounts: ["ubcea", "@SFUesports", "not a handle!"],
+      image_content_types: [],
+    };
+    const created = await fixture.request("/ingestion/event-candidates", "POST", body, "ingest");
+    expect(created.status).toBe(201);
+    const id = ((await json(created)).candidate as { id: string }).id;
+    // The collaborator's own scrape of the same post adds nothing new.
+    const again = await fixture.request(
+      "/ingestion/event-candidates",
+      "POST",
+      { ...body, source_account: "sfuesports", source_account_name: "SFU Esports" },
+      "ingest",
+    );
+    expect(again.status).toBe(200);
+    const detail = await fixture.request(`/admin/candidates/${id}`, "GET", undefined, "admin");
+    expect((await json(detail)).hosts).toEqual([
+      { handle: "ubcea", name: "UBC Esports" },
+      { handle: "sfuesports", name: "SFU Esports" },
+    ]);
+    await withDatabase(fixture.env, async (db) => {
+      const [host] = await db.select().from(hosts).where(eq(hosts.handle, "ubcea"));
+      expect(host).toMatchObject({ profileName: "UBC Esports", instagramUserId: "2036532873" });
     });
   });
   it("returns explicit capture waiting until images exist or the capture times out", async () => {

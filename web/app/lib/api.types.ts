@@ -1,3 +1,25 @@
+/** The account that runs an Event Listing, keyed by its Instagram handle. */
+export interface ApiHost {
+  handle: string;
+  name: string;
+}
+
+export interface ApiHostProfile extends ApiHost {
+  instagram_url: string;
+  upcoming_event_count: number;
+  past_event_count: number;
+}
+
+export interface AdminApiHost extends ApiHostProfile {
+  display_name: string | null;
+  profile_name: string | null;
+  instagram_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type HostEventWindow = "upcoming" | "past";
+
 export interface ApiEvent {
   id: string;
   title: string;
@@ -5,7 +27,8 @@ export interface ApiEvent {
   source: string;
   source_label: string;
   source_url: string | null;
-  club_name: string | null;
+  /** Main host first; empty when the listing names none. */
+  hosts: ApiHost[];
   event_picture_url: string | null;
   vibes: string[];
   location_name: string;
@@ -39,7 +62,8 @@ export interface CreateEventInput {
   source?: string;
   source_label?: string;
   source_url?: string | null;
-  club_name?: string | null;
+  /** Instagram handles, main host first. */
+  hosts?: string[];
   vibes?: string[];
   location_name: string;
   event_date: string;
@@ -52,7 +76,7 @@ export interface UpdateEventInput {
   source?: string;
   source_label?: string;
   source_url?: string | null;
-  club_name?: string | null;
+  hosts?: string[];
   vibes?: string[];
   location_name?: string;
   event_date?: string;

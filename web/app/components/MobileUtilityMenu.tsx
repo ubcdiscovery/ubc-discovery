@@ -45,6 +45,14 @@ export function MobileUtilityMenu() {
           className="absolute right-0 top-full z-50 mt-1 w-48 border-2 border-ink bg-surface shadow-hard"
         >
           <Link
+            to="/hosts"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex min-h-11 items-center border-b border-rule-soft px-3 font-mono text-xs font-bold tracking-wide text-ink uppercase hover:bg-accent-soft"
+          >
+            Browse hosts
+          </Link>
+          <Link
             to="/organizers"
             role="menuitem"
             onClick={() => setOpen(false)}

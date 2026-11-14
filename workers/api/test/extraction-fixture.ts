@@ -10,6 +10,7 @@ import { hashSecret } from "../src/http/auth";
 import { createAdminRoutes } from "../src/routes/admin";
 import { createIngestionRoutes } from "../src/routes/ingestion";
 import { createExtractionRoutes } from "../src/routes/extraction";
+import { setCandidateHosts } from "../src/services/hosts";
 import type { RequestServices } from "../src/services";
 import type { ObjectStorage } from "../src/services/storage";
 import { authTestEnv, realAuth, sessionCookie } from "./auth-fixture";
@@ -78,6 +79,9 @@ export function extractionFixture() {
         "event_listing_candidates",
         "event_listing_candidate_ingestion_audits",
         "candidate_extraction_jobs",
+        "hosts",
+        "event_hosts",
+        "candidate_hosts",
       ]) {
         await db.execute(
           sql`CREATE TABLE ${sql.identifier(schemaName)}.${sql.identifier(table)} (LIKE public.${sql.identifier(table)} INCLUDING ALL)`,
@@ -158,6 +162,7 @@ export function extractionFixture() {
   const seedCandidate = async (
     id: string,
     values: Partial<typeof eventListingCandidates.$inferInsert> = {},
+    hostHandles: string[] = [],
   ) =>
     withDatabase(env, async (db) => {
       const [candidate] = await db
@@ -171,6 +176,7 @@ export function extractionFixture() {
           ...values,
         })
         .returning();
+      await setCandidateHosts(db, id, hostHandles);
       return candidate!;
     });
   const candidate = async (id: string) =>
@@ -200,13 +206,13 @@ export async function json(response: Response): Promise<Record<string, unknown>>
 }
 
 /** A valid extraction result for a seeded candidate. */
-export const extraction = (id: string, club = "Fixture Club") => ({
+export const extraction = (id: string, isRepost = false) => ({
   candidate_id: id,
   is_event: true,
   title: `Event ${id}`,
   event_date: "2030-02-01T20:00:00-08:00",
   event_end_date: null,
   location_name: "Nest",
-  club_name: club,
+  is_repost: isRepost,
   vibes: ["social"],
 });

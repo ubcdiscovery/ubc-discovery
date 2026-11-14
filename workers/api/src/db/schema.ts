@@ -7,3 +7,4 @@ export * from "./schema/auth";
 export * from "./schema/events";
 export * from "./schema/credentials";
 export * from "./schema/candidates";
+export * from "./schema/hosts";

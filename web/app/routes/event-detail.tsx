@@ -11,6 +11,8 @@ import { useAuth } from "~/lib/auth";
 import { useEventRatings } from "~/lib/use-event-ratings";
 import { RatingsSection } from "~/components/EventRatings";
 import { RatingDraftModal } from "~/components/RatingDraftModal";
+import { HostLinks, HostList } from "~/components/EventHosts";
+
 export function meta({ loaderData }: Route.MetaArgs) {
   const event = loaderData as ApiEvent | undefined;
   return [
@@ -82,7 +84,7 @@ export default function EventDetail() {
       {/* Mobile */}
       <div className="pb-24 md:hidden">
         <div className="px-4.5 pt-4.5">
-          <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
+          <SourceBadge sourceLabel={event.source_label} hosts={event.hosts} linked />
           <h1 className="mt-3 mb-1.5 font-display font-extrabold text-4xl text-ink tracking-tight leading-none text-balance">
             {event.title}
           </h1>
@@ -113,11 +115,19 @@ export default function EventDetail() {
               d && endD ? fmtRange(d, endD).toUpperCase() : d ? fmtTime(d).toUpperCase() : "",
             ],
             ["WHERE", event.location_name, "OPEN IN MAPS →"],
-            ["HOST", event.club_name ?? event.source_label.replace(/_/g, " "), ""],
+            [
+              "HOST",
+              event.hosts.length ? (
+                <HostLinks hosts={event.hosts} />
+              ) : (
+                event.source_label.replace(/_/g, " ")
+              ),
+              "",
+            ],
             ["SOURCE", event.source_url ?? "—", event.source_url ? "OPEN ↗" : ""],
           ].map(([k, v, action], i, arr) => (
             <div
-              key={k}
+              key={k as string}
               className={`flex items-center gap-2.5 px-3 py-2.5 font-mono text-xs ${
                 i < arr.length - 1 ? "border-b border-rule-soft" : ""
               }`}
@@ -242,10 +252,16 @@ export default function EventDetail() {
             </span>
           </div>
           <div className="p-6 border-b border-ink">
-            <div className="font-mono text-xs text-muted tracking-wider uppercase">HOST</div>
-            <div className="font-display font-bold text-lg mt-1.5 tracking-tight">
-              {event.club_name ?? event.source_label.replace(/_/g, " ")}
+            <div className="font-mono text-xs text-muted tracking-wider uppercase">
+              {event.hosts.length > 1 ? "HOSTS" : "HOST"}
             </div>
+            {event.hosts.length ? (
+              <HostList hosts={event.hosts} />
+            ) : (
+              <div className="font-display font-bold text-lg mt-1.5 tracking-tight">
+                {event.source_label.replace(/_/g, " ")}
+              </div>
+            )}
           </div>
           <div className="p-6 flex flex-col gap-6">
             {event.source_url && (

@@ -7,6 +7,7 @@ import type { ApiEnv } from "../env";
 import { requireMember } from "../http/auth";
 import { ApiError } from "../http/errors";
 import { presentEvent } from "../presenters/events";
+import { hostsForEvents } from "../services/hosts";
 import { memberPagination } from "../schemas/member";
 import { createServices, type ServicesFactory } from "../services";
 
@@ -35,10 +36,14 @@ export function createSavedEventRoutes(
             .orderBy(desc(savedEvents.savedAt))
             .offset(query.skip ?? 0)
             .limit(query.limit ?? 20);
+          const eventHosts = await hostsForEvents(
+            db,
+            rows.map((row) => row.event.id),
+          );
           return {
             saved_events: rows.map((row) => ({
               saved_at: row.savedAt.toISOString(),
-              event: presentEvent(row.event, services.storage),
+              event: presentEvent(row.event, eventHosts.get(row.event.id) ?? [], services.storage),
             })),
             total: total!.count,
           };

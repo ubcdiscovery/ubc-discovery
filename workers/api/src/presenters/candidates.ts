@@ -5,7 +5,8 @@ import {
 } from "../db/schema";
 import type { Database } from "../services/event-administration";
 import type { ObjectStorage } from "../services/storage";
-import { sameClubSameDay } from "../services/candidate-publication";
+import { sameHostSameDay } from "../services/candidate-publication";
+import { hostsForCandidates, type HostSummary } from "../services/hosts";
 export function presentCandidate(candidate: EventListingCandidate) {
   return {
     id: candidate.id,
@@ -21,6 +22,7 @@ export function presentCandidate(candidate: EventListingCandidate) {
 }
 export async function presentAdminCandidate(
   candidate: EventListingCandidate,
+  hosts: HostSummary[],
   storage: ObjectStorage,
 ) {
   return {
@@ -34,7 +36,8 @@ export async function presentAdminCandidate(
     location_name: candidate.locationName,
     event_date: candidate.eventDate?.toISOString() ?? null,
     event_end_date: candidate.eventEndDate?.toISOString() ?? null,
-    club_name: candidate.clubName,
+    hosts,
+    is_repost: candidate.isRepost,
     vibes: candidate.vibes ?? [],
     source_label: candidate.sourceLabel,
     extracted_original: candidate.extractedOriginal,
@@ -56,7 +59,8 @@ export async function presentCandidateDetail(
     .from(audits)
     .where(eq(audits.candidateId, candidate.id))
     .orderBy(desc(audits.receivedAt));
-  const matches = await sameClubSameDay(candidate, db);
+  const matches = await sameHostSameDay(candidate, db);
+  const hosts = (await hostsForCandidates(db, [candidate.id])).get(candidate.id) ?? [];
   const all = [
     ...matches.candidates
       .filter((item) => item.eventDate)
@@ -80,7 +84,7 @@ export async function presentCandidateDetail(
       left.title.localeCompare(right.title),
   );
   return {
-    ...(await presentAdminCandidate(candidate, storage)),
+    ...(await presentAdminCandidate(candidate, hosts, storage)),
     ingestion_audits: entries.map((item) => ({
       id: item.id,
       source_type: item.sourceType,
@@ -91,6 +95,6 @@ export async function presentCandidateDetail(
       credential_label: item.credentialLabel,
       received_at: item.receivedAt.toISOString(),
     })),
-    same_club_same_day_matches: all,
+    same_host_same_day_matches: all,
   };
 }

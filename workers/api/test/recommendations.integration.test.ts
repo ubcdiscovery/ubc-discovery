@@ -61,7 +61,7 @@ describe.skipIf(!testUrl)("recommendation API against PostgreSQL", () => {
   beforeAll(async () => {
     await withDatabase({ DATABASE_URL: testUrl } as ApiEnv, async (db) => {
       await db.execute(sql`CREATE SCHEMA ${sql.identifier(schemaName)}`);
-      for (const table of ["users", "sessions", "events", "saved_events"])
+      for (const table of ["users", "sessions", "events", "saved_events", "hosts", "event_hosts"])
         await db.execute(
           sql`CREATE TABLE ${sql.identifier(schemaName)}.${sql.identifier(table)} (LIKE public.${sql.identifier(table)} INCLUDING ALL)`,
         );

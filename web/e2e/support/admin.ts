@@ -4,7 +4,7 @@ export type AdminMockEvent = {
   id: string;
   title: string;
   description: string;
-  club_name: string | null;
+  hosts: { handle: string; name: string }[];
   location_name: string;
   [key: string]: unknown;
 };
@@ -49,7 +49,12 @@ export function createAdminApiMock(options: {
       const normalized = query.toLowerCase();
       const matches = normalized
         ? events.filter((event) =>
-            [event.title, event.description, event.club_name, event.location_name]
+            [
+              event.title,
+              event.description,
+              ...event.hosts.map((host) => host.name),
+              event.location_name,
+            ]
               .filter(Boolean)
               .some((value) => String(value).toLowerCase().includes(normalized)),
           )

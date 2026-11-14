@@ -1,5 +1,5 @@
 export type AppNavigationItem = {
-  id: "discover" | "saved" | "organizers" | "profile" | "sign-in";
+  id: "discover" | "hosts" | "saved" | "organizers" | "profile" | "sign-in";
   label: string;
   to: string;
   end?: boolean;
@@ -11,8 +11,11 @@ export const ORGANIZER_NAVIGATION: AppNavigationItem = {
   to: "/organizers",
 };
 
+export const HOSTS_NAVIGATION: AppNavigationItem = { id: "hosts", label: "Hosts", to: "/hosts" };
+
 export const PRIMARY_NAVIGATION: AppNavigationItem[] = [
   { id: "discover", label: "Discover", to: "/", end: true },
+  HOSTS_NAVIGATION,
   { id: "saved", label: "Saved", to: "/saved" },
 ];
 

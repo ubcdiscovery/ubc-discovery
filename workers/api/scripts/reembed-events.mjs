@@ -14,6 +14,7 @@ import {
   embeddingRequest,
   embeddingsFromResult,
   generateEventText,
+  EVENT_HOST_NAMES_SQL,
 } from "../src/services/embeddings.ts";
 import { runCommand, wranglerBearerToken } from "./storage-common.mjs";
 
@@ -22,7 +23,7 @@ const BATCH_SIZE = 32;
 // Rows that need a vector from the current model; --all also redoes current ones.
 function pendingQuery(all, afterId) {
   return {
-    text: `SELECT id, title, description, club_name, location_name FROM events
+    text: `SELECT id, title, description, ${EVENT_HOST_NAMES_SQL} AS host_names, location_name FROM events
       WHERE id > $1 ${all ? "" : "AND embedding_model IS DISTINCT FROM $2"}
       ORDER BY id LIMIT ${BATCH_SIZE}`,
     values: all ? [afterId] : [afterId, EMBEDDING_MODEL_ID],
@@ -79,14 +80,14 @@ export async function reembedEvents(options, { db, fetcher = fetch, getToken, lo
         const result = await db.query(
           `UPDATE events SET embedding_vector = $2::vector, embedding_model = $3
            WHERE id = $1 AND title = $4 AND description = $5
-             AND club_name IS NOT DISTINCT FROM $6 AND location_name = $7`,
+             AND ${EVENT_HOST_NAMES_SQL} = $6::text[] AND location_name = $7`,
           [
             row.id,
             JSON.stringify(vectors[index]),
             EMBEDDING_MODEL_ID,
             row.title,
             row.description,
-            row.club_name,
+            row.host_names,
             row.location_name,
           ],
         );

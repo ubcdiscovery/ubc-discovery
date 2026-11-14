@@ -1,11 +1,12 @@
-import { and, desc, eq, getTableColumns, gte, ilike, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, exists, getTableColumns, gte, ilike, lt, or, sql } from "drizzle-orm";
 import { Elysia, t } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 import { withDatabase } from "../db";
 import { eventRatings, events } from "../db/schema";
 import type { ApiEnv } from "../env";
 import { ApiError } from "../http/errors";
-import { presentEvent, presentPastEvent } from "../presenters/events";
+import { presentEvent, presentEvents, presentPastEvent, withHosts } from "../presenters/events";
+import { hostMatch, hostsForEvents } from "../services/hosts";
 import { createServices, type ServicesFactory } from "../services";
 
 const {
@@ -47,7 +48,7 @@ export function createEventRoutes(
             .orderBy(desc(events.eventDate), desc(events.createdAt))
             .offset(query.skip ?? 0)
             .limit(pageLimit(query.limit, 20));
-          return { events: rows.map((event) => presentEvent(event, services.storage)) };
+          return { events: await presentEvents(db, rows, services.storage) };
         });
       },
       { query: pagination, detail: { tags: ["Events"] } },
@@ -71,8 +72,8 @@ export function createEventRoutes(
             .offset(query.skip ?? 0)
             .limit(pageLimit(query.limit, 20));
           return {
-            events: rows.map((event) =>
-              presentPastEvent(event, event.average, event.count, services.storage),
+            events: (await withHosts(db, rows)).map(([event, eventHosts]) =>
+              presentPastEvent(event, eventHosts, event.average, event.count, services.storage),
             ),
           };
         });
@@ -98,13 +99,13 @@ export function createEventRoutes(
                   ilike(events.title, pattern),
                   ilike(events.description, pattern),
                   ilike(events.locationName, pattern),
-                  ilike(events.clubName, pattern),
+                  exists(hostMatch(pattern)),
                 ),
               ),
             )
             .orderBy(events.eventDate)
             .limit(pageLimit(query.limit, 10));
-          return { events: rows.map((event) => presentEvent(event, services.storage)) };
+          return { events: await presentEvents(db, rows, services.storage) };
         });
       },
       {
@@ -129,7 +130,8 @@ export function createEventRoutes(
             .where(and(eq(events.id, params.event_id), eq(events.isArchived, false)))
             .limit(1);
           if (!event) throw new ApiError(404, "Event not found");
-          return presentEvent(event, services.storage);
+          const eventHostMap = await hostsForEvents(db, [event.id]);
+          return presentEvent(event, eventHostMap.get(event.id) ?? [], services.storage);
         });
       },
       { detail: { tags: ["Events"] } },

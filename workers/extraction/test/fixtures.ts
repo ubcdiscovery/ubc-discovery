@@ -32,6 +32,7 @@ export function item(
     state,
     caption: "Club event",
     source_account: "club",
+    author_accounts: ["club", "partner"],
     source_type: "instagram",
     reference_timestamp: "2026-10-11T12:00:00Z",
     created_at: "2026-10-11T12:00:00Z",
@@ -39,15 +40,27 @@ export function item(
   };
 }
 
-export function evidence(items: EvidenceItem[]): EvidenceBatch {
+const FIELDS = {
+  candidate_id: { type: "string" },
+  is_event: { type: "boolean" },
+  title: { type: ["string", "null"] },
+  event_date: { type: ["string", "null"] },
+  event_end_date: { type: ["string", "null"] },
+  location_name: { type: ["string", "null"] },
+  is_repost: { type: "boolean" },
+  vibes: { type: "array", items: { type: "string", enum: ["social", "academic"] } },
+};
+
+/** Evidence with the API's response schema; `legacy` is the one before Hosts. */
+export function evidence(items: EvidenceItem[], legacy = false): EvidenceBatch {
+  const { is_repost: _repost, ...before } = FIELDS;
+  const properties = legacy ? { ...before, club_name: { type: ["string", "null"] } } : FIELDS;
   return {
     system_prompt: "fixture prompt",
     schema: {
       type: "object",
       properties: {
-        extractions: {
-          items: { properties: { vibes: { items: { enum: ["social", "academic"] } } } },
-        },
+        extractions: { items: { properties, required: Object.keys(properties) } },
       },
     },
     items,
@@ -62,7 +75,7 @@ export function extraction(id: string): Extraction {
     event_date: "2026-10-15T19:00:00-07:00",
     event_end_date: null,
     location_name: "UBC",
-    club_name: "Club",
+    is_repost: false,
     vibes: ["social"],
   };
 }

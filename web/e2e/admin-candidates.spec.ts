@@ -148,7 +148,7 @@ test("administrator rejects then returns a Candidate to review", async ({ page }
 test("administrator can follow Candidate hold links and keeps a failed draft", async ({ page }) => {
   const heldCandidate = {
     ...mockExtractedCandidate,
-    same_club_same_day_matches: [
+    same_host_same_day_matches: [
       {
         kind: "event" as const,
         id: "event-held",

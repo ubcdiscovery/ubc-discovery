@@ -18,6 +18,8 @@ export const vibeSchema = t.Union(VIBES.map((v) => t.Literal(v)));
 export const sourceLabelSchema = t.Union(LABELS.map((v) => t.Literal(v)));
 export const dateSchema = t.Union([t.String(), t.Number()]);
 export const nullableDate = t.Nullable(dateSchema);
+/** Instagram handles of an Event Listing's Hosts, first one the main host. */
+export const hostHandlesSchema = t.Array(t.String({ maxLength: 100 }), { maxItems: 10 });
 export const createEventSchema = t.Object(
   {
     title: t.String(),
@@ -25,7 +27,7 @@ export const createEventSchema = t.Object(
     source: t.Optional(t.String({ minLength: 1, maxLength: 50, default: "manual" })),
     source_label: t.Optional(sourceLabelSchema),
     source_url: t.Optional(t.Nullable(t.String())),
-    club_name: t.Optional(t.Nullable(t.String())),
+    hosts: t.Optional(hostHandlesSchema),
     vibes: t.Optional(t.Array(vibeSchema)),
     location_name: t.String({ minLength: 1 }),
     event_date: dateSchema,
@@ -40,7 +42,7 @@ export const updateEventSchema = t.Object(
     source: t.Optional(t.String({ minLength: 1, maxLength: 50 })),
     source_label: t.Optional(sourceLabelSchema),
     source_url: t.Optional(t.Nullable(t.String())),
-    club_name: t.Optional(t.Nullable(t.String())),
+    hosts: t.Optional(hostHandlesSchema),
     vibes: t.Optional(t.Array(vibeSchema)),
     location_name: t.Optional(t.String({ minLength: 1 })),
     event_date: t.Optional(nullableDate),
@@ -121,7 +123,6 @@ export function eventValues(body: EventInput) {
     source: body.source ?? "manual",
     sourceLabel: (body.source_label ?? "campus_community") as SourceLabel,
     sourceUrl: body.source_url ?? null,
-    clubName: body.club_name ?? null,
     vibes: (body.vibes ?? []) as EventVibe[],
     locationName: location,
     eventDate,
@@ -135,7 +136,6 @@ export function eventChanges(body: EventUpdate): Partial<Event> {
   if (body.source !== undefined) changes.source = body.source;
   if (body.source_label !== undefined) changes.sourceLabel = body.source_label;
   if (body.source_url !== undefined) changes.sourceUrl = body.source_url;
-  if (body.club_name !== undefined) changes.clubName = body.club_name;
   if (body.vibes !== undefined) changes.vibes = body.vibes;
   if (body.location_name !== undefined) {
     const value = body.location_name.trim();

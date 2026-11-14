@@ -43,7 +43,7 @@ export const mockEvent = {
   source: "ubc",
   source_label: "ubc_official",
   source_url: null,
-  club_name: null,
+  hosts: [],
   event_picture_url: null,
   vibes: ["social"],
   location_name: "Main Mall",

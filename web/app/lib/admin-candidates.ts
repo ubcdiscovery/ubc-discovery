@@ -1,4 +1,4 @@
-import { authenticatedApiFetch } from "~/lib/api";
+import { authenticatedApiFetch, type ApiHost } from "~/lib/api";
 
 export type CandidateStatus = "pending" | "approved" | "rejected";
 
@@ -19,7 +19,9 @@ export interface ApiCandidate {
   location_name?: string | null;
   event_date?: string | null;
   event_end_date?: string | null;
-  club_name?: string | null;
+  hosts: ApiHost[];
+  /** Extraction judged it a promotion for someone else's event. */
+  is_repost: boolean;
   vibes?: string[];
   source_label?: string | null;
   extracted_original?: Record<string, unknown> | unknown[] | null;
@@ -40,7 +42,7 @@ interface ApiCandidateAudit {
 
 export interface ApiCandidateDetail extends ApiCandidate {
   ingestion_audits: ApiCandidateAudit[];
-  same_club_same_day_matches: Array<{
+  same_host_same_day_matches: Array<{
     kind: "candidate" | "event";
     id: string;
     title: string;
@@ -54,7 +56,8 @@ export type CorrectCandidateInput = {
   location_name?: string | null;
   event_date?: string | null;
   event_end_date?: string | null;
-  club_name?: string | null;
+  hosts?: string[];
+  is_repost?: boolean;
   vibes?: string[] | null;
   source_label?: string | null;
 };

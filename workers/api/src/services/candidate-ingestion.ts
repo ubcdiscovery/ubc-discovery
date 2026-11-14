@@ -11,6 +11,7 @@ import { parseDate } from "../schemas/events";
 import { ApiError } from "../http/errors";
 import type { IngestionCredential } from "../http/auth";
 import { allocateEventId, postgresErrorCode } from "./event-administration";
+import { addCandidateHosts, normalizeHandle, normalizeHandles, updateHostProfile } from "./hosts";
 import type { RequestServices } from "./index";
 import { presentCandidate } from "../presenters/candidates";
 import type { ApiEnv } from "../env";
@@ -75,6 +76,7 @@ export async function ingestCandidate(
     if (candidate && outcome) break;
   }
   if (!candidate || !outcome) throw new ApiError(409, "Could not allocate a unique Candidate id");
+  await attachIngestedHosts(tx, candidate.id, body);
   if (outcome === "existing") {
     const actual = (candidate.imageKeys ?? [])
       .map((key) => key.slice(key.lastIndexOf("/") + 1).toLowerCase())
@@ -121,4 +123,25 @@ export async function ingestCandidate(
     })
     .returning();
   return { outcome, receipt_id: audit!.id, candidate: presentCandidate(candidate!), uploads };
+}
+
+/**
+ * Instagram captures are hosted by the accounts credited on the post (owner first, then
+ * collaborators), or by the account they were scraped from when the post names none.
+ */
+async function attachIngestedHosts(
+  tx: DbTransaction,
+  candidateId: string,
+  body: CandidateIngestionInput,
+) {
+  if (body.source_type.trim() !== "instagram") return;
+  const source = normalizeHandle(body.source_account);
+  const handles = normalizeHandles(body.author_accounts?.length ? body.author_accounts : []);
+  if (source && !handles.includes(source)) handles.push(source);
+  await addCandidateHosts(tx, candidateId, handles);
+  if (source)
+    await updateHostProfile(tx, source, {
+      name: body.source_account_name,
+      instagramUserId: body.source_account_id,
+    });
 }

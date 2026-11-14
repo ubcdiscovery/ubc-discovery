@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { api, type ApiEvent } from "~/lib/api";
 import { fmtMonth, fmtDate02 } from "~/lib/date";
+import { hostCredit } from "~/lib/hosts";
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -234,12 +235,12 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                         {event.title}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        {event.club_name && (
+                        {event.hosts.length > 0 && (
                           <span className="font-mono text-xs text-muted tracking-wide truncate">
-                            {event.club_name}
+                            {hostCredit(event.hosts)}
                           </span>
                         )}
-                        {event.club_name && <span className="text-rule-soft">·</span>}
+                        {event.hosts.length > 0 && <span className="text-rule-soft">·</span>}
                         <span className="font-mono text-xs text-muted tracking-wide truncate">
                           {event.location_name}
                         </span>

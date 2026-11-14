@@ -40,6 +40,7 @@ export const events = pgTable(
       .notNull()
       .$defaultFn(() => "campus_community"),
     sourceUrl: varchar("source_url", { length: 1024 }),
+    /** Superseded by event_hosts; dropped by the next migration. */
     clubName: varchar("club_name", { length: 255 }),
     vibes: json("vibes")
       .$type<EventVibe[]>()

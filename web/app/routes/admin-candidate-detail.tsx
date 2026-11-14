@@ -63,7 +63,7 @@ export default function AdminCandidateDetail() {
   }
 
   const candidate = candidateQuery.data;
-  const matches = candidate.same_club_same_day_matches ?? [];
+  const matches = candidate.same_host_same_day_matches ?? [];
   const canEdit = candidate.status === "pending";
   async function mutate(action: "approve" | "reject" | "return") {
     setError(null);

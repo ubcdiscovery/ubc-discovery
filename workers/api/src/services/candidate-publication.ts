@@ -1,5 +1,7 @@
-import { and, eq, gte, lt, ne, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lt, ne, sql } from "drizzle-orm";
 import {
+  candidateHosts,
+  eventHosts,
   events,
   eventListingCandidates as candidates,
   type EventListingCandidate,
@@ -9,6 +11,7 @@ import type { AuditActor } from "../http/auth";
 import { eventImageKey } from "../presenters/events";
 import { createCanonicalEvent, type Database } from "./event-administration";
 import type { RequestServices } from "./index";
+import { candidateHostHandles } from "./hosts";
 
 const localFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "America/Vancouver",
@@ -55,9 +58,10 @@ export function isComplete(candidate: EventListingCandidate): boolean {
     !!candidate.locationName?.trim()
   );
 }
-export async function sameClubSameDay(candidate: EventListingCandidate, db: Database) {
-  const club = candidate.clubName?.trim().toLowerCase();
-  if (!club || !candidate.eventDate) return { candidates: [], events: [] };
+/** Pending Candidates and live Event Listings sharing a Host with the Candidate on its day. */
+export async function sameHostSameDay(candidate: EventListingCandidate, db: Database) {
+  const handles = await candidateHostHandles(db, candidate.id);
+  if (!handles.length || !candidate.eventDate) return { candidates: [], events: [] };
   const [start, end] = localDayBounds(candidate.eventDate);
   const candidateMatches = await db
     .select()
@@ -66,7 +70,13 @@ export async function sameClubSameDay(candidate: EventListingCandidate, db: Data
       and(
         eq(candidates.status, "pending"),
         ne(candidates.id, candidate.id),
-        sql`lower(trim(${candidates.clubName})) = ${club}`,
+        inArray(
+          candidates.id,
+          db
+            .select({ id: candidateHosts.candidateId })
+            .from(candidateHosts)
+            .where(inArray(candidateHosts.hostHandle, handles)),
+        ),
         gte(candidates.eventDate, start),
         lt(candidates.eventDate, end),
       ),
@@ -79,7 +89,13 @@ export async function sameClubSameDay(candidate: EventListingCandidate, db: Data
       and(
         eq(events.isArchived, false),
         ne(events.id, candidate.id),
-        sql`lower(trim(${events.clubName})) = ${club}`,
+        inArray(
+          events.id,
+          db
+            .select({ id: eventHosts.eventId })
+            .from(eventHosts)
+            .where(inArray(eventHosts.hostHandle, handles)),
+        ),
         gte(events.eventDate, start),
         lt(events.eventDate, end),
       ),
@@ -95,11 +111,12 @@ export async function previewAutoPublication(
   if (
     candidate.status !== "pending" ||
     !isComplete(candidate) ||
+    candidate.isRepost ||
     candidate.sourceLabel !== "ams_club" ||
     candidate.eventDate! < now
   )
     return "pending";
-  const matches = await sameClubSameDay(candidate, db);
+  const matches = await sameHostSameDay(candidate, db);
   if (matches.candidates.length || matches.events.length) return "pending";
   const [event] = await db
     .select({ id: events.id })
@@ -130,7 +147,7 @@ export async function publishCandidate(
       source: candidate.sourceType,
       source_label: candidate.sourceLabel,
       source_url: candidate.sourceUrl,
-      club_name: candidate.clubName,
+      hosts: await candidateHostHandles(db, candidate.id),
       vibes: candidate.vibes ?? [],
       location_name: candidate.locationName,
       event_date: candidate.eventDate.toISOString(),
@@ -159,14 +176,15 @@ export async function processAutoPublication(
     !locked ||
     locked.status !== "pending" ||
     !isComplete(locked) ||
+    locked.isRepost ||
     locked.sourceLabel !== "ams_club" ||
     locked.eventDate! < services.now()
   )
     return "pending";
-  const club = locked.clubName?.trim().toLowerCase();
-  if (club)
+  // Sorted so Candidates sharing several Hosts take the locks in the same order.
+  for (const handle of (await candidateHostHandles(db, locked.id)).sort())
     await db.execute(
-      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`candidate-auto-publication:${club}:${vancouverDay(locked.eventDate!)}`}, 0))`,
+      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`candidate-auto-publication:${handle}:${vancouverDay(locked.eventDate!)}`}, 0))`,
     );
   if ((await previewAutoPublication(db, locked, services.now())) !== "published") return "pending";
   await publishCandidate(

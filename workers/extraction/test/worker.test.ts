@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import worker, { consume } from "../src/index";
+import worker, { consume, type Extraction } from "../src/index";
 import {
   first,
   second,
@@ -226,6 +226,41 @@ describe("queue consumption", () => {
     ]);
     expect(a.ack).toHaveBeenCalledOnce();
     expect(b.retry).toHaveBeenCalledOnce();
+  });
+
+  it("validates against whichever field list the API sends", async () => {
+    const env = environment(),
+      http = httpMock();
+    const { is_repost: _repost, ...before } = extraction(first);
+    const legacy = { ...before, club_name: "Club" };
+    const wrongType = { ...extraction(second), is_repost: "no" } as unknown as Extraction;
+    const a = message(first),
+      b = message(second);
+    aiRun(env)
+      .mockResolvedValueOnce(ai([legacy]))
+      .mockResolvedValueOnce(ai([wrongType]))
+      .mockResolvedValueOnce(ai([wrongType]));
+    http
+      .mockResolvedValueOnce(json(evidence([item(first)], true)))
+      .mockResolvedValueOnce(json({ results: [{ candidate_id: first, status: "completed" }] }))
+      .mockResolvedValueOnce(json(evidence([item(second)])));
+    await consume(batch([a]), env, http);
+    expect(a.ack).toHaveBeenCalledOnce();
+    await consume(batch([b]), env, http);
+    expect(b.retry).toHaveBeenCalledOnce();
+  });
+
+  it("shows the model the accounts credited on the post", async () => {
+    const env = environment(),
+      http = httpMock();
+    aiRun(env).mockResolvedValueOnce(ai([extraction(first)]));
+    http
+      .mockResolvedValueOnce(json(evidence([item(first)])))
+      .mockResolvedValueOnce(json({ results: [{ candidate_id: first, status: "completed" }] }));
+    await consume(batch([message(first)]), env, http);
+    expect(parts(aiRun(env).mock.calls[0], "text")[0]!.text).toContain(
+      "author_accounts: @club, @partner",
+    );
   });
 
   it("retries a lost save response, then resumes without extracting twice", async () => {

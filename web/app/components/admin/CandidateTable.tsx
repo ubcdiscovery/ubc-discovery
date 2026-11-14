@@ -66,6 +66,15 @@ export function CandidateTable({ candidates, onDecision }: CandidateTableProps) 
                 <span className="font-display text-xl font-extrabold tracking-tight">
                   {candidate.source_account}
                 </span>
+                {candidate.hosts.length > 1 && (
+                  <span className="mt-0.5 block font-mono text-2xs uppercase tracking-wide text-muted">
+                    with{" "}
+                    {candidate.hosts
+                      .filter((host) => host.handle !== candidate.source_account)
+                      .map((host) => `@${host.handle}`)
+                      .join(", ")}
+                  </span>
+                )}
                 <span className="mt-1 line-clamp-2 wrap-break-word text-sm text-ink-soft">
                   {candidate.description?.trim() || "No caption supplied."}
                 </span>
@@ -76,6 +85,11 @@ export function CandidateTable({ candidates, onDecision }: CandidateTableProps) 
             </TableCell>
             <TableCell className="font-mono text-xs font-bold uppercase tracking-wide text-ink-soft">
               {extractionLabel(candidate)}
+              {candidate.is_repost && (
+                <span className="mt-1 block w-fit border border-danger px-1.5 text-danger">
+                  Repost
+                </span>
+              )}
             </TableCell>
             <TableCell className="font-mono text-xs text-ink-soft">
               {candidate.source_type}

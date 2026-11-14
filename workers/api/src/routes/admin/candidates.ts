@@ -15,6 +15,7 @@ import { checkEndDate, parseDate } from "../../schemas/events";
 import type { ServicesFactory } from "../../services";
 import { publishCandidate } from "../../services/candidate-publication";
 import { postgresErrorCode } from "../../services/event-administration";
+import { hostsForCandidates, normalizeHandles, setCandidateHosts } from "../../services/hosts";
 import { adminTransaction } from "./common";
 export function createAdminCandidateRoutes(env: ApiEnv, servicesFactory: ServicesFactory) {
   const routes = new Elysia({
@@ -53,9 +54,15 @@ export function createAdminCandidateRoutes(env: ApiEnv, servicesFactory: Service
             .select({ value: sql<number>`count(*)`.mapWith(Number) })
             .from(candidates)
             .where(and(...conditions));
+          const hosts = await hostsForCandidates(
+            tx,
+            rows.map((item) => item.id),
+          );
           return {
             candidates: await Promise.all(
-              rows.map((item) => presentAdminCandidate(item, services.storage)),
+              rows.map((item) =>
+                presentAdminCandidate(item, hosts.get(item.id) ?? [], services.storage),
+              ),
             ),
             total: total!.value,
           };
@@ -106,6 +113,8 @@ export function createAdminCandidateRoutes(env: ApiEnv, servicesFactory: Service
             changes.eventEndDate === undefined ? candidate.eventEndDate : changes.eventEndDate,
             "event_end_date must be on or after event_date",
           );
+          if (body.hosts !== undefined)
+            await setCandidateHosts(tx, candidate.id, normalizeHandles(body.hosts, true));
           const [saved] = Object.keys(changes).length
             ? await tx
                 .update(candidates)
@@ -199,10 +208,10 @@ function candidateChanges(body: CandidateCorrection) {
     vibes?: EventVibe[] | SQL;
   } = {};
   if (body.is_event !== undefined) changes.isEvent = body.is_event;
+  if (body.is_repost !== undefined) changes.isRepost = body.is_repost;
   for (const [source, destination] of [
     ["title", "title"],
     ["location_name", "locationName"],
-    ["club_name", "clubName"],
   ] as const) {
     if (body[source] !== undefined) changes[destination] = body[source]?.trim() || null;
   }

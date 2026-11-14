@@ -5,6 +5,7 @@ import { fmtDate02, fmtMonth, fmtTime } from "~/lib/date";
 import { SaveEventButton } from "./SaveEventButton";
 import { SourceBadge } from "./SourceBadge";
 import { VibeTag } from "./VibeTag";
+import { hostCredit } from "~/lib/hosts";
 
 function EventDate({ event }: { event: ApiEvent }) {
   if (!event.event_date) return <span>Date TBA</span>;
@@ -62,7 +63,7 @@ function Poster({
           }}
         >
           <span className="absolute top-[9%] left-[9%] font-mono text-xs font-bold tracking-widest uppercase opacity-80">
-            {event.club_name ?? "UBC Discovery"}
+            {hostCredit(event.hosts) ?? "UBC Discovery"}
           </span>
           <strong
             className={`font-display leading-none tracking-tight text-center ${
@@ -88,7 +89,7 @@ function CardDetails({ event }: { event: ApiEvent | ApiPastEvent }) {
   const pastEvent = "average_rating" in event ? (event as ApiPastEvent) : null;
   return (
     <div className="min-w-0">
-      <SourceBadge sourceLabel={event.source_label} host={event.club_name} />
+      <SourceBadge sourceLabel={event.source_label} hosts={event.hosts} />
       <h2 className="mt-2 max-w-[25ch] font-display text-2xl font-extrabold leading-none tracking-tight text-balance lg:text-3xl">
         {event.title}
       </h2>

@@ -1,5 +1,9 @@
 import type {
   ApiEvent,
+  ApiHost,
+  ApiHostProfile,
+  AdminApiHost,
+  HostEventWindow,
   AdminApiEvent,
   ApiPastEvent,
   EventListResponse,
@@ -16,6 +20,10 @@ import type {
 
 export type {
   ApiEvent,
+  ApiHost,
+  ApiHostProfile,
+  AdminApiHost,
+  HostEventWindow,
   AdminApiEvent,
   ApiPastEvent,
   EventListResponse,
@@ -90,6 +98,17 @@ export const api = {
     search: (q: string, limit = 10) =>
       apiFetch<EventListResponse>(`/events/search?q=${encodeURIComponent(q)}&limit=${limit}`),
   },
+  hosts: {
+    list: (q = "", skip = 0, limit = 50) =>
+      apiFetch<{ hosts: ApiHostProfile[]; total: number }>(
+        `/hosts?q=${encodeURIComponent(q)}&skip=${skip}&limit=${limit}`,
+      ),
+    get: (handle: string) => apiFetch<ApiHostProfile>(`/hosts/${encodeURIComponent(handle)}`),
+    events: (handle: string, when: HostEventWindow, skip = 0, limit = 50) =>
+      apiFetch<{ events: ApiEvent[]; total: number }>(
+        `/hosts/${encodeURIComponent(handle)}/events?when=${when}&skip=${skip}&limit=${limit}`,
+      ),
+  },
   users: {
     me: () => authenticatedApiFetch<UserResponse>("/users/me"),
     onboarding: (data: {
@@ -121,6 +140,17 @@ export const api = {
       ),
   },
   admin: {
+    hosts: {
+      list: (q = "", skip = 0, limit = 25) =>
+        authenticatedApiFetch<{ hosts: AdminApiHost[]; total: number }>(
+          `/admin/hosts?q=${encodeURIComponent(q)}&skip=${skip}&limit=${limit}`,
+        ),
+      update: (handle: string, data: { display_name: string | null }) =>
+        authenticatedApiFetch<AdminApiHost>(`/admin/hosts/${encodeURIComponent(handle)}`, {
+          method: "PUT",
+          body: JSON.stringify(data),
+        }),
+    },
     events: {
       list: (q = "", skip = 0, limit = 25, status: AdminEventStatus = "all") =>
         authenticatedApiFetch<{ events: AdminApiEvent[]; total: number }>(

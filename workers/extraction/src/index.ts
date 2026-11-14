@@ -14,6 +14,18 @@ export type { Env, ExtractionMessage, Extraction, EvidenceItem, EvidenceBatch } 
 
 const MAX_OUTPUT_TOKENS = 4096;
 
+export function evidenceText(item: EvidenceItem): string {
+  const lines = [`candidate_id: ${item.candidate_id}`, `source_account: @${item.source_account}`];
+  if (item.author_accounts?.length)
+    lines.push(`author_accounts: ${item.author_accounts.map((handle) => `@${handle}`).join(", ")}`);
+  lines.push(
+    `source_type: ${item.source_type}`,
+    `reference_timestamp: ${item.reference_timestamp}`,
+    `caption:\n${item.caption}`,
+  );
+  return lines.join("\n");
+}
+
 export async function extract(
   env: Env,
   evidence: EvidenceBatch,
@@ -24,7 +36,7 @@ export async function extract(
   for (const item of items) {
     content.push({
       type: "text",
-      text: `candidate_id: ${item.candidate_id}\nsource_account: @${item.source_account}\nsource_type: ${item.source_type}\nreference_timestamp: ${item.reference_timestamp}\ncaption:\n${item.caption}`,
+      text: evidenceText(item),
     });
     for (const image of item.images)
       content.push({ type: "image_url", image_url: { url: await inlineImage(image.url, http) } });

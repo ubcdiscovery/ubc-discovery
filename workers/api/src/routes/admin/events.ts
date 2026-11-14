@@ -1,24 +1,20 @@
 import { Elysia, t } from "elysia";
 import { presentUpload } from "../../presenters/storage";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, exists, ilike, or, sql } from "drizzle-orm";
 import { events, eventAuditLogs as audits } from "../../db/schema";
 import { integerSetting, type ApiEnv } from "../../env";
 import { ApiError } from "../../http/errors";
-import { presentAdminEvent, eventImageKey } from "../../presenters/events";
-import {
-  createEventSchema,
-  updateEventSchema,
-  checkEndDate,
-  eventChanges,
-} from "../../schemas/events";
+import { presentAdminEvent, eventImageKey, withHosts } from "../../presenters/events";
+import { hostMatch, hostsForEvent } from "../../services/hosts";
+import { createEventSchema, updateEventSchema } from "../../schemas/events";
 import { uploadFileSize } from "../../schemas/upload-size";
 import type { ServicesFactory } from "../../services";
 import {
   createCanonicalEvent,
   addEventAudit,
   eventSnapshot,
-  embeddingFor,
+  updateCanonicalEvent,
 } from "../../services/event-administration";
 import { adminTransaction } from "./common";
 export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFactory) {
@@ -40,7 +36,7 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
                 ilike(events.title, pattern),
                 ilike(events.description, pattern),
                 ilike(events.locationName, pattern),
-                ilike(events.clubName, pattern),
+                exists(hostMatch(pattern)),
               ),
             );
           }
@@ -58,7 +54,9 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
             .from(events)
             .where(and(...conditions));
           return {
-            events: rows.map((event) => presentAdminEvent(event, services.storage)),
+            events: (await withHosts(tx, rows)).map(([event, hosts]) =>
+              presentAdminEvent(event, hosts, services.storage),
+            ),
             total: total!.value,
           };
         }),
@@ -112,7 +110,7 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
         adminTransaction(env, request, servicesFactory, async (tx, _actor, services) => {
           const [event] = await tx.select().from(events).where(eq(events.id, params.event_id));
           if (!event) throw new ApiError(404, "Event not found");
-          return presentAdminEvent(event, services.storage);
+          return presentAdminEvent(event, await hostsForEvent(tx, event.id), services.storage);
         }),
       { detail: { tags: ["Admin Events"] } },
     )
@@ -124,10 +122,8 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
           request,
           servicesFactory,
           async (tx, actor, services) => {
-            return presentAdminEvent(
-              await createCanonicalEvent(tx, body, actor, services),
-              services.storage,
-            );
+            const created = await createCanonicalEvent(tx, body, actor, services);
+            return presentAdminEvent(created.event, created.hosts, services.storage);
           },
           true,
         ),
@@ -143,48 +139,10 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
             .where(eq(events.id, params.event_id))
             .for("update");
           if (!event) throw new ApiError(404, "Event not found");
-          const before = eventSnapshot(event);
-          const changes = eventChanges(body);
-          checkEndDate(
-            changes.eventDate ?? event.eventDate,
-            changes.eventEndDate === undefined ? event.eventEndDate : changes.eventEndDate,
+          return presentAdminEvent(
+            ...(await updateCanonicalEvent(tx, event, body, actor, services)),
+            services.storage,
           );
-          const updated = { ...event, ...changes };
-          const embeddingFields = [
-            "title",
-            "description",
-            "clubName",
-            "vibes",
-            "locationName",
-            "eventDate",
-            "eventEndDate",
-          ] as const;
-          const embeddingChanged = embeddingFields.some(
-            (field) =>
-              field in changes && JSON.stringify(event[field]) !== JSON.stringify(updated[field]),
-          );
-          if (embeddingChanged) {
-            const embedding = await embeddingFor(updated, services);
-            if (embedding) Object.assign(changes, embedding);
-          }
-          if (Object.keys(changes).length) {
-            const [saved] = await tx
-              .update(events)
-              .set(changes)
-              .where(eq(events.id, event.id))
-              .returning();
-            await addEventAudit(
-              tx,
-              saved!,
-              actor,
-              "update",
-              before,
-              eventSnapshot(saved!),
-              services.now(),
-            );
-            return presentAdminEvent(saved!, services.storage);
-          }
-          return presentAdminEvent(event, services.storage);
         }),
       { body: updateEventSchema, detail: { tags: ["Admin Events"] } },
     )
@@ -229,7 +187,9 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
             .where(eq(events.id, params.event_id))
             .for("update");
           if (!event) throw new ApiError(404, "Event not found");
-          if (event.isArchived === archived) return presentAdminEvent(event, services.storage);
+          const hosts = await hostsForEvent(tx, event.id);
+          if (event.isArchived === archived)
+            return presentAdminEvent(event, hosts, services.storage);
           const [saved] = await tx
             .update(events)
             .set({
@@ -244,11 +204,11 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
             saved!,
             actor,
             archived ? "archive" : "restore",
-            eventSnapshot(event),
-            eventSnapshot(saved!),
+            eventSnapshot(event, hosts),
+            eventSnapshot(saved!, hosts),
             services.now(),
           );
-          return presentAdminEvent(saved!, services.storage);
+          return presentAdminEvent(saved!, hosts, services.storage);
         }),
       { parse: "none", detail: { tags: ["Admin Events"] } },
     );
@@ -264,6 +224,7 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
           .for("update");
         if (!event) throw new ApiError(404, "Event not found");
         if (!event.isArchived) {
+          const hosts = await hostsForEvent(tx, event.id);
           const [saved] = await tx
             .update(events)
             .set({ isArchived: true, archivedAt: services.now(), archivedBy: actor.actorId })
@@ -274,8 +235,8 @@ export function createAdminEventRoutes(env: ApiEnv, servicesFactory: ServicesFac
             saved!,
             actor,
             "archive",
-            eventSnapshot(event),
-            eventSnapshot(saved!),
+            eventSnapshot(event, hosts),
+            eventSnapshot(saved!, hosts),
             services.now(),
           );
         }
