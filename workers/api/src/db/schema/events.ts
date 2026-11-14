@@ -40,8 +40,6 @@ export const events = pgTable(
       .notNull()
       .$defaultFn(() => "campus_community"),
     sourceUrl: varchar("source_url", { length: 1024 }),
-    /** Superseded by event_hosts; dropped by the next migration. */
-    clubName: varchar("club_name", { length: 255 }),
     vibes: json("vibes")
       .$type<EventVibe[]>()
       .notNull()
@@ -69,7 +67,7 @@ export const events = pgTable(
     ),
     index("ix_events_search_trgm").using(
       "gin",
-      sql`(coalesce(${table.title}, '') || ' ' || coalesce(${table.clubName}, '') || ' ' || coalesce(${table.locationName}, '')) gin_trgm_ops`,
+      sql`(coalesce(${table.title}, '') || ' ' || coalesce(${table.locationName}, '')) gin_trgm_ops`,
     ),
     index("ix_events_embedding_vector_hnsw")
       .using("hnsw", table.embeddingVector.op("vector_cosine_ops"))
