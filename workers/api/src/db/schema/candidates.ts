@@ -47,8 +47,6 @@ export const eventListingCandidates = pgTable(
     locationName: varchar("location_name", { length: 255 }),
     eventDate: instant("event_date"),
     eventEndDate: instant("event_end_date"),
-    /** Superseded by candidate_hosts; dropped by the next migration. */
-    clubName: varchar("club_name", { length: 255 }),
     vibes: json("vibes")
       .$type<EventVibe[]>()
       .notNull()
