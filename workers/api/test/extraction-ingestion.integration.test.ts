@@ -7,6 +7,11 @@ import {
   hosts,
 } from "../src/db/schema";
 import { localDayBounds, vancouverDay } from "../src/services/candidate-publication";
+import {
+  parseExtractedDate,
+  rollForwardYear,
+  vancouverReference,
+} from "../src/routes/extraction/candidates";
 import { extractionFixture, extraction, json, testUrl } from "./extraction-fixture";
 const fixture = extractionFixture();
 
@@ -20,6 +25,53 @@ describe("Vancouver publication calendar", () => {
     expect(fallEnd.getTime() - fallStart.getTime()).toBe(25 * 3600_000);
     const [permanentStart, permanentEnd] = localDayBounds(new Date("2026-11-01T20:00:00Z"));
     expect(permanentEnd.getTime() - permanentStart.getTime()).toBe(24 * 3600_000);
+  });
+
+  it("reads extracted wall-clock times through the Vancouver time zone rules", () => {
+    expect(parseExtractedDate("2025-12-15T19:00")!.toISOString()).toBe("2025-12-16T03:00:00.000Z");
+    // British Columbia stays on UTC-7 permanently from 2026.
+    expect(parseExtractedDate("2026-11-15T19:00")!.toISOString()).toBe("2026-11-16T02:00:00.000Z");
+    expect(parseExtractedDate("2026-11-15T19:00:00-07:00")!.toISOString()).toBe(
+      "2026-11-16T02:00:00.000Z",
+    );
+    expect(parseExtractedDate("2026-11-15T19:00:00Z")!.toISOString()).toBe(
+      "2026-11-15T19:00:00.000Z",
+    );
+    expect(parseExtractedDate(null)).toBeNull();
+  });
+
+  it("moves a yearless date from a December post into the next year", () => {
+    const december = new Date("2026-12-01T20:00:00Z");
+    const roll = (value: string, reference: Date | null) =>
+      rollForwardYear(parseExtractedDate(value), reference)?.toISOString();
+    expect(roll("2026-01-15T18:00", december)).toBe(
+      parseExtractedDate("2027-01-15T18:00")!.toISOString(),
+    );
+    expect(rollForwardYear(null, december)).toBeNull();
+    // Backfilled posts have no posting time and may be years old: never moved forward.
+    expect(roll("2026-01-15T18:00", null)).toBe(
+      parseExtractedDate("2026-01-15T18:00")!.toISOString(),
+    );
+    // A recent or upcoming date stays, as does a spring event seen in a late-summer backfill.
+    expect(roll("2026-11-20T18:00", december)).toBe(
+      parseExtractedDate("2026-11-20T18:00")!.toISOString(),
+    );
+    expect(roll("2026-12-05T18:00", december)).toBe(
+      parseExtractedDate("2026-12-05T18:00")!.toISOString(),
+    );
+    const backfill = new Date("2026-08-23T11:40:00Z");
+    expect(roll("2026-03-10T17:30", backfill)).toBe(
+      parseExtractedDate("2026-03-10T17:30")!.toISOString(),
+    );
+    // Daylight saving differs between the years: the wall-clock time is kept.
+    expect(roll("2025-12-15T19:00", new Date("2026-07-01T00:00:00Z"))).toBe(
+      "2026-12-16T02:00:00.000Z",
+    );
+  });
+
+  it("gives the extractor a local reference time with its weekday", () => {
+    expect(vancouverReference(new Date("2026-10-30T21:05:00Z"))).toBe("Friday 2026-10-30 14:05");
+    expect(vancouverReference(new Date("2026-11-17T02:16:00Z"))).toBe("Monday 2026-11-16 19:16");
   });
 });
 
@@ -210,7 +262,7 @@ describe.skipIf(!testUrl)("queue extraction and ingestion PostgreSQL parity", ()
             {
               candidate_id: "wait0001",
               generation: 1,
-              extraction: { ...extraction("wait0001"), event_date: "2030-02-01T20:00:00" },
+              extraction: { ...extraction("wait0001"), event_date: "2030-02-30T20:00" },
             },
           ],
         })

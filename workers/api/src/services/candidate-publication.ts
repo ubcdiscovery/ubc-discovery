@@ -25,7 +25,11 @@ export function vancouverDay(value: Date): string {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 function localMidnightUtc(day: string): Date {
-  const wall = new Date(`${day}T00:00:00Z`).getTime();
+  return vancouverWallTime(new Date(`${day}T00:00:00Z`));
+}
+/** The instant at which Vancouver clocks show `wall`'s UTC fields. */
+export function vancouverWallTime(value: Date): Date {
+  const wall = value.getTime();
   let result = wall;
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Vancouver",
@@ -110,6 +114,8 @@ export async function previewAutoPublication(
 ): Promise<"published" | "pending"> {
   if (
     candidate.status !== "pending" ||
+    // Without a posting time (the initial backfill) the post may be years old.
+    candidate.postedAt === null ||
     !isComplete(candidate) ||
     candidate.isRepost ||
     candidate.sourceLabel !== "ams_club" ||
@@ -175,6 +181,7 @@ export async function processAutoPublication(
   if (
     !locked ||
     locked.status !== "pending" ||
+    locked.postedAt === null ||
     !isComplete(locked) ||
     locked.isRepost ||
     locked.sourceLabel !== "ams_club" ||
