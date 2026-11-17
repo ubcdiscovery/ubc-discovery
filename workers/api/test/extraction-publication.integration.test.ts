@@ -75,6 +75,21 @@ describe.skipIf(!testUrl)("candidate publication and recovery PostgreSQL parity"
     expect(candidate.isRepost).toBe(true);
     expect(candidate.status).toBe("pending");
   });
+  it("holds Candidates without a posting time for human review", async () => {
+    await fixture.seedCandidate(
+      "noposted",
+      { postedAt: null, captureReadyAt: fixture.services.now() },
+      ["backfillclub"],
+    );
+    const response = await fixture.request("/extraction/results", "POST", {
+      model: "test-model",
+      results: [{ candidate_id: "noposted", generation: 1, extraction: extraction("noposted") }],
+    });
+    expect(await json(response)).toEqual({
+      results: [{ candidate_id: "noposted", status: "completed" }],
+    });
+    expect((await fixture.candidate("noposted")).status).toBe("pending");
+  });
   it("serializes concurrent same-host publication and never publishes two matching drafts", async () => {
     await fixture.seedCandidate("race0001", { captureReadyAt: fixture.services.now() }, [
       "raceclub",

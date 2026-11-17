@@ -4,12 +4,13 @@ export function identity(item: ExtractionMessage): string {
   return `${item.candidate_id}:${item.generation}`;
 }
 
+/** An ISO 8601 datetime; the offset is optional because the API reads local wall-clock time. */
 export function validDatetime(value: string): boolean {
   const match =
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.exec(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(Z|[+-]\d{2}:\d{2})?$/.exec(
       value,
     );
-  if (!match || !Number.isFinite(Date.parse(value))) return false;
+  if (!match || !Number.isFinite(Date.parse(match[7] ? value : `${value}Z`))) return false;
   const [, year, month, day, hour, minute, second] = match;
   const y = Number(year),
     m = Number(month),

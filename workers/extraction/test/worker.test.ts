@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import worker, { consume, type Extraction } from "../src/index";
+import { validDatetime } from "../src/validation";
 import {
   first,
   second,
@@ -280,5 +281,19 @@ describe("queue consumption", () => {
     await consume(batch([retry]), env, http);
     expect(aiRun(env)).toHaveBeenCalledOnce();
     expect(retry.ack).toHaveBeenCalledOnce();
+  });
+});
+
+describe("validDatetime", () => {
+  it("accepts local wall-clock times with or without an offset", () => {
+    expect(validDatetime("2026-11-08T19:00")).toBe(true);
+    expect(validDatetime("2026-11-08T19:00:00")).toBe(true);
+    expect(validDatetime("2026-11-08T19:00:00-08:00")).toBe(true);
+    expect(validDatetime("2026-11-08T19:00:00Z")).toBe(true);
+  });
+  it("rejects impossible or partial datetimes", () => {
+    expect(validDatetime("2026-02-30T19:00")).toBe(false);
+    expect(validDatetime("2026-11-08T24:00")).toBe(false);
+    expect(validDatetime("2026-11-08")).toBe(false);
   });
 });

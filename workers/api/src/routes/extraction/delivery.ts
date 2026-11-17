@@ -7,14 +7,20 @@ import { type ApiEnv } from "../../env";
 import { requireApiCredential } from "../../http/auth";
 import { ApiError } from "../../http/errors";
 import { deliveriesSchema, deliverySchema, resultsSchema } from "../../schemas/candidates";
-import { parseDate } from "../../schemas/events";
 import { createServices, type ServicesFactory } from "../../services";
 import { processAutoPublication } from "../../services/candidate-publication";
 import { postgresErrorCode } from "../../services/event-administration";
 import { captureTimedOut } from "../../services/extraction-queue";
 import { SYSTEM_PROMPT, RESPONSE_SCHEMA } from "./contract";
 import { candidateHostHandles } from "../../services/hosts";
-import { settledStatus, uniqueDeliveries, lockedCandidate, extractionFields } from "./candidates";
+import {
+  settledStatus,
+  uniqueDeliveries,
+  lockedCandidate,
+  extractionFields,
+  parseExtractedDate,
+  vancouverReference,
+} from "./candidates";
 
 /** Evidence, result and terminal callbacks from the extraction Worker. */
 export function createDeliveryRoutes(
@@ -88,7 +94,9 @@ export function createDeliveryRoutes(
                     source_account: candidate.sourceAccount,
                     author_accounts: await candidateHostHandles(tx, candidate.id),
                     source_type: candidate.sourceType,
-                    reference_timestamp: (candidate.postedAt ?? candidate.createdAt).toISOString(),
+                    reference_timestamp: vancouverReference(
+                      candidate.postedAt ?? candidate.createdAt,
+                    ),
                     images,
                   });
                 }
@@ -114,8 +122,8 @@ export function createDeliveryRoutes(
           if (item.extraction && item.extraction.candidate_id !== item.candidate_id)
             throw new ApiError(422, "extraction candidate_id must match result candidate_id");
           if (item.extraction) {
-            parseDate(item.extraction.event_date, true);
-            parseDate(item.extraction.event_end_date, true);
+            parseExtractedDate(item.extraction.event_date);
+            parseExtractedDate(item.extraction.event_end_date);
           }
         }
         const services = servicesFactory();
@@ -155,7 +163,14 @@ export function createDeliveryRoutes(
                     throw new ApiError(409, `Capture not ready for ${candidate.id}`);
                   await tx
                     .update(candidates)
-                    .set(extractionFields(item.extraction, body.model, services.now()))
+                    .set(
+                      extractionFields(
+                        item.extraction,
+                        body.model,
+                        services.now(),
+                        candidate.postedAt,
+                      ),
+                    )
                     .where(eq(candidates.id, candidate.id));
                 }
                 return null;

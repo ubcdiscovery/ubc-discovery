@@ -173,6 +173,7 @@ export function extractionFixture() {
           externalSourceId: id,
           sourceAccount: "fixture",
           createdAt: new Date("2029-12-31T00:00:00Z"),
+          postedAt: new Date("2029-12-30T00:00:00Z"),
           ...values,
         })
         .returning();
