@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, lt, ne, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lt, lte, ne, sql } from "drizzle-orm";
 import {
   candidateHosts,
   eventHosts,
@@ -168,19 +168,92 @@ export async function publishCandidate(
   await db.update(candidates).set({ status: "approved" }).where(eq(candidates.id, candidate.id));
   candidate.status = "approved";
 }
+const TITLE_STOPWORDS = new Set([
+  "the",
+  "and",
+  "for",
+  "with",
+  "our",
+  "ubc",
+  "of",
+  "at",
+  "in",
+  "x",
+  "event",
+]);
+function titleWords(title: string): Set<string> {
+  return new Set(
+    title
+      .normalize("NFKD")
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter((word) => word.length > 1 && !TITLE_STOPWORDS.has(word)),
+  );
+}
+/** At least half the words of the shorter title appear in the other, e.g. "LOOP Hackathon". */
+export function similarTitles(a: string, b: string): boolean {
+  const [left, right] = [titleWords(a), titleWords(b)];
+  const shorter = Math.min(left.size, right.size);
+  if (!shorter) return false;
+  const shared = [...left].filter((word) => right.has(word)).length;
+  return shared / shorter >= 0.5;
+}
+const REMINDER_WINDOW_MS = 60 * 60_000;
+export type AutoRejection = "not_event" | "reminder";
+/**
+ * Why a pending Candidate needs no review: extraction found no event, or it is a
+ * reminder for a live Event Listing a Host already runs (similar title, start within
+ * an hour). Same-day events that differ stay in review.
+ */
+export async function autoRejection(
+  db: Database,
+  candidate: EventListingCandidate,
+): Promise<AutoRejection | null> {
+  if (candidate.isEvent === false) return "not_event";
+  if (!candidate.isEvent || !candidate.eventDate || !candidate.title?.trim()) return null;
+  const handles = await candidateHostHandles(db, candidate.id);
+  if (!handles.length) return null;
+  const start = candidate.eventDate.getTime();
+  const live = await db
+    .select({ title: events.title })
+    .from(events)
+    .where(
+      and(
+        eq(events.isArchived, false),
+        ne(events.id, candidate.id),
+        inArray(
+          events.id,
+          db
+            .select({ id: eventHosts.eventId })
+            .from(eventHosts)
+            .where(inArray(eventHosts.hostHandle, handles)),
+        ),
+        gte(events.eventDate, new Date(start - REMINDER_WINDOW_MS)),
+        lte(events.eventDate, new Date(start + REMINDER_WINDOW_MS)),
+      ),
+    );
+  return live.some((event) => similarTitles(event.title, candidate.title!)) ? "reminder" : null;
+}
 export async function processAutoPublication(
   db: Database,
   candidate: EventListingCandidate,
   services: RequestServices,
-): Promise<"published" | "pending"> {
+): Promise<"published" | "pending" | "rejected"> {
   const [locked] = await db
     .select()
     .from(candidates)
     .where(eq(candidates.id, candidate.id))
     .for("update");
+  if (!locked || locked.status !== "pending") return "pending";
+  const rejection = await autoRejection(db, locked);
+  if (rejection) {
+    await db.update(candidates).set({ status: "rejected" }).where(eq(candidates.id, locked.id));
+    console.info(
+      JSON.stringify({ event: "auto_rejected", candidate_id: locked.id, reason: rejection }),
+    );
+    return "rejected";
+  }
   if (
-    !locked ||
-    locked.status !== "pending" ||
     locked.postedAt === null ||
     !isComplete(locked) ||
     locked.isRepost ||

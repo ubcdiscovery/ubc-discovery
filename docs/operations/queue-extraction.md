@@ -31,7 +31,11 @@ whole batch and use Queue backoff.
 
 The result endpoint saves extraction before publication and sorts publication
 by `(created_at, id)` within a batch. Existing same-club/day locking and review
-rules still apply. The consumer runs with concurrency one. Cloudflare does not
+rules still apply. Before publication, a pending Candidate is rejected without
+review when extraction finds it is not an event, or when it is a reminder: one of
+its Hosts already has a live Event Listing with a similar title starting within an
+hour. The Worker log records each as `auto_rejected` with its reason; an admin can
+return it to review. The consumer runs with concurrency one. Cloudflare does not
 guarantee FIFO ordering across batches: the older Candidate wins within a batch,
 but the first eligible Candidate processed can win across batches.
 
